@@ -1,0 +1,8 @@
+__pycache__/
+examples/*
+!examples/.gitkeep
+*.DS_Store
+.idea/
+model/
+log/
+local/
