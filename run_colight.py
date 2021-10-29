@@ -40,9 +40,9 @@ parser.add_argument('--test_model', action="store_true", default=False)
 parser.add_argument('--save_model', action="store_false", default=True)
 parser.add_argument('--load_model', action="store_true", default=False)
 parser.add_argument("--save_rate",type=int,default=10,help="save model once every time this many episodes are completed")
-parser.add_argument('--save_dir',type=str,default="model/colight_debug_1x5",help='directory in which model should be saved')
+parser.add_argument('--save_dir',type=str,default="model/colight_debug_1x1",help='directory in which model should be saved')
 #parser.add_argument('--load_dir',type=str,default="model/colight",help='directory in which model should be loaded')
-parser.add_argument('--log_dir',type=str,default="log/colight_debug_1x5",help='directory in which logs should be saved')
+parser.add_argument('--log_dir',type=str,default="log/colight_debug_1x1",help='directory in which logs should be saved')
 parser.add_argument('--vehicle_max',type=int,default=1,help='used to normalize node observayion')
 parser.add_argument('--mask_type',type=int,default=0,help='used to specify the type of softmax')
 parser.add_argument('--get_attention', action="store_true", default=False)
@@ -269,7 +269,7 @@ class TrafficLightDQN:
                     else:
                         actions = self.agent.sample(s_size=self.agent.num_agents)
                     reward_list = []  # [intervals,agents,reward]
-                    actions[len(actions) - 1] = 0
+                    # actions[len(actions) - 1] = 0
                     # print(actions)
                     for _ in range(self.args.action_interval):
                         obs, rewards, dones, _ = self.env.step(actions)
@@ -328,7 +328,7 @@ class TrafficLightDQN:
                 actions = self.agent.get_action(last_phase, obs,test_phase=True)
                 actions = actions[0]
                 rewards_list = []
-                actions[len(actions) - 1] = 0
+                # actions[len(actions) - 1] = 0
                 for _ in range(self.args.action_interval):
                     obs, rewards, dones, _ = self.env.step(actions)
                     i += 1
@@ -371,7 +371,7 @@ class TrafficLightDQN:
                     actions = self.agent.get_action(last_phase, obs,test_phase=True)
                 actions = actions[0]
                 rewards_list = []
-                actions[len(actions) - 1] = 0
+                # actions[len(actions) - 1] = 0
                 for _ in range(self.args.action_interval):
                     obs, rewards, dones, _ = self.env.step(actions)
                     i += 1
