@@ -1,7 +1,7 @@
 import gym
 from environment import TSCEnv
 from world import World
-from generator import LaneVehicleGenerator,IntersectionVehicleGenerator
+from generator import LaneVehicleGenerator,IntersectionPhaseGenerator
 from agent.dqn_agent import DQNAgent
 from metric import TravelTimeMetric
 import argparse
@@ -46,7 +46,7 @@ for i in world.intersections:
         action_space,
         [
             LaneVehicleGenerator(world, i, ["lane_count"], in_only=True, average=None),
-            IntersectionVehicleGenerator(world, i, ["phase"], targets=["cur_phase"], negative=False),
+            IntersectionPhaseGenerator(world, i, ["phase"], targets=["cur_phase"], negative=False),
 
         ],
         LaneVehicleGenerator(world, i, ["lane_waiting_count"], in_only=True, average="all", negative=True),
