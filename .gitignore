@@ -6,3 +6,6 @@ examples/*
 model/
 log/
 local/
+data/frontend
+*.pkl
+data/*.txt
