@@ -1,7 +1,7 @@
 import gym
 from environment import TSCEnv
 from world import World
-from generator import LaneVehicleGenerator
+from generator import LaneVehicleGenerator,IntersectionVehicleGenerator
 from agent.dqn_agent import DQNAgent
 from metric import TravelTimeMetric
 import argparse
@@ -12,7 +12,7 @@ from datetime import datetime
 
 # parse args
 parser = argparse.ArgumentParser(description='Run Example')
-parser.add_argument('config_file', type=str, help='path of config file')
+parser.add_argument('--config_file', type=str, help='path of config file')
 parser.add_argument('--thread', type=int, default=1, help='number of threads')
 parser.add_argument('--steps', type=int, default=3600, help='number of steps')
 parser.add_argument('--action_interval', type=int, default=20, help='how often agent make decisions')
@@ -44,7 +44,11 @@ for i in world.intersections:
     action_space = gym.spaces.Discrete(len(i.phases))
     agents.append(DQNAgent(
         action_space,
-        LaneVehicleGenerator(world, i, ["lane_count"], in_only=True, average=None),
+        [
+            LaneVehicleGenerator(world, i, ["lane_count"], in_only=True, average=None),
+            IntersectionVehicleGenerator(world, i, ["phase"], targets=["cur_phase"], negative=False),
+
+        ],
         LaneVehicleGenerator(world, i, ["lane_waiting_count"], in_only=True, average="all", negative=True),
         i.id
     ))
@@ -54,7 +58,6 @@ for i in world.intersections:
     #     break
 
 for agent in agents:
-    print(agent.ob_length)
     print(agent.action_space)
 # create metric
 metric = TravelTimeMetric(world)
@@ -81,13 +84,15 @@ def train(args, env):
                 for agent_id, agent in enumerate(agents):
                     if total_decision_num > agent.learning_start:
                     #if True:
-                        actions.append(agent.get_action(last_obs[agent_id]))
+                        # actions.append(agent.get_action(last_obs[agent_id]))
+                        actions.append(agent.choose(last_obs[agent_id]))
                     else:
                         actions.append(agent.sample())
 
                 rewards_list = []
                 for _ in range(args.action_interval):
                     obs, rewards, dones, _ = env.step(actions)
+                    # print("Time {} action: {}".format(i, actions))
                     i += 1
                     rewards_list.append(rewards)
                 rewards = np.mean(rewards_list, axis=0)

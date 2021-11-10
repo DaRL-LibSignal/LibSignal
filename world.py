@@ -31,6 +31,7 @@ class Intersection(object):
         self.in_roads = None
 
         # links and phase information of each intersection
+        self.current_phase = 0
         self.roadlinks = []
         self.lanelinks_of_roadlink = []
         self.startlanes = []
@@ -41,8 +42,8 @@ class Intersection(object):
 
         # define yellow phases, currently default to 0
 
-        self.yellow_phase_id = [-1]
-        self.yellow_phase_time = 0
+        self.yellow_phase_id = [0]
+        self.yellow_phase_time = 5
 
         # parsing links and phases
         for roadlink in intersection["roadLinks"]:
@@ -103,6 +104,7 @@ class Intersection(object):
             if self.current_phase_time >= self.yellow_phase_time:
                 self._change_phase(self.phases[self.action_before_yellow], interval)
                 self.current_phase = self.action_before_yellow
+                self.action_executed = self.action_before_yellow
             else:
                 self.current_phase_time += interval
         else:
@@ -115,6 +117,7 @@ class Intersection(object):
                 else:
                     self._change_phase(action, interval)
                     self.current_phase = action
+                    self.action_executed = action
 
     def reset(self):
         # record phase info
@@ -126,6 +129,7 @@ class Intersection(object):
         self.eng.set_tl_phase(self.id, self._current_phase)
         self.current_phase_time = 0
         self.action_before_yellow = None
+        self.action_executed = None
 
 
 class World(object):
@@ -193,7 +197,9 @@ class World(object):
             "lane_waiting_time_count": self.get_lane_waiting_time_count,
             "lane_delay": self.get_lane_delay,
             "vehicle_trajectory": self.get_vehicle_trajectory,
-            "history_vehicles": self.get_history_vehicles
+            "history_vehicles": self.get_history_vehicles,
+            "phase": self.get_cur_phase
+            # "action_executed": self.get_executed_action
         }
         self.fns = []
         self.info = {}
@@ -203,6 +209,18 @@ class World(object):
         self.history_vehicles = set()
 
         print("world built.")
+
+    def get_executed_action(self):
+        actions = []
+        for i in self.intersections:
+            actions.append(i.action_executed)
+        return actions
+
+    def get_cur_phase(self):
+        phases = []
+        for i in self.intersections:
+            phases.append(i.current_phase)
+        return phases
 
     def get_pressure(self):
         vehicles = self.eng.get_lane_vehicle_count()
