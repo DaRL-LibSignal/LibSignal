@@ -13,11 +13,9 @@ class IntersectionVehicleGenerator():
     I : Intersection object
     fns : list of statistics to get,"vehicle_trajectory", "lane_vehicles", "history_vehicles" is needed for result "passed_count" and "passed_time_count",
                                     "vehicle_distance", "lane_vehicles" is needed for result "vehicle_map"
-                                    "phase" is needed for result "cur_phase"
     targets : list of results to return, currently support "vehicle_map": map of vehicles: an image representation of vehicles’ position in this intersection
                                                            "passed_count": total number of vehicles that passed the intersection during time interval ∆t after the last action
                                                            "passed_time_count": total time (in minutes) spent on approaching lanes of vehicles that passed the intersection during time interval ∆t after the last action
-                                                           "cur_phase": current phase of the intersection (not before yellow phase)
              See section 4.2 of the intelliLight paper[Hua Wei et al, KDD'18] for more detailed description on these targets.
     negative : boolean, whether return negative values (mostly for Reward)
     time_interval: use to calculate
@@ -26,8 +24,7 @@ class IntersectionVehicleGenerator():
         self.world = world
         self.I = I
 
-        # get cur phase of the intersection
-        self.phase = I.current_phase
+
 
         # get lanes of intersections
         self.lanes = []
@@ -55,8 +52,7 @@ class IntersectionVehicleGenerator():
         self.result_functions = {
             "passed_count": self.passed_count,
             "passed_time_count": self.passed_time_count,
-            "vehicle_map": self.vehicle_map,
-            "cur_phase": self.cur_phase
+            "vehicle_map": self.vehicle_map
         }
 
         self.negative = negative
@@ -173,11 +169,6 @@ class IntersectionVehicleGenerator():
                 mapOfCars[transform_tuple[0], transform_tuple[1]] = 1
 
         return mapOfCars
-
-
-    def cur_phase(self,fns):
-        cur_phase = fns["phase"]
-        return cur_phase
 
 
     def generate(self, action_interval=5):
