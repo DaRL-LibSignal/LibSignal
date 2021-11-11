@@ -60,7 +60,7 @@ class Intersection(object):
         self.startlanes = list(set(self.startlanes))
 
         phases = intersection["trafficLight"]["lightphases"]
-        self.phases = [i for i in range(len(phases)) if not i in self.yellow_phase_id]
+        self.phases = [i for i in range(len(phases)) if not i in self.yellow_phase_id] # mapping from model output to cityflow phase id
         for i in self.phases:
             phase = phases[i]
             self.phase_available_roadlinks.append(phase["availableRoadLinks"])
@@ -115,7 +115,7 @@ class Intersection(object):
                     self._change_phase(self.yellow_phase_id[0], interval)
                     self.action_before_yellow = action
                 else:
-                    self._change_phase(action, interval)
+                    self._change_phase(self.phases[action], interval)
                     self.current_phase = action
                     self.action_executed = action
 
