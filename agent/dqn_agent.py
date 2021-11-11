@@ -42,8 +42,8 @@ class DQNAgent(RLAgent):
 
         # print(obs_lane)
         state = State(
-            num_of_vehicles=np.reshape(np.array(obs_lane[0]), newshape=(1, 8)),
-            cur_phase=np.reshape(np.array([cur_phase]), newshape=(1, 1))
+            num_of_vehicles=np.reshape(np.array(obs_lane[0]), newshape=(-1, 12)),
+            cur_phase=np.reshape(np.array([cur_phase]), newshape=(-1, 1))
         )
 
         return state.to_list()
@@ -145,7 +145,7 @@ class DQNAgent(RLAgent):
 class State(object):
     # ==========================
     dims = {
-        "D_NUM_OF_VEHICLES":  (8,),
+        "D_NUM_OF_VEHICLES":  (12,),
         "D_CUR_PHASE":  (1,)
 
     }
