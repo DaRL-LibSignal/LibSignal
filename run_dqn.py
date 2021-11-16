@@ -1,8 +1,8 @@
 import gym
 from environment import TSCEnv
 from world import World
-from generator import LaneVehicleGenerator,IntersectionPhaseGenerator
-from agent.dqn_agent import DQNAgent
+from generator import LaneVehicleGenerator, IntersectionPhaseGenerator
+from agent.dqn_torch_agent import DQNAgent
 from metric import TravelTimeMetric
 import argparse
 import os
@@ -16,12 +16,12 @@ parser.add_argument('--config_file', type=str, help='path of config file')
 parser.add_argument('--thread', type=int, default=1, help='number of threads')
 parser.add_argument('--steps', type=int, default=3600, help='number of steps')
 parser.add_argument('--action_interval', type=int, default=20, help='how often agent make decisions')
-parser.add_argument('--episodes', type=int, default=40, help='training episodes')
+parser.add_argument('--episodes', type=int, default=100, help='training episodes')
 parser.add_argument('--save_model', action="store_true", default=False)
 parser.add_argument('--load_model', action="store_true", default=False)
 parser.add_argument("--save_rate", type=int, default=20, help="save model once every time this many episodes are completed")
-parser.add_argument('--save_dir', type=str, default="model/dqn_4x4", help='directory in which model should be saved')
-parser.add_argument('--log_dir', type=str, default="log/dqn_4x4", help='directory in which logs should be saved')
+parser.add_argument('--save_dir', type=str, default="model/dqn_4x4/torch", help='directory in which model should be saved')
+parser.add_argument('--log_dir', type=str, default="log/dqn_4x4/torch", help='directory in which logs should be saved')
 args = parser.parse_args()
 
 if not os.path.exists(args.log_dir):
@@ -47,7 +47,6 @@ for i in world.intersections:
         [
             LaneVehicleGenerator(world, i, ["lane_count"], in_only=True, average=None),
             IntersectionPhaseGenerator(world, i, ["phase"], targets=["cur_phase"], negative=False),
-
         ],
         LaneVehicleGenerator(world, i, ["lane_waiting_count"], in_only=True, average="all", negative=True),
         i.id

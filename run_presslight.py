@@ -2,7 +2,7 @@ import gym
 from environment import TSCEnv
 from world import World
 from generator import LaneVehicleGenerator, IntersectionPhaseGenerator
-from agent.presslight_agent import PressLightAgent
+from agent.presslight_torch_agent import PressLightAgent
 from metric import TravelTimeMetric
 import argparse
 import os
@@ -18,14 +18,14 @@ parser.add_argument('--config_file', type=str, help='path of config file')
 parser.add_argument('--thread', type=int, default=1, help='number of threads')
 parser.add_argument('--steps', type=int, default=3600, help='number of steps')
 parser.add_argument('--action_interval', type=int, default=20, help='how often agent make decisions')
-parser.add_argument('--episodes', type=int, default=200, help='training episodes')
+parser.add_argument('--episodes', type=int, default=100, help='training episodes')
 parser.add_argument('--save_model', action="store_true", default=False)
 parser.add_argument('--load_model', action="store_true", default=False)
 parser.add_argument("--save_rate", type=int, default=20,
                     help="save model once every time this many episodes are completed")
-parser.add_argument('--save_dir', type=str, default="model/presslight_1X6/torch",
+parser.add_argument('--save_dir', type=str, default="model/presslight_4x4/torch",
                     help='directory in which model should be saved')
-parser.add_argument('--log_dir', type=str, default="log/presslight_1X6/torch",
+parser.add_argument('--log_dir', type=str, default="log/presslight_4X4/torch",
                     help='directory in which logs should be saved')
 # k segmentations of input roads, default is 1                          add this feature later
 parser.add_argument('--k', type=int, default=1, help='k segmentations of input roads')
