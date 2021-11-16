@@ -85,7 +85,6 @@ class DQNAgent(RLAgent):
             list_all_flatten_feature.append(dic_input_node[feature_name])
         all_flatten_feature = concatenate(list_all_flatten_feature, axis=1, name="all_flatten_feature")
 
-
         fc1 = Dense(20, activation='relu')(all_flatten_feature)
         fc2 = Dense(20, activation='relu')(fc1)
         q_values = Dense(self.action_space.n, activation='linear')(fc2)

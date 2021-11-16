@@ -32,7 +32,7 @@ class DQN(nn.Module):
                 return self._forward(x)
 
 
-class PressLightAgent(RLAgent):
+class DQNAgent(RLAgent):
     def __init__(self, action_space, ob_generator, reward_generator, iid):
         super().__init__(action_space, ob_generator, reward_generator)
 
@@ -62,12 +62,6 @@ class PressLightAgent(RLAgent):
         self.optimizer = optim.RMSprop(self.model.parameters(), lr=0.001, alpha=0.9, centered=False, eps=1e-7)
         self.update_target_network()
 
-
-    def get_action(self, ob):
-        ob = torch.tensor(np.concatenate((ob[0], ob[1]), axis=1)).float()
-        act_values = self.model.forward(ob)
-        return torch.argmax(act_values, dim=1)
-
     def get_ob(self):
 
         obs_lane = [self.ob_generator[0].generate()]
@@ -75,7 +69,7 @@ class PressLightAgent(RLAgent):
 
         # print(obs_lane)
         state = State(
-            num_of_vehicles=np.reshape(np.array(obs_lane[0]), newshape=(-1, 24)),
+            num_of_vehicles=np.reshape(np.array(obs_lane[0]), newshape=(-1, 12)),
             cur_phase=np.reshape(np.array([cur_phase]), newshape=(-1, 1))
         )
         return state.to_list()
@@ -86,8 +80,14 @@ class PressLightAgent(RLAgent):
                 for feature_name in self.list_feature_name]
 
     def choose(self, ob):
+        # ob = self.convert_state_to_input(state)
         if np.random.rand() <= self.epsilon:
             return self.action_space.sample()
+        ob = torch.tensor(np.concatenate((ob[0], ob[1]), axis=1)).float()
+        act_values = self.model.forward(ob)
+        return torch.argmax(act_values, dim=1)
+
+    def get_action(self, ob):
         ob = torch.tensor(np.concatenate((ob[0], ob[1]), axis=1)).float()
         act_values = self.model.forward(ob)
         return torch.argmax(act_values, dim=1)
@@ -97,7 +97,6 @@ class PressLightAgent(RLAgent):
 
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
-
         model = DQN(self.ob_length, self.action_space.n)
         return model
 
@@ -111,6 +110,7 @@ class PressLightAgent(RLAgent):
     def remember(self, ob, action, reward, next_ob):
         self.memory.append((ob, action, reward, next_ob))
 
+
     def _encode_sample(self, minibatch):
         obses_t, actions_t, rewards_t, obses_tp1 = list(zip(*minibatch))
         obs = [np.squeeze(obs_i) for obs_i in list(zip(*obses_t))]
@@ -118,10 +118,10 @@ class PressLightAgent(RLAgent):
         obs = np.concatenate((obs[0], obs[1][:, np.newaxis]), axis=1)
         next_obs = [np.squeeze(obs_i) for obs_i in list(zip(*obses_tp1))]
         next_obs = np.concatenate((next_obs[0], next_obs[1][:, np.newaxis]), axis=1)
-        # actions = np.array(actions_t, copy=False)
+        #actions = np.array(actions_t, copy=False)
         rewards = np.array(rewards_t, copy=False)
         obs = torch.from_numpy(obs).float()
-        # actions = torch.from_numpy(actions).int()
+        #actions = torch.from_numpy(actions).int()
         rewards = torch.from_numpy(rewards).float()
         next_obs = torch.from_numpy(next_obs).float()
         return obs, actions_t, rewards, next_obs
@@ -142,13 +142,13 @@ class PressLightAgent(RLAgent):
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def load_model(self, dir="model/presslight/torch", e=0):
+    def load_model(self, dir="model/dqn", e = 0):
         name = "dqn_agent_{}_{}.pt".format(self.iid, e)
         model_name = os.path.join(dir, name)
         self.model = DQN(self.ob_length, self.action_space.n)
         self.model.load_state_dict(torch.load(model_name))
 
-    def save_model(self, dir="model/dqn/presslight/torch", e=0):
+    def save_model(self, dir="model/dqn", e = 0):
         name = "dqn_agent_{}_{}.pt".format(self.iid, e)
         model_name = os.path.join(dir, name)
         torch.save(self.model.state_dict(), model_name)
@@ -156,8 +156,9 @@ class PressLightAgent(RLAgent):
 class State(object):
     # ==========================
     dims = {
-        "D_NUM_OF_VEHICLES":  (24,),
+        "D_NUM_OF_VEHICLES":  (12,),
         "D_CUR_PHASE":  (1,)
+
     }
 
     # ==========================
@@ -168,5 +169,5 @@ class State(object):
         self.cur_phase = cur_phase
 
     def to_list(self):
-        results = [self.num_of_vehicles, self.cur_phase]
+        results = [self.num_of_vehicles,self.cur_phase]
         return results
