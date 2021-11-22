@@ -5,8 +5,14 @@ examples/*
 .idea/
 model/
 log/
-local/
 data/frontend
+data/replay_dir/
 *.pkl
+<<<<<<< HEAD
 data/
 intellilight/
+=======
+data/*.txt
+intellilight/
+.ipynb
+>>>>>>> 55156103e5cfd5e4e64908b9eaacbce56978e7eb
