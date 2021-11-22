@@ -5,7 +5,9 @@ examples/*
 .idea/
 model/
 log/
-local/
 data/frontend
+data/replay_dir/
 *.pkl
 data/*.txt
+intellilight/
+.ipynb
