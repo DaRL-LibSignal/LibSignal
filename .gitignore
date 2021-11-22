@@ -8,4 +8,5 @@ log/
 local/
 data/frontend
 *.pkl
-data/*.txt
+data/
+intellilight/
