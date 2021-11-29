@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import gym
 from environment_colight import TSCEnv
 from world import World
