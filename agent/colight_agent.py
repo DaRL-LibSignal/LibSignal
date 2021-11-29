@@ -77,7 +77,7 @@ class CoLightAgent(RLAgent):
         self.world.subscribe("pressure")
         self.world.subscribe("lane_count")
         self.world.subscribe("lane_waiting_count")
-        
+        tf.reset_default_graph()
         self._placeholder_init()
         self._build_eval_model()
         self._build_target_model()
@@ -86,7 +86,7 @@ class CoLightAgent(RLAgent):
         self.replace_target_op = [tf.assign(t,e) for t,e in zip(self.target_params,self.eval_params)]
         t_config = tf.ConfigProto()
         t_config.gpu_options.allow_growth = True
-        self.algo_saver = tf.train.Saver(tf.trainable_variables(),max_to_keep=2)
+        self.algo_saver = tf.train.Saver(tf.trainable_variables(),max_to_keep=100)
         self.sess = tf.Session(config=t_config)
         self.sess.run(tf.global_variables_initializer())
         summary_writer = tf.summary.FileWriter('./log/', tf.get_default_graph())
@@ -181,13 +181,13 @@ class CoLightAgent(RLAgent):
         return h,att_record_all_layers
 
     def _build_target_model(self):
-        with tf.variable_scope("target_q_model",reuse=tf.AUTO_REUSE):
+        with tf.variable_scope("target_q_model",reuse=None):
             value_output, _ = self._build_model()
             self.target_q_value=Dense(self.action_space.n,kernel_initializer='random_normal',name='target_q_value')(value_output)
             #self.target_q_value = tf.layers.dense(value_output,units=self.action_space.n, name="target_q_value") #batch agents value
 
     def _build_eval_model(self):
-        with tf.variable_scope("eval_q_model",reuse=tf.AUTO_REUSE):
+        with tf.variable_scope("eval_q_model",reuse=None):
             value_output, att_record_eval = self._build_model()
             self.value = Dense(self.action_space.n,kernel_initializer='random_normal',name='q_value')(value_output)
             self.attention_record = att_record_eval[-1] #[batch,agents,nv,neighbor], used in visualize when testing, generally its only 1 gat layer
@@ -429,17 +429,19 @@ class CoLightAgent(RLAgent):
 
     def load_model(self, mdir="model/colight"):
         """
-        mdir is the path of model 
+        mdir is the path of model
         """
-        #name = "netlight_agent_{}".format(self.iid)
+        # name = "netlight_agent_{}".format(self.iid)
         # model_name = os.path.join(mdir, name)
-        model_name=mdir
-        self.algo_saver.restore(self.sess,model_name)
-        #self.model.load_weights(model_name)
+        model_name = mdir
+        self.algo_saver.restore(self.sess, tf.train.latest_checkpoint(model_name))
+        # self.model.load_weights(model_name)
 
     def save_model(self, itr, prefix="", mdir="model/colight"):
-        name = prefix+"_colight"
+        if not os.path.exists(mdir):
+            os.makedirs(mdir)
+        name = prefix + "_colight"
         model_name = os.path.join(mdir, name)
         print(model_name)
         self.algo_saver.save(self.sess, model_name, global_step=itr)
-        #self.model.save_weights(model_name)
+        # self.model.save_weights(model_name)
