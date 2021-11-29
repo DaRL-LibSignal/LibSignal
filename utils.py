@@ -46,7 +46,7 @@ def generate_node_dict(roadnet_file):
             'output_nodes': list(set(output_nodes)),
             'output_edges': output_edges# should be a dict, with key as an input edge, value as output edges
         }
-        if node_id not in self.net_node_dict.keys():
+        if node_id not in net_node_dict.keys():
             net_node_dict[node_id] = net_node
     #actually we have to give an int id to them in order to use in tf
     return net_node_dict
@@ -210,70 +210,73 @@ def analyse_vehicle_nums(file_path):
 
 
 if __name__ == "__main__":
-    build_int_intersection_map( "/mnt/c/users/onlyc/desktop/work/RRL_TLC/roadnet_atlanta.json", save_dir="graph_info_1x5.pkl")
-    # analyse_type=1
-    # # 0 means analyze the vehicle information
-    # # 1 means analyze the attention matrix of colight
-    # # 2 means analyze topology of roadnet graph
-    # if analyse_type==0:
-    #     file_path = "data/replay_data/ana33fb_half.pkl"
-    #     analyse_vehicle_nums(file_path)
-    # elif analyse_type==1:
-    #     agent_num = 4
-    #     print_sum = True
-    #     #yzy8_Colight_syn33_0.001_0.8_0.9995_64_1000_5000_20200407-155418_colight-100_att_ana.pkl # 5 head #syn331
-    #     #yzy9_Colight_syn33_0.001_0.8_0.9995_64_1000_5000_20200407-155519_colight-100_att_ana.pkl # 5 head #syn332
-    #     #yzy8_Colight_syn33_0.001_0.8_0.9995_64_1000_5000_20200407-181821_colight-100_att_ana.pkl # 1 head #syn331
-    #     # yzy24_Colight_hz44_0.001_0.8_0.9995_64_1000_5000_20200408-125837_colight-100_att_ana.pkl # hz443
-    #     file_path = "data/analysis/colight/yzy9_Colight_syn33_0.001_0.8_0.9995_64_1000_5000_20200407-155519_colight-100_att_ana.pkl"
-    #     # yzynettest_syn33_0.001_0.8_0.9995_64_1000_5000_20200410-230841netlight-100_att_ana.pkl # syn332
-    #     #file_path = "data/analysis/netlight/yzynettest_syn33_0.001_0.8_0.9995_64_1000_5000_20200410-230841netlight-100_att_ana.pkl"
-    #     attention_mat = pickle.load(open(file_path,"rb"))
-    #     tmp = np.array(attention_mat[50])
-    #     print(tmp.shape)
-    #     for i in[50,100,150,199,250]:
-    #         tmp = attention_mat[i][agent_num]
-    #         if print_sum:
-    #             tmp=np.array(tmp)
-    #             tmp=np.sum(tmp,axis=0)
-    #         print(tmp)
-    #         #print(attention_mat[i][agent_num])
-    #         print("-"*20)
-    #     # print(attention_mat[100][agent_num])
-    #     # print("*"*20)
-    #     # print(attention_mat[150][agent_num])
-    #     # print("*"*20)
-    #     # print(attention_mat[199][agent_num])
-    #     # print("*"*20)
-    #     # print(attention_mat[250][agent_num])
-    # elif analyse_type==2:
-    #     config_dir = "data/roadnet/roadnet_syn_4_4.json"
-    #     res = build_int_intersection_map(config_dir,save_dir="graph_info_syn22.pkl")
-    #     net_node_dict_id2inter = res[0]
-    #     net_node_dict_inter2id =res[1]
-    #     net_edge_dict_id2edge=res[2]
-    #     net_edge_dict_edge2id=res[3]
-    #     node_degree_node=res[4]
-    #     node_degree_edge=res[5]
-    #     node_adjacent_node_matrix=res[6]
-    #     node_adjacent_edge_matrix=res[7]
-    #     edge_adjacent_node_matrix=res[8]
-    #     print(net_node_dict_id2inter)
-    #     print("-"*20)
-    #     print(net_node_dict_inter2id)
-    #     print("-"*20)
-    #     print(net_edge_dict_id2edge)
-    #     print("-"*20)
-    #     print(net_edge_dict_edge2id)
-    #     print("-"*20)
-    #     print(node_degree_node)
-    #     print("-"*20)
-    #     print(node_degree_edge)
-    #     print("-"*20)
-    #     print(node_adjacent_node_matrix)
-    #     print("-"*20)
-    #     print(node_adjacent_edge_matrix)
-    #     print("-"*20)
-    #     print(edge_adjacent_node_matrix)
-    #     print("-"*20)
-    #     print("done")
+    analyse_type=3
+    # 0 means analyze the vehicle information
+    # 1 means analyze the attention matrix of colight
+    # 2 means analyze topology of roadnet graph 
+    if analyse_type==0:
+        file_path = "data/replay_data/ana33fb_half.pkl"
+        analyse_vehicle_nums(file_path)
+    elif analyse_type==1:
+        agent_num = 4
+        print_sum = True
+        #yzy8_Colight_syn33_0.001_0.8_0.9995_64_1000_5000_20200407-155418_colight-100_att_ana.pkl # 5 head #syn331
+        #yzy9_Colight_syn33_0.001_0.8_0.9995_64_1000_5000_20200407-155519_colight-100_att_ana.pkl # 5 head #syn332
+        #yzy8_Colight_syn33_0.001_0.8_0.9995_64_1000_5000_20200407-181821_colight-100_att_ana.pkl # 1 head #syn331
+        # yzy24_Colight_hz44_0.001_0.8_0.9995_64_1000_5000_20200408-125837_colight-100_att_ana.pkl # hz443
+        file_path = "data/analysis/colight/yzy9_Colight_syn33_0.001_0.8_0.9995_64_1000_5000_20200407-155519_colight-100_att_ana.pkl"
+        # yzynettest_syn33_0.001_0.8_0.9995_64_1000_5000_20200410-230841netlight-100_att_ana.pkl # syn332
+        #file_path = "data/analysis/netlight/yzynettest_syn33_0.001_0.8_0.9995_64_1000_5000_20200410-230841netlight-100_att_ana.pkl"
+        attention_mat = pickle.load(open(file_path,"rb"))
+        tmp = np.array(attention_mat[50])
+        print(tmp.shape)
+        for i in[50,100,150,199,250]:
+            tmp = attention_mat[i][agent_num]
+            if print_sum:
+                tmp=np.array(tmp)
+                tmp=np.sum(tmp,axis=0)
+            print(tmp)
+            #print(attention_mat[i][agent_num])
+            print("-"*20)
+        # print(attention_mat[100][agent_num])
+        # print("*"*20)
+        # print(attention_mat[150][agent_num])
+        # print("*"*20)
+        # print(attention_mat[199][agent_num])
+        # print("*"*20)
+        # print(attention_mat[250][agent_num])
+    elif analyse_type==2:
+        config_dir = "data/roadnet/roadnet_syn_4_4.json"
+        res = build_int_intersection_map(config_dir,save_dir="graph_info_syn22.pkl")
+        net_node_dict_id2inter = res[0]
+        net_node_dict_inter2id =res[1]
+        net_edge_dict_id2edge=res[2]
+        net_edge_dict_edge2id=res[3]
+        node_degree_node=res[4]
+        node_degree_edge=res[5]
+        node_adjacent_node_matrix=res[6]
+        node_adjacent_edge_matrix=res[7]
+        edge_adjacent_node_matrix=res[8]
+        print(net_node_dict_id2inter)
+        print("-"*20)
+        print(net_node_dict_inter2id)
+        print("-"*20)
+        print(net_edge_dict_id2edge)
+        print("-"*20)
+        print(net_edge_dict_edge2id)
+        print("-"*20)
+        print(node_degree_node)
+        print("-"*20)
+        print(node_degree_edge)
+        print("-"*20)
+        print(node_adjacent_node_matrix)
+        print("-"*20)
+        print(node_adjacent_edge_matrix)
+        print("-"*20)
+        print(edge_adjacent_node_matrix)
+        print("-"*20)
+        print("done")
+
+    elif analyse_type==3:
+        config_dir = "data/template_lsr/6_6/roadnet_6_6.json"
+        res = build_int_intersection_map(config_dir,save_dir="data/graphinfo/graph_info_tmp_lsr6x6.pkl")
