@@ -7,7 +7,6 @@ model/
 log/
 data/frontend
 data/replay_dir/
-*.pkl
 data/*.txt
 intellilight/
 .ipynb
