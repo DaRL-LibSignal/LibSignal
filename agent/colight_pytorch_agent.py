@@ -1,8 +1,7 @@
 from . import RLAgent
 import random
 import numpy as np
-import tensorflow as tf
-from collections import deque,OrderedDict
+from collections import deque, OrderedDict
 import os
 import pickle
 import time
@@ -10,8 +9,11 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.nn.utils import clip_grad_norm_
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops
+from torch_geometric.data import Data, Batch
+import torch_scatter
 
 
 class Embedding_MLP(nn.Module):
@@ -20,7 +22,7 @@ class Embedding_MLP(nn.Module):
         constructor_dict = OrderedDict()
         for l_idx, l_size in enumerate(layers):
             name = f"node_embedding_{l_idx}"
-            if l_idx ==0:
+            if l_idx == 0:
                 h = nn.Linear(in_size, l_size)
                 constructor_dict.update({name: h})
             else:
@@ -64,20 +66,23 @@ class MultiHeadAttModel(MessagePassing):
         self.nv = nv
         self.suffix = suffix
         # target is center
-        self.W_target = nn.Linear(d, dv * nv, bias=False)
-        self.W_source = nn.Linear(d, dv * nv, bias=False)
+        self.W_target = nn.Linear(d, dv * nv)
+        self.W_source = nn.Linear(d, dv * nv)
         self.hidden_embedding = nn.Linear(d, dv * nv)
         self.out = nn.Linear(dv, d_out)
+        self.att_list = []
         self.att = None
 
     def _forward(self, x, edge_index):
         # TODO: test batch is shared or not
 
         # x has shape [N, d], edge_index has shape [E, 2]
-        edge_index, _ = add_self_loops(edge_index, num_nodes=x.size(0))
-        aggregated, att = self.propagate(x=x, edge_index=edge_index)
-        self.att = att
-        return aggregated
+        edge_index, _ = add_self_loops(edge_index=edge_index)
+        aggregated = self.propagate(x=x, edge_index=edge_index)  # [16, 16]
+        out = self.out(aggregated)
+        out = F.relu(out)  # [ 16, 128]
+        #self.att = torch.tensor(self.att_list)
+        return out
 
     def forward(self, x, edge_index, train=True):
         if train:
@@ -86,29 +91,48 @@ class MultiHeadAttModel(MessagePassing):
             with torch.no_grad():
                 return self._forward(x, edge_index)
 
-    def message(self, x_i, x_j):
-        h_target = self.W_target(x_i)
-        h_target = torch.reshape(h_target, (h_target.shape[:-1], self.nv, self.dv))
-        agent_repr = torch.permute(h_target, (1, 0, 2))
+    def message(self, x_i, x_j, edge_index):
+        h_target = F.relu(self.W_target(x_i))
+        h_target = h_target.view(h_target.shape[:-1][0], self.nv, self.dv)
+        agent_repr = h_target.permute(1, 0, 2)
 
-        print(h_target.shape)
-        h_source = self.W_source(x_j)
-        h_source = torch.reshape(h_source, (h_target.shape[:-1], self.nv, self.dv))
-        neighbor_repr = torch.permute(h_source, (1, 0, 2))
+        h_source = F.relu(self.W_source(x_j))
+        h_source = h_source.view(h_source.shape[:-1][0], self.nv, self.dv)
+        neighbor_repr = h_source.permute(1, 0, 2)   #[nv, E, dv]
+        index = edge_index[1]  # which is target
         #TODO: confirm its a vector of size E
         # method 1: e_i = torch.einsum()
-        # method 2: e_i = torch.mm()
+        # method 2: e_i = torch.bmm()
         # method 3: e_i = (a * b).sum(-1)
-        e_i = (agent_repr * neighbor_repr).sum(-1)
-        # (
-        alpha_i = F.softmax(e_i, dim=-1)
-        alpha_i_expand = alpha_i.repeat(1, 1, self.dv)
+        e_i = torch.mul(agent_repr, neighbor_repr).sum(-1)  # [5, 64]
+        max_node = torch_scatter.scatter_max(e_i, index=index)[0]  # [5, 16]
+        max_i = max_node.index_select(1, index=index)  # [5, 64]
+        ec_i = torch.add(e_i, -max_i)
+        ecexp_i = torch.exp(ec_i)
+        norm_node = torch_scatter.scatter_sum(ecexp_i, index=index)  # [5, 16]
+        normst_node = torch.add(norm_node, 1e-12)  # [5, 16]
+        normst_i = normst_node.index_select(1, index)  # [5, 64]
 
-        hidden_neighbor = self.hidden_embedding(x_i)
-        hidden_neighbor_repr = torch.permute(hidden_neighbor, (1, 0, 2))
-        out = (hidden_neighbor_repr * alpha_i_expand).sum(-2).mean(0)
-        out = F.relu(self.out(out))
-        return out, alpha_i
+        alpha_i = ecexp_i / normst_i  # [5, 64]
+        alpha_i_expand = alpha_i.repeat(self.dv, 1, 1)
+        alpha_i_expand = torch.permute(alpha_i_expand, (1, 2, 0))  # [5, 64, 16]
+        # TODO: test x_j or x_i here -> should be x_j
+        hidden_neighbor = F.relu(self.hidden_embedding(x_j))
+        hidden_neighbor = hidden_neighbor.view(hidden_neighbor.shape[:-1][0], self.nv, self.dv)
+        hidden_neighbor_repr = hidden_neighbor.permute(1, 0, 2)  # [5, 64, 16]
+        out = torch.mul(hidden_neighbor_repr, alpha_i_expand).mean(0)
+
+        # TODO: maybe here
+        self.att_list.append(alpha_i)  # [64, 16]
+        return out
+    """
+    def aggregate(self, inputs, edge_index):
+        out = inputs
+        index = edge_index[1]
+    """
+
+
+
 
     def get_att(self):
         if self.att is None:
@@ -120,44 +144,72 @@ class ColightNet(nn.Module):
     def __init__(self, input_dim, **kwargs):
         super(ColightNet, self).__init__()
         self.constructor_dict = kwargs
+        self.action_space = self.constructor_dict.get('action_space') or 8
         self.modulelist = nn.ModuleList()
         self.embedding_MLP = Embedding_MLP(input_dim, layers=self.constructor_dict.get('NODE_EMB_DIM') or [128, 128])
         for i in range(self.constructor_dict.get('N_LAYERS')):
-            module = MultiHeadAttModel(d= self.constructor_dict.get('INPUT_DIM')[i],
-                                        dv=self.constructor_dict.get('NODE_LAYER_DIMS_EACH_HEAD')[i],
-                                        d_out=self.constructor_dict.get('OUTPUT_DIM')[i],
-                                        nv=self.constructor_dict.get('NUM_HEADS')[i],
-                                        suffix=i)
+            module = MultiHeadAttModel(d=self.constructor_dict.get('INPUT_DIM')[i],
+                                       dv=self.constructor_dict.get('NODE_LAYER_DIMS_EACH_HEAD')[i],
+                                       d_out=self.constructor_dict.get('OUTPUT_DIM')[i],
+                                       nv=self.constructor_dict.get('NUM_HEADS')[i],
+                                       suffix=i)
             self.modulelist.append(module)
-        self.output_layer = nn.Sequential()
         output_dict = OrderedDict()
-        for l_idx, l_size in enumerate(self.constructor_dict.get('OUTPUT_LAYERS')):
-            name = f'output_{l_idx}'
-            h = nn.Linear(module.d_out, l_size)
-            output_dict.update({name, h})
-            name = f'relu_{l_idx}'
-            output_dict.update({name: nn.ReLU})
 
-    def forward(self, x, edge_index):
-        h = self.embedding_MLP(x)
+        """
+        if self.constructor_dict.get('N_LAYERS') == 0:
+            out = nn.Linear(128, self.action_space.n)
+            name = f'output'
+            output_dict.update({name: out})
+            self.output_layer = nn.Sequential(output_dict)
+        """
+        output_dict = OrderedDict()
+        if len(self.constructor_dict['OUTPUT_LAYERS']) != 0:
+            # TODO: dubug this branch
+            for l_idx, l_size in enumerate(self.constructor_dict['OUTPUT_LAYERS']):
+                name = f'output_{l_idx}'
+                if l_idx == 0:
+                    h = nn.Linear(module.d_out, l_size)
+                else:
+                    h = nn.Linear(self.output_dict.get('OUTPUT_LAYERS')[l_idx - 1], l_size)
+                output_dict.update({name: h})
+                name = f'relu_{l_idx}'
+                output_dict.update({name: nn.ReLU})
+            out = nn.Linear(self.constructor_dict['OUTPUT_LAYERS'][-1], self.action_space.n)
+        else:
+            out = nn.Linear(module.d_out, self.action_space.n)
+        name = f'output'
+        output_dict.update({name: out})
+        self.output_layer = nn.Sequential(output_dict)
+
+    def forward(self, x, edge_index, train=True):
+        h = self.embedding_MLP.forward(x, train)
+        #TODO: implement att
         for mdl in self.modulelist:
-            h, att = mdl.foward(h, edge_index)
-        for layer in self.output_layer:
-            h = layer.forward(h)
+            h = mdl.forward(h, edge_index, train)
+        if train:
+            h = self.output_layer(h)
+        else:
+            with torch.no_grad():
+                h = self.output_layer(h)
         return h
-
 
 
 class CoLightAgent(RLAgent):
     def __init__(self, action_space, ob_generator, reward_generator, world, traffic_env_conf, graph_setting, args):
         super().__init__(action_space, ob_generator[0][1], reward_generator)
-
+        self.action_space = action_space
         self.ob_generators = ob_generator  # a list of ob_generators for each intersection ordered by its int_id
         self.ob_length = ob_generator[0][1].ob_length  # the observation length for each intersection
+        self.args = args
 
         self.graph_setting = graph_setting
         self.neighbor_id = self.graph_setting["NEIGHBOR_ID"]  # neighbor node of node
         self.degree_num = self.graph_setting["NODE_DEGREE_NODE"]  # degree of each intersection
+        self.edge_idx = torch.flip(torch.tensor(self.graph_setting["EDGE_IDX"].T, dtype=torch.long), dims=[0])
+        self.graph_setting.update({'action_space': self.action_space})
+        self.passer = self.graph_setting
+
         self.direction_dic = {"0": [1, 0, 0, 0], "1": [0, 1, 0, 0], "2": [0, 0, 1, 0],
                               "3": [0, 0, 0, 1]}  # TODO: should refine it
 
@@ -187,62 +239,13 @@ class CoLightAgent(RLAgent):
         self.world.subscribe("lane_count")
         self.world.subscribe("lane_waiting_count")
 
-        self._placeholder_init()
-        self._build_eval_model()
-        self._build_target_model()
-        self.eval_params = tf.get_collection("eval_q_model")
-        self.target_params = tf.get_collection("target_q_model")
-        self.replace_target_op = [tf.assign(t, e) for t, e in zip(self.target_params, self.eval_params)]
-        t_config = tf.ConfigProto()
-        t_config.gpu_options.allow_growth = True
-        self.algo_saver = tf.train.Saver(tf.trainable_variables(), max_to_keep=2)
-        self.sess = tf.Session(config=t_config)
-        self.sess.run(tf.global_variables_initializer())
-        summary_writer = tf.summary.FileWriter('./log/', tf.get_default_graph())
-        self.sess.run(self.replace_target_op)
-
-    def _placeholder_init(self):
-        self.node_state_length = 0
-        # for feature_name in self.dic_traffic_env_conf["LIST_STATE_FEATURE"]:
-        #     if  "adjacency" in feature_name:
-        #         self.node_state_length += self.dic_traffic_env_conf["DIC_FEATURE_DIM"]["D_" + feature_name.upper()][0]
-        #     else:
-        #         self.node_state_length += self.ob_length
-        self.input_node_state = tf.placeholder(dtype=tf.float32, shape=[None, self.num_agents, self.ob_length],
-                                               name='input_state')  # concat [lane_num_vehicle]
-        self.input_node_phase = tf.placeholder(dtype=tf.int32, shape=[None, self.num_agents], name='input_phase')
-        self.input_neighbor_id = tf.placeholder(dtype=tf.int32,
-                                                shape=[self.num_agents, self.graph_setting["NEIGHBOR_NUM"]],
-                                                name="neighbor_id")  # neighbor node of node
-        self.input_node_degree_mask = tf.placeholder(dtype=tf.int32, shape=[self.num_agents],
-                                                     name="node_degree_mask")  # not all nodes has degree 4
-        self.input_actions = tf.placeholder(dtype=tf.int32, shape=[None, self.num_agents],
-                                            name="input_actions")  # batch ,agents
-        self.input_target_value = tf.placeholder(dtype=tf.float32, shape=[None, self.num_agents, ],
-                                                 name="input_target_value")
-        one_hot_phase = tf.one_hot(self.input_node_phase,
-                                   len(self.world.intersections[0].phases))  # batch, agents, num_phases
-        self.concat_input = tf.concat([self.input_node_state, one_hot_phase], axis=-1, name="concate_input_obs")
-        # actions one-hot
-        self.input_actions_one_hot = tf.one_hot(self.input_actions, self.action_space.n)
-        # the adjacent node of node
-        # self.neighbor_node_one_hot = tf.one_hot(self.input_neighbor_id,self.num_agents) # agent, neighbor, agents
-        neighbor_node_tmp = tf.range(0, self.num_agents)
-        neighbor_node_tmp = tf.expand_dims(neighbor_node_tmp, axis=-1)
-        expanded_neighbor_id = tf.concat([neighbor_node_tmp, self.input_neighbor_id],
-                                         axis=-1)  # [agents ,num_neighbor+1] include node itself
-        neighbor_node_one_hot = tf.one_hot(expanded_neighbor_id, self.num_agents)
-        neighbor_node_one_hot = tf.expand_dims(neighbor_node_one_hot, axis=0)
-        self.neighbor_node_one_hot = tf.tile(neighbor_node_one_hot, [tf.shape(self.input_node_state)[0], 1, 1, 1])
-        # process the mask
-        degree_mask = self.input_node_degree_mask + 1
-        degree_mask = tf.sequence_mask(degree_mask, self.graph_setting["NEIGHBOR_NUM"] + 1)  # agetns, neighbor_num+1
-        # degree_mask = tf.expand_dims(degree_mask,axis=-1)
-        self.degree_mask = tf.cast(degree_mask, tf.float32, name="processed_degree")  # agents, neighbor_num
-
-    # def _state_embedding(self):
-    #     with tf.variable_scope("First_Embedding",reuse=tf.AUTO_REUSE):
-    #         self.phase_embedding_matrix = tf.get_variable(name="phase_emb_matrix",shape=[len(self.world.intersections[0].phases),self.graph_setting["PHASE_EMB_DIM"]])
+        self.criterion = nn.MSELoss(reduction='mean')
+        self.model = self._build_model()
+        self.target_model = self._build_model()
+        self.update_target_network()
+        self.optimizer = optim.RMSprop(self.model.parameters(), lr=0.001, alpha=0.9, centered=False, eps=1e-7)
+        #for i in self.model.named_parameters():
+        #    print(i)
 
     def _build_model(self):
         """
@@ -256,181 +259,21 @@ class CoLightAgent(RLAgent):
         # In: [batch,agent,neighbors,agents]
         # In.append(Input(shape=[self.num_agents,self.len_feature],name="feature"))
         # In.append(Input(shape=(self.num_agents,self.num_neighbors,self.num_agents),name="adjacency_matrix"))
-
-        feature = self.MLP(self.input_node_state,
-                           self.graph_setting["NODE_EMB_DIM"])  # feature:[batch,agents,feature_dim]
-
-        att_record_all_layers = list()
-        for i in range(self.graph_setting["N_LAYERS"]):
-            if i == 0:
-                h, att_record = self._MultiHeadsAttModel(
-                    feature,
-                    self.neighbor_node_one_hot,
-                    l=self.graph_setting["NEIGHBOR_NUM"],
-                    d=self.graph_setting["INPUT_DIM"][i],
-                    dv=self.graph_setting["NODE_LAYER_DIMS_EACH_HEAD"][i],
-                    dout=self.graph_setting["OUTPUT_DIM"][i],
-                    nv=self.graph_setting["NUM_HEADS"][i],
-                    suffix=i
-                )
-            else:
-                h, att_record = self._MultiHeadsAttModel(
-                    h,
-                    self.neighbor_node_one_hot,
-                    l=self.graph_setting["NEIGHBOR_NUM"],
-                    d=self.graph_setting["INPUT_DIM"][i],
-                    dv=self.graph_setting["NODE_LAYER_DIMS_EACH_HEAD"][i],
-                    dout=self.graph_setting["OUTPUT_DIM"][i],
-                    nv=self.graph_setting["NUM_HEADS"][i],
-                    suffix=i
-                )
-            att_record_all_layers.append(att_record)
+        #TODO: keep no phase
+        model = ColightNet(self.ob_length, **self.passer)
+        #model = ColightNet(self.action_space.n + self.ob_length, **self.passer)
         # if self.graph_setting["N_LAYERS"]>1:
         #     att_record_all_layers=Concatenate(axis=1)(att_record_all_layers)
         # else:
         #     att_record_all_layers=att_record_all_layers[0]
 
         # att_record_all_layers=Reshape((self.graph_setting["N_LAYERS"],self.num_agents,self.graph_setting["NUM_HEADS"][self.graph_setting["N_LAYERS"]-1],self.graph_setting["NEIGHBOR_NUM"]+1))(att_record_all_layers)
-        for layer_index, layer_size in enumerate(self.graph_setting["OUTPUT_LAYERS"]):
-            h = Dense(layer_size, activation='relu', kernel_initializer='random_normal',
-                      name='Dense_q_%d' % layer_index)(h)
+
         # out = Dense(self.action_space.n,kernel_initializer='random_normal',name='action_layer')(h)
         # out:[batch,agent,action], att:[batch,layers,agent,head,neighbors]
         # model=Model(inputs=In,outputs=[out,att_record_all_layers])
-        return h, att_record_all_layers
-
-    def _build_target_model(self):
-        with tf.variable_scope("target_q_model", reuse=tf.AUTO_REUSE):
-            value_output, _ = self._build_model()
-            self.target_q_value = Dense(self.action_space.n, kernel_initializer='random_normal', name='target_q_value')(
-                value_output)
-            # self.target_q_value = tf.layers.dense(value_output,units=self.action_space.n, name="target_q_value") #batch agents value
-
-    def _build_eval_model(self):
-        with tf.variable_scope("eval_q_model", reuse=tf.AUTO_REUSE):
-            value_output, att_record_eval = self._build_model()
-            self.value = Dense(self.action_space.n, kernel_initializer='random_normal', name='q_value')(value_output)
-            self.attention_record = att_record_eval[
-                -1]  # [batch,agents,nv,neighbor], used in visualize when testing, generally its only 1 gat layer
-            # self.value = tf.layers.dense(value_output,units=self.action_space.n, name="q_value") #batch agents action_dim
-            q_value = tf.reduce_sum(self.value * self.input_actions_one_hot, axis=-1)  # batch agents
-            self.q_loss = tf.reduce_mean(tf.square(q_value - self.input_target_value), name="q_loss")
-            self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
-            tvars = tf.trainable_variables()
-            grads, _ = tf.clip_by_global_norm(tf.gradients(self.q_loss, tvars), self.grad_clip)
-            self.train_op = self.optimizer.apply_gradients(zip(grads, tvars), name="train_op")
-            # self.train_op = tf.train.RMSPropOptimizer(self.learning_rate).minimize(self.q_loss)
-
-    def _MultiHeadsAttModel(self, In_agent, In_neighbor, l=5, d=128, dv=16, dout=128, nv=8, suffix=-1):
-        """
-        input:
-            In_agent [bacth,agent,128]
-            In_neighbor [agent, neighbor_num]
-            l: number of neighborhoods (in my code, l=num_neighbor+1,because l include itself)
-            d: dimension of agent's embedding
-            dv: dimension of each head
-            dout: dimension of output
-            nv: number of head (multi-head attention)
-        output:
-            -hidden state: [batch,agent,32]
-            -attention: [batch,agent,neighbor]
-        """
-
-        """agent repr"""
-        print("In_agent.shape,In_neighbor.shape,l, d, dv, dout, nv", In_agent.shape, In_neighbor.shape, l, d, dv, dout,
-              nv)
-        # [batch,agent,dim]->[batch,agent,1,dim]
-        agent_repr = Reshape((self.num_agents, 1, d))(In_agent)
-
-        """neighbor repr"""
-        # [batch,agent,dim]->(reshape)[batch,1,agent,dim]->(tile)[batch,agent,agent,dim]
-        neighbor_repr = RepeatVector3D(self.num_agents)(In_agent)
-        print("neighbor_repr.shape", neighbor_repr.shape)
-        # [batch,agent,neighbor,agent]x[batch,agent,agent,dim]->[batch,agent,neighbor,dim]
-        neighbor_repr = Lambda(lambda x: K.batch_dot(x[0], x[1]))([In_neighbor, neighbor_repr])
-        print("neighbor_repr.shape", neighbor_repr.shape)
-
-        """attention computation"""
-        # multi-head
-        # [batch,agent,1,dim]->[batch,agent,1,dv*nv]
-        agent_repr_head = Dense(dv * nv, activation='relu', kernel_initializer='random_normal',
-                                name='agent_repr_%d' % suffix)(agent_repr)
-        # [batch,agent,1,dv,nv]->[batch,agent,nv,1,dv]
-        agent_repr_head = Reshape((self.num_agents, 1, dv, nv))(agent_repr_head)
-        agent_repr_head = Lambda(lambda x: K.permute_dimensions(x, (0, 1, 4, 2, 3)))(agent_repr_head)
-
-        neighbor_repr_head = Dense(dv * nv, activation='relu', kernel_initializer='random_normal',
-                                   name='neighbor_repr_%d' % suffix)(neighbor_repr)
-        # [batch,agent,neighbor,dv,nv]->[batch,agent,nv,neighbor,dv]
-        print("DEBUG", neighbor_repr_head.shape)
-        print("self.num_agents,self.num_neighbors,dv,nv", self.num_agents, self.graph_setting["NEIGHBOR_NUM"], dv, nv)
-        neighbor_repr_head = Reshape((self.num_agents, self.graph_setting["NEIGHBOR_NUM"] + 1, dv, nv))(
-            neighbor_repr_head)
-        neighbor_repr_head = Lambda(lambda x: K.permute_dimensions(x, (0, 1, 4, 2, 3)))(neighbor_repr_head)
-
-        # should mask
-        tmp_mask = tf.expand_dims(self.degree_mask, axis=1)  # [agents,neighbor] --->  [agents,1,neighbor]
-        tmp_mask = tf.expand_dims(tmp_mask, axis=-2)  # [agents,1,neighbor] --->  [agents,1,1,neighbor]
-        tmp_mask = tf.tile(tmp_mask, [1, nv, 1, 1])  # [agents,1,1,neighbor] --->  [agents,nv,1,neighbor]
-
-        if self.mask_type == 1:
-            # [batch,agent,nv,1,dv]x[batch,agent,nv,neighbor,dv]->[batch,agent,nv,1,neighbor]
-            # neighbor_repr_head=Lambda(lambda x:K.batch_dot(x[0],x[1],axes=[4,4]))([agent_repr_head,neighbor_repr_head])
-            # tmp_neigbor_repr_head = neighbor_repr_head - tf.stop_gradient(tf.expand_dims(tf.reduce_max(neighbor_repr_head,axis=-1),axis=-1))
-            # tmp_neigbor_repr_head = neighbor_repr_head - tf.expand_dims(tf.reduce_max(neighbor_repr_head,axis=-1),axis=-1)
-            # neighbor_repr_head = tf.exp(tmp_neigbor_repr_head)
-            # neighbor_repr_head=neighbor_repr_head * tmp_mask
-            # tmp_sum = tf.reduce_sum(neighbor_repr_head,axis=-1) # [batch,agent,nv,1]
-            # tmp_sum = tf.expand_dims(tmp_sum,axis=-1)# [batch,agent,nv,1,1]
-            # att = neighbor_repr_head / tmp_sum
-
-            # [batch,agent,nv,1,dv]x[batch,agent,nv,neighbor,dv]->[batch,agent,nv,1,neighbor]
-            att = Lambda(lambda x: K.softmax(K.batch_dot(x[0], x[1], axes=[4, 4])))(
-                [agent_repr_head, neighbor_repr_head])  # [batch,agents,nv,1,neighbor]
-            att = att * tmp_mask  # [batch,agents,nv,1,neighbor]
-            tmp_att = att
-            att = att / tf.expand_dims(tf.reduce_sum(tmp_att, axis=-1), axis=-1)
-            print("att.shape:", att.shape)
-        else:
-            # [batch,agent,nv,1,dv]x[batch,agent,nv,neighbor,dv]->[batch,agent,nv,1,neighbor]
-            att = Lambda(lambda x: K.softmax(K.batch_dot(x[0], x[1], axes=[4, 4])))(
-                [agent_repr_head, neighbor_repr_head])  # [batch,agents,nv,1,neighbor]
-            att = att * tmp_mask  # [batch,agents,nv,1,neighbor]
-            print("att.shape:", att.shape)
-        att_record = Reshape((self.num_agents, nv, self.graph_setting["NEIGHBOR_NUM"] + 1))(
-            att)  # [batch,agent,nv,1,neighbor]->[batch,agent,nv,neighbor]
-
-        # self embedding again
-        neighbor_hidden_repr_head = Dense(dv * nv, activation='relu', kernel_initializer='random_normal',
-                                          name='neighbor_hidden_repr_%d' % suffix)(neighbor_repr)
-        neighbor_hidden_repr_head = Reshape((self.num_agents, self.graph_setting["NEIGHBOR_NUM"] + 1, dv, nv))(
-            neighbor_hidden_repr_head)  # [batch,agents,neighbor,dv,nv]
-        neighbor_hidden_repr_head = Lambda(lambda x: K.permute_dimensions(x, (0, 1, 4, 2, 3)))(
-            neighbor_hidden_repr_head)  # [batch,agents,nv,neighbor,dv]
-        out = Lambda(lambda x: K.mean(K.batch_dot(x[0], x[1]), axis=2))([att,
-                                                                         neighbor_hidden_repr_head])  # [batch,agents,nv,1,neighbor]*[batch,agents,nv,neighbor,dv]--->[batch,agents,nv,1,dv]--->[batch,agents,1,dv]
-        print("out-shape:", out.shape)
-        out = Reshape((self.num_agents, dv))(out)  # [batch, agents,dv]
-        out = Dense(dout, activation="relu", kernel_initializer='random_normal', name='MLP_after_relation_%d' % suffix)(
-            out)
-        return out, att_record
-
-    def MLP(self, In_0, layers=[128, 128]):
-        """
-        Currently, the MLP layer
-        -input: [batch,#agents,feature_dim]
-        -outpout: [batch,#agents,128]
-        """
-        # In_0 = Input(shape=[self.num_agents,self.len_feature])
-        for layer_index, layer_size in enumerate(layers):
-            if layer_index == 0:
-                h = Dense(layer_size, activation='relu', kernel_initializer='random_normal',
-                          name='Dense_embed_%d' % layer_index)(In_0)
-            else:
-                h = Dense(layer_size, activation='relu', kernel_initializer='random_normal',
-                          name='Dense_embed_%d' % layer_index)(h)
-
-        return h
+        print(model)
+        return model
 
     def get_action(self, phase, ob, test_phase=False):
         """
@@ -443,22 +286,31 @@ class CoLightAgent(RLAgent):
         if not test_phase:
             # print("train_phase")
             if np.random.rand() <= self.epsilon:
-                return self.sample([1, self.num_agents])
+                return self.sample(s_size=self.num_agents)
         # ob = self._reshape_ob(ob)
         # act_values = self.model.predict([phase, ob])
-        e_ob = ob[np.newaxis, :]
-        e_phase = np.array(phase)
-        e_phase = e_phase[np.newaxis, :]
+
+        e_ob = torch.tensor(ob, dtype=torch.float32)
+        edge = self.edge_idx
+        dt = Data(x=e_ob, edge_index=edge)
+
+        #e_phase = F.one_hot(torch.tensor(phase, dtype=torch.long), self.action_space.n)
+        #x = torch.concat([e_ob, e_phase], dim=1)
+        #data = Data(x=x, edge_index=self.graph_setting['edge_idx'])
+
         # observations = np.concatenate([phase,ob],axis=-1)
         # observations = observations[np.newaxis,:]
-        my_feed_dict = {self.input_node_state: e_ob, self.input_node_phase: e_phase,
-                        self.input_neighbor_id: self.neighbor_id, self.input_node_degree_mask: self.degree_num}
         if self.get_attention:
-            act_values, att_mat = self.sess.run([self.value, self.attention_record], feed_dict=my_feed_dict)
-            return np.argmax(act_values, axis=-1), att_mat  # [batch, agents],[batch,agent,nv,neighbor]
+            # TODO: no phase here
+            actions = self.model.forward(x=dt.x, edge_index=dt.edge_index)
+            att = self.get_attention
+            #TODO: implement att
+            actions = actions.detach().numpy()
+            return np.argmax(actions, axis=1)  # [batch, agents],[batch,agent,nv,neighbor]
         else:
-            act_values = self.sess.run(self.value, feed_dict=my_feed_dict)
-            return np.argmax(act_values, axis=-1)  # batch, agents
+            actions = self.model.forward(x=dt.x, edge_index=dt.edge_index)
+            actions = actions.detach().numpy()
+            return np.argmax(actions, axis=1)  # batch, agents
 
     def sample(self, s_size):
         return np.random.randint(0, self.action_space.n, s_size)
@@ -516,68 +368,130 @@ class CoLightAgent(RLAgent):
 
     def remember(self, ob, phase, action, reward, next_ob, next_phase):
         self.replay_buffer.append((ob, phase, action, reward, next_ob, next_phase))
-
-    def replay(self):
-        # need refine later with env
-        if self.batch_size > len(self.replay_buffer):
-            minibatch = self.replay_buffer
-        else:
-            minibatch = random.sample(self.replay_buffer, self.batch_size)
-        obs = []
-        phases = []
+    """
+    def _encode_sample(self, minibatch):
+        batch_list = []
+        batch_list_p = []
+        #ob_t, phase_t, actions_t, rewards_t, ob_tp1, phase_tp1 = list(zip(*minibatch))
+        #rewards = torch.tensor(rewards_t, dtype=torch.float32)
+        #actions = actions_t
         actions = []
         rewards = []
-        next_obs = []
-        next_phases = []
-        for i in range(len(minibatch)):
-            obs.append(minibatch[i][0])
-            phases.append(minibatch[i][1])
-            actions.append(minibatch[i][2])
-            rewards.append(minibatch[i][3])
-            next_obs.append(minibatch[i][4])
-            next_phases.append(minibatch[i][5])
-        obs = np.array(obs)
-        phases = np.array(phases)
-        actions = np.array(actions)
-        rewards = np.array(rewards)
-        next_obs = np.array(next_obs)
-        next_phases = np.array(next_phases)
-        # obs, phases, edge_obs, actions, rewards, next_obs, next_phases, next_edge_obs = [np.stack(x) for x in np.array(minibatch).T]
-        # observations = np.concatenate([next_obs, next_phases],axis=-1)
-        my_feed_dict = {self.input_node_state: next_obs, self.input_node_phase: next_phases,
-                        self.input_neighbor_id: self.neighbor_id,
-                        self.input_node_degree_mask: self.degree_num}
-        next_state_value = self.sess.run(self.target_q_value, feed_dict=my_feed_dict)
-        next_state_value = np.max(next_state_value, axis=-1)  # batch, agents
-        target = rewards + self.gamma * next_state_value
-        # observations = np.concatenate([obs, phases],axis=-1)
-        my_feed_dict = {self.input_node_state: obs, self.input_node_phase: phases,
-                        self.input_neighbor_id: self.neighbor_id,
-                        self.input_node_degree_mask: self.degree_num, self.input_actions: actions,
-                        self.input_target_value: target}
-        loss_q, _ = self.sess.run([self.q_loss, self.train_op], feed_dict=my_feed_dict)
-        loss_q = np.sum(loss_q, axis=-1)
-        loss_q = np.mean(loss_q)
+        for dp in minibatch:
+            cat = F.one_hot(torch.tensor(dp[1], dtype=torch.long), self.action_space.n)
+            state = torch.tensor(dp[0], dtype=torch.float32)
+            x = torch.concat([state, cat], dim=1)
+            batch_list.append(Data(x=x, edge_index=self.edge_idx))
+
+            cat_p = F.one_hot(torch.tensor(dp[5], dtype=torch.long), self.action_space.n)
+            state_p = torch.tensor(dp[4], dtype=torch.float32)
+            x_p = torch.concat([state_p, cat_p], dim=1)
+            batch_list_p.append(Data(x=x_p, edge_index=self.edge_idx))
+            rewards.append(dp[3])
+            actions.append(dp[2])
+        batch_t = Batch.from_data_list(batch_list)
+        batch_tp = Batch.from_data_list(batch_list_p)
+        # TODO reshape slow warning
+        rewards = torch.tensor(np.array(rewards), dtype=torch.float32)
+        rewards = rewards.view(rewards.shape[0] * rewards.shape[1])
+        actions = torch.tensor(np.array(actions), dtype=torch.long)
+        actions = actions.view(actions.shape[0] * actions.shape[1])
+        return batch_t, batch_tp, rewards, actions
+    """
+
+    def _encode_sample(self, minibatch):
+        batch_list = []
+        batch_list_p = []
+        #ob_t, phase_t, actions_t, rewards_t, ob_tp1, phase_tp1 = list(zip(*minibatch))
+        #rewards = torch.tensor(rewards_t, dtype=torch.float32)
+        #actions = actions_t
+        actions = []
+        rewards = []
+        for dp in minibatch:
+            state = torch.tensor(dp[0], dtype=torch.float32)
+
+            batch_list.append(Data(x=state, edge_index=self.edge_idx))
+
+            state_p = torch.tensor(dp[4], dtype=torch.float32)
+            batch_list_p.append(Data(x=state_p, edge_index=self.edge_idx))
+            rewards.append(dp[3])
+            actions.append(dp[2])
+        batch_t = Batch.from_data_list(batch_list)
+        batch_tp = Batch.from_data_list(batch_list_p)
+        # TODO reshape slow warning
+        rewards = torch.tensor(np.array(rewards), dtype=torch.float32)
+        rewards = rewards.view(rewards.shape[0] * rewards.shape[1])
+        actions = torch.tensor(np.array(actions), dtype=torch.long)
+        actions = actions.view(actions.shape[0] * actions.shape[1])
+        return batch_t, batch_tp, rewards, actions
+
+    def replay(self):
+        minibatch = random.sample(self.replay_buffer, self.batch_size)
+        b_t, b_tp, rewards, actions = self._encode_sample(minibatch)
+        out = self.target_model.forward(x=b_tp.x, edge_index=b_tp.edge_index, train=False)
+        target = rewards + self.gamma * torch.max(out, dim=1)[0]
+        target_f = self.model.forward(x=b_t.x, edge_index=b_t.edge_index, train=False)
+
+        for i, action in enumerate(actions):
+            target_f[i][action] = target[i]
+        loss = self.criterion(self.model.forward(x=b_t.x, edge_index=b_t.edge_index, train=True), target_f)
+        self.optimizer.zero_grad()
+        loss.backward()
+        clip_grad_norm_(self.model.parameters(), self.grad_clip)
+        """
+        thr = 0
+        for i in self.eval_model.named_parameters():
+            thr += 1
+            if thr == 8:
+                print(i[1].grad)
+                break
+        """
+        self.optimizer.step()
+        #print('======================after')
+        weights = self.model.state_dict()
+        for i in self.model.state_dict():
+            #print(weights[i].data)
+            break
+        # print(history.history['loss'])
+
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-        return loss_q
+        return loss.detach().numpy()
 
     def update_target_network(self):
-        self.sess.run(self.replace_target_op)
+        weights = self.model.state_dict()
+        #print('=============================')
+        weights_b = self.target_model.state_dict()
+        for i in self.target_model.state_dict():
+            #print('before', '\n')
+            #print(weights_b[i].data)
+            break
 
-    def load_model(self, mdir="model/colight"):
+        self.target_model.load_state_dict(weights)
+        for i in self.model.state_dict():
+            #print('refer', '\n')
+            #print(weights[i].data)
+            break
+        weights_a = self.target_model.state_dict()
+        for i in self.target_model.state_dict():
+            #print('after', '\n')
+            #print(weights_a[i].data)
+            break
+
+    def load_model(self, mdir="model/colight_torch", prefix='', e=0):
         """
         mdir is the path of model
         """
         # name = "netlight_agent_{}".format(self.iid)
         # model_name = os.path.join(mdir, name)
-        model_name = mdir
-        self.algo_saver.restore(self.sess, model_name)
+        name = "colight_agent_{}_{}.pt".format(prefix, e)
+        model_name = os.path.join(mdir, name)
+        self.model = ColightNet(self.ob_length, **self.passer)
+        self.model.load_state_dict(torch.load(model_name))
         # self.model.load_weights(model_name)
 
-    def save_model(self, itr, prefix="", mdir="model/colight"):
-        name = prefix + "_colight"
+    def save_model(self, mdir="model/colight_torch", prefix='', e=0):
+        name = "colight_agent_{}_{}.pt".format(prefix, e)
         model_name = os.path.join(mdir, name)
-        print(model_name)
-        self.algo_saver.save(self.sess, model_name, global_step=itr)
+        torch.save(self.model.state_dict(), model_name)
         # self.model.save_weights(model_name)
