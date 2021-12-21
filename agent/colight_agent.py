@@ -186,6 +186,7 @@ class CoLightAgent(RLAgent):
             self.target_q_value=Dense(self.action_space.n,kernel_initializer='random_normal',name='target_q_value')(value_output)
             #self.target_q_value = tf.layers.dense(value_output,units=self.action_space.n, name="target_q_value") #batch agents value
 
+
     def _build_eval_model(self):
         with tf.variable_scope("eval_q_model",reuse=tf.AUTO_REUSE):
             value_output, att_record_eval = self._build_model()
@@ -412,6 +413,7 @@ class CoLightAgent(RLAgent):
         my_feed_dict = {self.input_node_state:next_obs, self.input_node_phase:next_phases, self.input_neighbor_id:self.neighbor_id,
                         self.input_node_degree_mask: self.degree_num}
         next_state_value = self.sess.run(self.target_q_value,feed_dict=my_feed_dict)
+
         next_state_value = np.max(next_state_value,axis=-1) #batch, agents
         target = rewards + self.gamma * next_state_value
         # observations = np.concatenate([obs, phases],axis=-1)
@@ -420,6 +422,13 @@ class CoLightAgent(RLAgent):
         loss_q,_=self.sess.run([self.q_loss,self.train_op],feed_dict=my_feed_dict)
         loss_q = np.sum(loss_q,axis=-1)
         loss_q = np.mean(loss_q)
+        #TODO: print
+        variable_names = [v.name for v in tf.trainable_variables()]
+        variable_shape = [v.shape for v in tf.trainable_variables()]
+        for k,v in zip(variable_names, variable_shape):
+            #print("V: ", k)
+            #print('shape: ', v)
+            pass
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
         return loss_q

@@ -9,5 +9,6 @@ data/frontend
 data/replay_dir/
 data/*.txt
 intellilight/
+venv/
 .ipynb
 

@@ -54,6 +54,7 @@ class DQNAgent(RLAgent):
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.005
+
         self.batch_size = 32
 
         self.criterion = nn.MSELoss()

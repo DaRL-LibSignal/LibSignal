@@ -32,11 +32,11 @@ class TSCEnv(gym.Env):
         self.metric = metric
 
     def step(self, actions):
-        assert len(actions) == self.n_agents
+        assert actions.shape[0] == self.n_agents
 
         self.world.step(actions)
 
-        if isinstance(self.agents,list):
+        if isinstance(self.agents, list):
             obs = [agent.get_ob() for agent in self.agents]
             rewards = [agent.get_reward() for agent in self.agents]
         else:

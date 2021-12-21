@@ -12,7 +12,6 @@ from datetime import datetime
 from utils import *
 import pickle
 
-
 # parse args
 parser = argparse.ArgumentParser(description='Run Example')
 parser.add_argument('--config_file', type=str,help='path of config file')  #road net
@@ -177,7 +176,7 @@ dic_graph_setting = {
     "OUTPUT_LAYERS":[], #
     "NEIGHBOR_ID": node_adjacent_node_matrix,  # adjacent node id of each node
     "ID2INTER_MAPPING": net_node_dict_id2inter,  # id ---> intersection mapping
-    "INTER2ID_MAPPING":net_node_dict_inter2id,  # intersection ----->id mapping
+    "INTER2ID_MAPPING": net_node_dict_inter2id,  # intersection ----->id mapping
     "NODE_DEGREE_NODE": node_degree_node,  # number of adjacent nodes of node
 }
 
@@ -313,6 +312,7 @@ class TrafficLightDQN:
                     node_dict = self.world.id2intersection[node_id_str]
                     last_phase.append(node_dict.current_phase)
                 actions = self.agent.get_action(last_phase, obs,test_phase=True)
+                #TODO REVISE
                 actions = actions[0]
                 rewards_list = []
                 for _ in range(self.args.action_interval):
