@@ -47,6 +47,7 @@ parser.add_argument('--vehicle_max',type=int,default=1,help='used to normalize n
 parser.add_argument('--mask_type',type=int,default=0,help='used to specify the type of softmax')
 parser.add_argument('--get_attention', action="store_true", default=False)
 parser.add_argument('--test_when_train', action="store_false", default=True)
+
 args = parser.parse_args()
 
 os.environ["CUDA_VISIBLE_DEVICES"] = args.ngpu
@@ -346,7 +347,7 @@ class TrafficLightDQN:
         if not drop_load:
             model_name=self.args.load_model_dir
             if model_name is not None:
-                self.agent.load_model(model_name, args.predix, args.episodes)
+                self.agent.load_model(model_name, args.prefix, args.episodes)
             else:
                 raise ValueError("model name should not be none")
         attention_mat_list = []
