@@ -1,14 +1,6 @@
 __pycache__/
-examples/*
-!examples/.gitkeep
 *.DS_Store
 .idea/
-model/
-log/
-data/frontend
-data/replay_dir/
-data/*.txt
-intellilight/
+data/output_data
 venv/
 .ipynb
-roadgraph/

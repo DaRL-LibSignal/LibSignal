@@ -1,4 +1,4 @@
-from . import RLAgent
+from .rl_agent_t import RLAgent_t
 import random
 import numpy as np
 from collections import deque, OrderedDict
@@ -195,7 +195,7 @@ class ColightNet(nn.Module):
         return h
 
 
-class CoLightAgent(RLAgent):
+class CoLightAgent(RLAgent_t):
     def __init__(self, action_space, ob_generator, reward_generator, world, traffic_env_conf, graph_setting, args):
         super().__init__(action_space, ob_generator[0][1], reward_generator)
         self.action_space = action_space
@@ -340,7 +340,7 @@ class CoLightAgent(RLAgent):
                 in_lanes = []
                 for road in node_dict.in_roads:
                     from_zero = (road["startIntersection"] == node_dict.id) if self.world.RIGHT else (
-                                road["endIntersection"] == i.id)
+                                road["endIntersection"] == node_dict.id)
                     for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
                         in_lanes.append(road["id"] + "_" + str(n))
                 for lane in vehicle_nums.keys():
@@ -382,7 +382,6 @@ class CoLightAgent(RLAgent):
             state = torch.tensor(dp[0], dtype=torch.float32)
             x = torch.concat([state, cat], dim=1)
             batch_list.append(Data(x=x, edge_index=self.edge_idx))
-
             cat_p = F.one_hot(torch.tensor(dp[5], dtype=torch.long), self.action_space.n)
             state_p = torch.tensor(dp[4], dtype=torch.float32)
             x_p = torch.concat([state_p, cat_p], dim=1)

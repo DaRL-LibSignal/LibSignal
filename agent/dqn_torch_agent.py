@@ -33,8 +33,8 @@ class DQN(nn.Module):
 
 
 class DQNAgent(RLAgent):
-    def __init__(self, action_space, ob_generator, reward_generator, iid):
-        super().__init__(action_space, ob_generator, reward_generator)
+    def __init__(self, world, intersection_id):
+        super().__init__(world, intersection_id)
 
         self.iid = iid
         self.ob_generator = ob_generator

@@ -1,4 +1,4 @@
-Colight 用法说明
+light 用法说明
 命令参考如下：（命令行中需要调整的参数基本都在下面了）
 python3 run_colight.py --config_file jn343 --graph_info_dir jn34 -lr 1e-3 -bs 64 -ls 1000 -ep 0.8 -ed 0.9995 -me 0.01 -rs 5000 --episodes 100 --action_interval 10 -pr yzy27 --ngpu 0
     config_file:指定cityflow的config，详细路径为 data/config_dir/config_{config_file}.json

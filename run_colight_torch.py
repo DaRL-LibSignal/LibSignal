@@ -15,7 +15,7 @@ import pickle
 
 # parseargs
 parser = argparse.ArgumentParser(description='Run Example')
-parser.add_argument('--config_file', type=str,help='path of config file')  #road net
+parser.add_argument('--config_file', default='4X4', type=str,help='path of config file')  #road net
 parser.add_argument('--thread', type=int, default=4,help='number of threads')  # used in cityflow
 parser.add_argument('--ngpu', type=str, default="-1",help='gpu to be used')  # choose gpu card
 parser.add_argument('-lr','--learning_rate', type=float, default=1e-3, help="learning rate")
@@ -34,7 +34,7 @@ parser.add_argument('--action_interval',type=int,default=10,help='how often agen
 parser.add_argument('--episodes',type=int,default=200,help='training episodes')
 #parser.add_argument('--test_episodes',type=int,default=10,help='testing episodes')
 parser.add_argument('--load_model_dir',type=str,default=None,help='load this model to test')
-parser.add_argument('--graph_info_dir',type=str,default="syn33",help='load infos about graph(i.e. mapping, adjacent)')
+parser.add_argument('--graph_info_dir',type=str,default="hz4x4",help='load infos about graph(i.e. mapping, adjacent)')
 parser.add_argument('--train_model', action="store_false", default=True)
 parser.add_argument('--test_model', action="store_true", default=False)
 parser.add_argument('--save_model', action="store_false", default=True)
@@ -47,7 +47,6 @@ parser.add_argument('--vehicle_max',type=int,default=1,help='used to normalize n
 parser.add_argument('--mask_type',type=int,default=0,help='used to specify the type of softmax')
 parser.add_argument('--get_attention', action="store_true", default=False)
 parser.add_argument('--test_when_train', action="store_false", default=True)
-
 args = parser.parse_args()
 
 os.environ["CUDA_VISIBLE_DEVICES"] = args.ngpu
@@ -347,7 +346,7 @@ class TrafficLightDQN:
         if not drop_load:
             model_name=self.args.load_model_dir
             if model_name is not None:
-                self.agent.load_model(model_name, args.prefix, args.episodes)
+                self.agent.load_model(model_name, args.predix, args.episodes)
             else:
                 raise ValueError("model name should not be none")
         attention_mat_list = []
@@ -415,9 +414,3 @@ if __name__ == '__main__':
             raise ValueError("invalid parameters, load_model_dir should not be None when the agent is not trained")
         print("begin to test model")
         player.test()
-# simulate
-# import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = '0, 1'
-# train(args, env)
-# test()
-# meta_test('/mnt/d/Cityflow/examples/config.json')

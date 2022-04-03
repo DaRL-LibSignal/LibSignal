@@ -1,25 +1,40 @@
 from . import BaseAgent
+import gym
+from generator.lane_vehicle import LaneVehicleGenerator
+from generator.intersection_phase import IntersectionPhaseGenerator
+
 
 class RLAgent(BaseAgent):
-    def __init__(self, action_space, ob_generator, reward_generator):
-        super().__init__(action_space)
-        self.ob_generator = ob_generator
-        self.reward_generator = reward_generator
+    def __init__(self, world, intersection_id='intersection_1_1'):
+        super().__init__()
+        self.id = intersection_id
+        self.world = world
+        self.action_space = gym.spaces.Discrete(len(world.id2intersection[intersection_id].phases))
+        self.ob_generator = LaneVehicleGenerator(self.world, world.id2intersection[self.id],
+                                                 ["lane_count"], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, world.id2intersection[self.id],
+                                                          ['phase'], targets=['cur_phase'], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, world.id2intersection[self.id],
+                                                     ["lane_waiting_count"], in_only=True, average="all",
+                                                     negative=True)
 
     def get_ob(self):
         return self.ob_generator.generate()
+
+    def get_phase(self):
+        return self.phase_generator.generate()
 
     def get_reward(self):
         reward = self.reward_generator.generate()
         assert len(reward) == 1
         return reward[0]
 
-    def get_action(self, ob):
+    def get_action(self, ob, phase):
         return self.action_space.sample()
-
-    def choose(self,**kwargs):
+    """
+    def choose(self, **kwargs):
         raise NotImplementedError
-
+    """
 
 class State(object):
     # todo: implement as abstract class
