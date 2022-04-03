@@ -1,6 +1,4 @@
 import gym
-import numpy as np
-import cityflow
 
 
 class TSCEnv(gym.Env):
@@ -15,33 +13,39 @@ class TSCEnv(gym.Env):
     """
 
     def __init__(self, world, agents, metric):
+        """
+        :param world: one world object to interact with agents. Support multi world
+        objects in different TSCEnvs.
+        :param agents: single agent, each control all intersections. Or multi agent,
+        each control one intersection.
+        actions is a list of actions, agents is a list of agents.
+        :param metric: metrics to evaluate policy.
+        """
+
         self.world = world
-
         self.eng = self.world.eng
-        self.n_agents = len(agents)
-        self.n = self.n_agents
-
-        assert len(agents) == self.n_agents
-
+        self.n_agents = len(agents) * agents[0].sub_agents
+        # test agent number == intersection number
+        assert len(world.intersection_ids) == self.n_agents
         self.agents = agents
-        action_dims = [agent.action_space.n for agent in agents]
+        action_dims = [agent.action_space.n * agent.sub_agents for agent in agents]
+        # total action space of all agents.
         self.action_space = gym.spaces.MultiDiscrete(action_dims)
-
         self.metric = metric
 
-    def change_world(self, world):
-        self.world.reset()
-        # self.world = world
-        self.eng = world.eng
-        self.world.reset()
-
     def step(self, actions):
+        """
+        :param actions: keep action as N_agents * 1
+        """
         assert len(actions) == self.n_agents
 
         self.world.step(actions)
-
-        obs = [agent.get_ob() for agent in self.agents]
-        rewards = [agent.get_reward() for agent in self.agents]
+        if not len(self.agents) == 1:
+            obs = [agent.get_ob() for agent in self.agents]
+            rewards = [agent.get_reward() for agent in self.agents]
+        else:
+            obs = self.agents[0].get_ob()
+            rewards = self.agents[0].get_reward()
         dones = [False] * self.n_agents
         # infos = {"metric": self.metric.update()}
         infos = {}
@@ -50,5 +54,9 @@ class TSCEnv(gym.Env):
 
     def reset(self):
         self.world.reset()
-        obs = [agent.get_ob() for agent in self.agents]
+        if not len(self.agents) == 1:
+            obs = [agent.get_ob() for agent in self.agents]
+        else:
+            obs = self.agents[0].get_ob()
         return obs
+

@@ -1,7 +1,8 @@
 
 class BaseAgent(object):
-    def __init__(self, action_space):
-        self.action_space = action_space
+    def __init__(self):
+        # revise if it is multi-agents in one model
+        self.sub_agents = 1
 
     def get_ob(self):
         raise NotImplementedError()
@@ -9,5 +10,5 @@ class BaseAgent(object):
     def get_reward(self):
         raise NotImplementedError()
 
-    def get_action(self, ob):
+    def get_action(self, ob, phase):
         raise NotImplementedError()
