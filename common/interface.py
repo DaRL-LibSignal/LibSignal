@@ -17,17 +17,27 @@ class Graph_World_Interface(Interface):
 
 
 @Registry.register_world('traffic_setting')
-class Traffic_path_Interface(Interface):
+class Traffic_param_Interface(Interface):
     def __init__(self, path):
-        super(Traffic_path_Interface, self).__init__()
-        Traffic_path_Interface.param = load_config_dict(path)
+        super(Traffic_param_Interface, self).__init__()
+        if isinstance(path, dict):
+            Traffic_param_Interface.param = path
+        elif isinstance(path, str):
+            Traffic_param_Interface.param = load_config_dict(path)
+        else:
+            raise NotImplementedError('traffic setting: input should be path or dictionary')
 
 
 @Registry.register_model('model_setting')
 class ModelAgent_param_Interface(Interface):
     def __init__(self, path):
         super(ModelAgent_param_Interface, self).__init__()
-        ModelAgent_param_Interface.param = load_config_dict(path)
+        if isinstance(path, dict):
+            ModelAgent_param_Interface.param = path
+        elif isinstance(path, str):
+            ModelAgent_param_Interface.param = load_config_dict(path)
+        else:
+            raise NotImplementedError('model setting: input should be path or dictionary')
 
 
 @Registry.register_logger('output_path')
@@ -41,12 +51,21 @@ class Logger_path_Interface(Interface):
 class Logger_param_Interface(Interface):
     def __init__(self, path):
         super(Logger_param_Interface, self).__init__()
-        Logger_param_Interface.param = load_config_dict(path)
+        if isinstance(path, dict):
+            Logger_param_Interface.param = path
+        elif isinstance(path, str):
+            Logger_param_Interface.param = load_config_dict(path)
+        else:
+            raise NotImplementedError('logger setting: input should be path or dictionary')
 
 
-@Registry.register_task('task_setting')
-class Task_param_Interface(Interface):
+@Registry.register_trainer('trainer_setting')
+class Trainer_param_Interface(Interface):
     def __init__(self, path):
-        super(Task_param_Interface, self).__init__()
-        Task_param_Interface.param = load_config_dict(path)
-
+        super(Trainer_param_Interface, self).__init__()
+        if isinstance(path, dict):
+            Trainer_param_Interface.param = path
+        elif isinstance(path, str):
+            Trainer_param_Interface.param = load_config_dict(path)
+        else:
+            raise NotImplementedError('task setting: input should be path or dictionary')

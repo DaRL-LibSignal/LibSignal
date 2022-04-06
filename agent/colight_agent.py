@@ -30,8 +30,8 @@ class RepeatVector3D(Layer):
         return (input_shape[0], self.times, input_shape[1],input_shape[2])
 
     def call(self, inputs):
-        #[batch,agent,dim]->[batch,1,agent,dim]
-        #[batch,1,agent,dim]->[batch,agent,agent,dim]
+        #[batch,agents,dim]->[batch,1,agents,dim]
+        #[batch,1,agents,dim]->[batch,agents,agents,dim]
         return K.tile(K.expand_dims(inputs,1),[1,self.times,1,1])
 
 
@@ -110,7 +110,7 @@ class CoLightAgent(RLAgent):
         #actions one-hot
         self.input_actions_one_hot = tf.one_hot(self.input_actions, self.action_space.n)
         # the adjacent node of node
-        #self.neighbor_node_one_hot = tf.one_hot(self.input_neighbor_id,self.num_agents) # agent, neighbor, agents  
+        #self.neighbor_node_one_hot = tf.one_hot(self.input_neighbor_id,self.num_agents) # agents, neighbor, agents
         neighbor_node_tmp = tf.range(0,self.num_agents)
         neighbor_node_tmp = tf.expand_dims(neighbor_node_tmp,axis=-1)
         expanded_neighbor_id = tf.concat([neighbor_node_tmp,self.input_neighbor_id],axis=-1) #[agents ,num_neighbor+1] include node itself
@@ -135,8 +135,8 @@ class CoLightAgent(RLAgent):
         #[#agents,batch,feature_dim],[#agents,batch,neighbors,agents],[batch,1,neighbors]
         ->[#agentsxbatch,feature_dim],[#agentsxbatch,neighbors,agents],[batch,1,neighbors]
         """
-        #In: [batch,agent,feature]
-        #In: [batch,agent,neighbors,agents]
+        #In: [batch,agents,feature]
+        #In: [batch,agents,neighbors,agents]
         # In.append(Input(shape=[self.num_agents,self.len_feature],name="feature"))
         # In.append(Input(shape=(self.num_agents,self.num_neighbors,self.num_agents),name="adjacency_matrix")) 
 
@@ -176,7 +176,7 @@ class CoLightAgent(RLAgent):
         for layer_index,layer_size in enumerate(self.graph_setting["OUTPUT_LAYERS"]):
                 h=Dense(layer_size,activation='relu',kernel_initializer='random_normal',name='Dense_q_%d'%layer_index)(h)
         # out = Dense(self.action_space.n,kernel_initializer='random_normal',name='action_layer')(h)
-        # out:[batch,agent,action], att:[batch,layers,agent,head,neighbors]
+        # out:[batch,agents,action], att:[batch,layers,agents,head,neighbors]
         # model=Model(inputs=In,outputs=[out,att_record_all_layers])
         return h,att_record_all_layers
 
@@ -204,41 +204,41 @@ class CoLightAgent(RLAgent):
     def _MultiHeadsAttModel(self,In_agent,In_neighbor,l=5, d=128, dv=16, dout=128, nv = 8,suffix=-1):
         """
         input:
-            In_agent [bacth,agent,128]
-            In_neighbor [agent, neighbor_num]
+            In_agent [bacth,agents,128]
+            In_neighbor [agents, neighbor_num]
             l: number of neighborhoods (in my code, l=num_neighbor+1,because l include itself)
-            d: dimension of agent's embedding
+            d: dimension of agents's embedding
             dv: dimension of each head
             dout: dimension of output
             nv: number of head (multi-head attention)
         output:
-            -hidden state: [batch,agent,32]
-            -attention: [batch,agent,neighbor]
+            -hidden state: [batch,agents,32]
+            -attention: [batch,agents,neighbor]
         """
 
-        """agent repr"""
+        """agents repr"""
         print("In_agent.shape,In_neighbor.shape,l, d, dv, dout, nv", In_agent.shape,In_neighbor.shape,l, d, dv, dout, nv)
-        #[batch,agent,dim]->[batch,agent,1,dim]
+        #[batch,agents,dim]->[batch,agents,1,dim]
         agent_repr=Reshape((self.num_agents,1,d))(In_agent)
 
         """neighbor repr"""
-        #[batch,agent,dim]->(reshape)[batch,1,agent,dim]->(tile)[batch,agent,agent,dim]
+        #[batch,agents,dim]->(reshape)[batch,1,agents,dim]->(tile)[batch,agents,agents,dim]
         neighbor_repr=RepeatVector3D(self.num_agents)(In_agent)
         print("neighbor_repr.shape", neighbor_repr.shape)
-        #[batch,agent,neighbor,agent]x[batch,agent,agent,dim]->[batch,agent,neighbor,dim]
+        #[batch,agents,neighbor,agents]x[batch,agents,agents,dim]->[batch,agents,neighbor,dim]
         neighbor_repr=Lambda(lambda x:K.batch_dot(x[0],x[1]))([In_neighbor,neighbor_repr])
         print("neighbor_repr.shape", neighbor_repr.shape)
         
         """attention computation"""
         #multi-head
-        #[batch,agent,1,dim]->[batch,agent,1,dv*nv]
+        #[batch,agents,1,dim]->[batch,agents,1,dv*nv]
         agent_repr_head=Dense(dv*nv,activation='relu',kernel_initializer='random_normal',name='agent_repr_%d'%suffix)(agent_repr)
-        #[batch,agent,1,dv,nv]->[batch,agent,nv,1,dv]
+        #[batch,agents,1,dv,nv]->[batch,agents,nv,1,dv]
         agent_repr_head=Reshape((self.num_agents,1,dv,nv))(agent_repr_head)
         agent_repr_head=Lambda(lambda x:K.permute_dimensions(x,(0,1,4,2,3)))(agent_repr_head)
 
         neighbor_repr_head=Dense(dv*nv,activation='relu',kernel_initializer='random_normal',name='neighbor_repr_%d'%suffix)(neighbor_repr)
-        #[batch,agent,neighbor,dv,nv]->[batch,agent,nv,neighbor,dv]
+        #[batch,agents,neighbor,dv,nv]->[batch,agents,nv,neighbor,dv]
         print("DEBUG",neighbor_repr_head.shape)
         print("self.num_agents,self.num_neighbors,dv,nv", self.num_agents,self.graph_setting["NEIGHBOR_NUM"],dv,nv)
         neighbor_repr_head=Reshape((self.num_agents,self.graph_setting["NEIGHBOR_NUM"]+1,dv,nv))(neighbor_repr_head)
@@ -250,28 +250,28 @@ class CoLightAgent(RLAgent):
         tmp_mask = tf.tile(tmp_mask,[1,nv,1,1]) # [agents,1,1,neighbor] --->  [agents,nv,1,neighbor]
 
         if self.mask_type==1:
-            # [batch,agent,nv,1,dv]x[batch,agent,nv,neighbor,dv]->[batch,agent,nv,1,neighbor]
+            # [batch,agents,nv,1,dv]x[batch,agents,nv,neighbor,dv]->[batch,agents,nv,1,neighbor]
             # neighbor_repr_head=Lambda(lambda x:K.batch_dot(x[0],x[1],axes=[4,4]))([agent_repr_head,neighbor_repr_head])
             # tmp_neigbor_repr_head = neighbor_repr_head - tf.stop_gradient(tf.expand_dims(tf.reduce_max(neighbor_repr_head,axis=-1),axis=-1))
             # tmp_neigbor_repr_head = neighbor_repr_head - tf.expand_dims(tf.reduce_max(neighbor_repr_head,axis=-1),axis=-1)
             # neighbor_repr_head = tf.exp(tmp_neigbor_repr_head)
             # neighbor_repr_head=neighbor_repr_head * tmp_mask
-            # tmp_sum = tf.reduce_sum(neighbor_repr_head,axis=-1) # [batch,agent,nv,1]
-            # tmp_sum = tf.expand_dims(tmp_sum,axis=-1)# [batch,agent,nv,1,1]
+            # tmp_sum = tf.reduce_sum(neighbor_repr_head,axis=-1) # [batch,agents,nv,1]
+            # tmp_sum = tf.expand_dims(tmp_sum,axis=-1)# [batch,agents,nv,1,1]
             # att = neighbor_repr_head / tmp_sum
 
-            #[batch,agent,nv,1,dv]x[batch,agent,nv,neighbor,dv]->[batch,agent,nv,1,neighbor]
+            #[batch,agents,nv,1,dv]x[batch,agents,nv,neighbor,dv]->[batch,agents,nv,1,neighbor]
             att=Lambda(lambda x:K.softmax(K.batch_dot(x[0],x[1],axes=[4,4])))([agent_repr_head,neighbor_repr_head]) #[batch,agents,nv,1,neighbor]
             att = att * tmp_mask #[batch,agents,nv,1,neighbor]
             tmp_att = att
             att = att / tf.expand_dims(tf.reduce_sum(tmp_att,axis=-1),axis=-1)
             print("att.shape:",att.shape)
         else:
-            #[batch,agent,nv,1,dv]x[batch,agent,nv,neighbor,dv]->[batch,agent,nv,1,neighbor]
+            #[batch,agents,nv,1,dv]x[batch,agents,nv,neighbor,dv]->[batch,agents,nv,1,neighbor]
             att=Lambda(lambda x:K.softmax(K.batch_dot(x[0],x[1],axes=[4,4])))([agent_repr_head,neighbor_repr_head]) #[batch,agents,nv,1,neighbor]
             att = att * tmp_mask #[batch,agents,nv,1,neighbor]
             print("att.shape:",att.shape)
-        att_record=Reshape((self.num_agents,nv,self.graph_setting["NEIGHBOR_NUM"]+1))(att) #[batch,agent,nv,1,neighbor]->[batch,agent,nv,neighbor]
+        att_record=Reshape((self.num_agents,nv,self.graph_setting["NEIGHBOR_NUM"]+1))(att) #[batch,agents,nv,1,neighbor]->[batch,agents,nv,neighbor]
         
 
 
@@ -322,7 +322,7 @@ class CoLightAgent(RLAgent):
         my_feed_dict = {self.input_node_state:e_ob, self.input_node_phase:e_phase, self.input_neighbor_id:self.neighbor_id,self.input_node_degree_mask: self.degree_num}
         if self.get_attention:
             act_values, att_mat = self.sess.run([self.value,self.attention_record],feed_dict=my_feed_dict)
-            return np.argmax(act_values, axis=-1), att_mat #[batch, agents],[batch,agent,nv,neighbor]
+            return np.argmax(act_values, axis=-1), att_mat #[batch, agents],[batch,agents,nv,neighbor]
         else:
             act_values = self.sess.run(self.value,feed_dict=my_feed_dict)
             return np.argmax(act_values, axis=-1) #batch, agents

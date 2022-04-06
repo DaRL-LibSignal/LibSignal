@@ -92,7 +92,7 @@ class LaneVehicleGenerator(BaseGenerator):
 
 if __name__ == "__main__":
     from world import World
-    world = World("examples/config.json", thread_num=1)
+    world = World("examples/configs.json", thread_num=1)
     laneVehicle = LaneVehicleGenerator(world, world.intersections[0], ["count"], False, "road")
     for _ in range(100):
         world.step()
