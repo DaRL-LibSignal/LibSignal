@@ -1,80 +1,62 @@
 import pickle
 import numpy as np 
 import json
-import sys
-import pandas as pd 
 import os
-import time
-from copy import deepcopy
+import yaml
+import copy
+import logging
+from datetime import datetime
+
+from common.registry import Registry
 
 
-def generate_node_dict(roadnet_file):
-    '''
-    node dict has key as node id, value could be the dict of input nodes and output nodes
-    :return:
-    '''
-    roadnet_dict = json.load(open(roadnet_file,"r"))
-    net_node_dict = {}
-    for node_dict in roadnet_dict["intersections"]:
-        node_id = node_dict["id"]
-        road_links = node_dict['roads']
-        #input_roads_links = [i in node_dict["roads"] if i.beginwith("road_"+node_id[13:])]
-        input_nodes = []
-        output_nodes = [] #needed ,usually the same with input nodes
-        input_edges = [] # needed 
-        output_edges = {} # actually useless in Netlight
-        for road_link_id in road_links:
-            road_link_dict = get_road_dict(roadnet_dict["roads"],road_link_id)
-            if road_link_dict['startIntersection'] == node_id:
-                end_node = road_link_dict['endIntersection']
-                output_nodes.append(end_node)
-                # todo add output edges
-            elif road_link_dict['endIntersection'] == node_id:
-                input_edges.append(road_link_id)
-                start_node = road_link_dict['startIntersection']
-                input_nodes.append(start_node)
-                output_edges[road_link_id] = set() # paris, roadlinks [road_in,road_out]
-                pass
-        # update roadlinks
-        actual_roadlinks = node_dict['roadLinks']
-        for actual_roadlink in actual_roadlinks:
-            output_edges[actual_roadlink['startRoad']].add(actual_roadlink['endRoad'])
+class SeverityLevelBetween(logging.Filter):
+    def __init__(self, min_level, max_level):
+        super().__init__()
+        self.min_level = min_level
+        self.max_level = max_level
 
-        net_node = {
-            'node_id': node_id,
-            'input_nodes': list(set(input_nodes)),
-            'input_edges': list(set(input_edges)),
-            'output_nodes': list(set(output_nodes)),
-            'output_edges': output_edges# should be a dict, with key as an input edge, value as output edges
-        }
-        if node_id not in net_node_dict.keys():
-            net_node_dict[node_id] = net_node
-    #actually we have to give an int id to them in order to use in tf
-    return net_node_dict
+    def filter(self, record):
+        return self.min_level <= record.levelno < self.max_level
 
 
-def generate_edge_dict(roadnet_file, net_node_dict):
-    '''
-    edge dict has key as edge id, value could be the dict of input edges and output edges
-    :return:
-    '''
-    roadnet_dict = json.load(open(roadnet_file,"r"))
-    net_edge_dict = {}
-    for edge_dict in roadnet_dict['roads']:
-        edge_id = edge_dict['id']
-        input_node = edge_dict['startIntersection']
-        output_node = edge_dict['endIntersection']
+def setup_logging(prefix):
+    root = logging.getLogger()
 
-        net_edge = {
-            'edge_id': edge_id,
-            'input_node': input_node,
-            'output_node': output_node,
-            'input_edges': net_node_dict[input_node]['input_edges'],
-            'output_edges': net_node_dict[output_node]['output_edges'][edge_id],
-        }
-        if edge_id not in net_edge_dict.keys():
-            net_edge_dict[edge_id] = net_edge
-    return net_edge_dict
+    # Perform setup only if logging has not been configured
+    if not root.hasHandlers():
+        root.setLevel(logging.INFO)
+        log_formatter = logging.Formatter(
+            "%(asctime)s (%(levelname)s): %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        """
+        # Send INFO to stdout
+        handler_out = logging.StreamHandler(sys.stdout)
+        handler_out.addFilter(
+            SeverityLevelBetween(logging.INFO, logging.WARNING)
+        )
+        handler_out.setFormatter(log_formatter)
+        root.addHandler(handler_out)
+
+        # Send WARNING (and higher) to stderr
+        handler_err = logging.StreamHandler(sys.stderr)
+        handler_err.setLevel(logging.WARNING)
+        handler_err.setFormatter(log_formatter)
+        root.addHandler(handler_err)
+        """
+        logger_dir = os.path.join(
+            Registry.mapping['logger_mapping']['output_path'].path,
+            Registry.mapping['logger_mapping']['logger_setting'].param['log_dir'])
+        if not os.path.exists(logger_dir):
+            os.makedirs(logger_dir)
+        handler_file = logging.FileHandler(os.path.join(
+            logger_dir,
+            f"CoLight_{datetime.now().strftime('%Y%m%d-%H%M%S')}.log")
+        )
+        handler_file.setLevel(logging.INFO)
+        root.addHandler(handler_file)
+        return root
 
 
 def get_road_dict(roadnet_dict, road_id):
@@ -197,3 +179,106 @@ def analyse_vehicle_nums(file_path):
 def get_output_file_path(task, model, prefix):
     path = os.path.join('./data/output_data', task, model, prefix)
     return path
+
+
+def load_config(path, previous_includes=[]):
+    if path in previous_includes:
+        raise ValueError(
+            f"Cyclic configs include detected. {path} included in sequence {previous_includes}."
+        )
+    previous_includes = previous_includes + [path]
+
+    direct_config = yaml.load(open(path, "r"), Loader=yaml.Loader)
+
+    # Load configs from included files.
+    if "includes" in direct_config:
+        includes = direct_config.pop("includes")
+    else:
+        includes = []
+    if not isinstance(includes, list):
+        raise AttributeError(
+            "Includes must be a list, '{}' provided".format(type(includes))
+        )
+
+    config = {}
+    duplicates_warning = []
+    duplicates_error = []
+
+    # TODO: Need test duplication here
+    for include in includes:
+        include_config, inc_dup_warning, inc_dup_error = load_config(
+            include, previous_includes
+        )
+        duplicates_warning += inc_dup_warning
+        duplicates_error += inc_dup_error
+
+        # Duplicates between includes causes an error
+        config, merge_dup_error = merge_dicts(config, include_config)
+        duplicates_error += merge_dup_error
+
+    # Duplicates between included and main file causes warnings
+    config, merge_dup_warning = merge_dicts(config, direct_config)
+    duplicates_warning += merge_dup_warning
+
+    return config, duplicates_warning, duplicates_error
+
+
+def merge_dicts(dict1: dict, dict2: dict):
+    """Recursively merge two dictionaries.
+    Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary as a
+    value, this will call itself recursively to merge these dictionaries.
+    This does not modify the input dictionaries (creates an internal copy).
+    Additionally returns a list of detected duplicates.
+    Adapted from https://github.com/TUM-DAML/seml/blob/master/seml/utils.py
+    Parameters
+    ----------
+    dict1: dict
+        First dict.
+    dict2: dict
+        Second dict. Values in dict2 will override values from dict1 in case they share the same key.
+    Returns
+    -------
+    return_dict: dict
+        Merged dictionaries.
+    """
+    if not isinstance(dict1, dict):
+        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)}.")
+    if not isinstance(dict2, dict):
+        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)}.")
+
+    return_dict = copy.deepcopy(dict1)
+    duplicates = []
+
+    for k, v in dict2.items():
+        if k not in dict1:
+            return_dict[k] = v
+        else:
+            if isinstance(v, dict) and isinstance(dict1[k], dict):
+                return_dict[k], duplicates_k = merge_dicts(dict1[k], dict2[k])
+                duplicates += [f"{k}.{dup}" for dup in duplicates_k]
+            else:
+                return_dict[k] = dict2[k]
+                duplicates.append(k)
+
+    return return_dict, duplicates
+
+
+def build_config(args):
+    # configs file of specific agents is loaded from configs/agents/{agent_name}
+    agent_name = os.path.join('./configs/agents', args.task, f'{args.agent}.yml')
+    config, duplicates_warning, duplicates_error = load_config(agent_name)
+    if len(duplicates_warning) > 0:
+        logging.warning(
+            f"Overwritten configs parameters from included configs "
+            f"(non-included parameters take precedence): {duplicates_warning}"
+        )
+    if len(duplicates_error) > 0:
+        raise ValueError(
+            f"Conflicting (duplicate) parameters in simultaneously "
+            f"included configs: {duplicates_error}"
+        )
+    args_dict = vars(args)
+    for key in args_dict:
+        config.update({key: args_dict[key]})  # short access for important param
+    return config
+

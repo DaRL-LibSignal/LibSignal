@@ -8,7 +8,6 @@ import gym
 
 from generator.lane_vehicle import LaneVehicleGenerator
 from generator.intersection_phase import IntersectionPhaseGenerator
-
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -20,18 +19,17 @@ from torch_geometric.nn import MessagePassing
 from torch_geometric.data import Data, Batch
 from torch_geometric.utils import add_self_loops
 
-import pickle as pkl
 
-@Registry.register_model('model')
+@Registry.register_model('colight')
 class CoLightAgent(RLAgent):
-    #  TODO: test multiprocessing effect on agent or need deep copy here
+    #  TODO: test multiprocessing effect on agents or need deep copy here
     def __init__(self, world, prefix):
         super().__init__(world)
         """
-        multi-agent in one model-> modify self.action_space, self.reward_generator, self.ob_generator here
+        multi-agents in one model-> modify self.action_space, self.reward_generator, self.ob_generator here
         """
         #  general setting of world and model structure
-        self.buffer_size = Registry.mapping['task_mapping']['task_setting'].param['buffer_size']
+        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
         self.graph = Registry.mapping['world_mapping']['graph_setting'].graph
@@ -134,29 +132,6 @@ class CoLightAgent(RLAgent):
         phase = np.array(phase)
         return phase
 
-    def get_reward_test(self):
-        vehicle_reward = []
-        vehicle_nums = self.world.get_info("lane_waiting_count")
-        for i in range(self.sub_agents):
-            node_id = self.graph["node_idx2id"][i]
-            node_dict = self.world.id2intersection[node_id]
-            nvehicles = 0
-            tmp_vehicle = []
-            in_lanes = []
-            for road in node_dict.in_roads:
-                from_zero = (road["startIntersection"] == node_dict.id) if self.world.RIGHT else (
-                        road["endIntersection"] == node_dict.id)
-                for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
-                    in_lanes.append(road["id"] + "_" + str(n))
-            for lane in vehicle_nums.keys():
-                if lane in in_lanes:
-                    nvehicles += vehicle_nums[lane]
-                    tmp_vehicle.append(vehicle_nums[lane])
-            # vehicle_reward.append(-nvehicles)
-            tmp_vehicle = np.array(tmp_vehicle)
-            vehicle_reward.append(-tmp_vehicle.sum())  # return the average length of a intersection
-        vehicle_reward = np.array(vehicle_reward)
-        return vehicle_reward
 
     def get_action(self, ob, phase, test=False):
         """
@@ -339,16 +314,16 @@ class Embedding_MLP(nn.Module):
 class MultiHeadAttModel(MessagePassing):
     """
     inputs:
-        In_agent [bacth,agent,128]
-        In_neighbor [agent, neighbor_num]
+        In_agent [bacth,agents,128]
+        In_neighbor [agents, neighbor_num]
         l: number of neighborhoods (in my code, l=num_neighbor+1,because l include itself)
-        d: dimension of agent's embedding
+        d: dimension of agents's embedding
         dv: dimension of each head
         dout: dimension of output
         nv: number of head (multi-head attention)
     output:
-        -hidden state: [batch,agent,32]
-        -attention: [batch,agent,neighbor]
+        -hidden state: [batch,agents,32]
+        -attention: [batch,agents,neighbor]
     """
     def __init__(self, d, dv, d_out, nv, suffix):
         super(MultiHeadAttModel, self).__init__(aggr='add')

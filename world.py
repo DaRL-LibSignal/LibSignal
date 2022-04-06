@@ -366,6 +366,6 @@ class World(object):
 
 
 if __name__ == "__main__":
-    world = World("/mnt/d/Cityflow/tools/generator/config.json", thread_num=1)
+    world = World("/mnt/d/Cityflow/tools/generator/configs.json", thread_num=1)
     # print(len(world.intersections[0].startlanes))
     print(world.intersections[0].phase_available_startlanes)

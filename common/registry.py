@@ -16,6 +16,7 @@ class Registry:
         'model_mapping': {},
         'logger_mapping': {},
         'world_mapping': {},
+        'trainer_mapping': {}
     }
 
     @classmethod
@@ -43,6 +44,13 @@ class Registry:
     def register_task(cls, name):
         def wrap(f):
             cls.mapping['task_mapping'][name] = f
+            return f
+        return wrap
+
+    @classmethod
+    def register_trainer(cls, name):
+        def wrap(f):
+            cls.mapping['trainer_mapping'][name] = f
             return f
         return wrap
 

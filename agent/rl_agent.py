@@ -1,9 +1,11 @@
 from . import BaseAgent
+from common.registry import Registry
 import gym
 from generator.lane_vehicle import LaneVehicleGenerator
 from generator.intersection_phase import IntersectionPhaseGenerator
 
 
+@Registry.register_model('rl')
 class RLAgent(BaseAgent):
     def __init__(self, world, intersection_id='intersection_1_1'):
         super().__init__()

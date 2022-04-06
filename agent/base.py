@@ -1,4 +1,7 @@
+from common.registry import Registry
 
+
+@Registry.register_model('base')
 class BaseAgent(object):
     def __init__(self):
         # revise if it is multi-agents in one model
