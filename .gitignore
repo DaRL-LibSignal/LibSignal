@@ -2,5 +2,4 @@ __pycache__/
 *.DS_Store
 .idea/
 data/output_data
-venv/
 .ipynb

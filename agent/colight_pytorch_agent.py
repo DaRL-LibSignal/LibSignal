@@ -47,16 +47,16 @@ class Embedding_MLP(nn.Module):
 class MultiHeadAttModel(MessagePassing):
     """
     inputs:
-        In_agent [bacth,agent,128]
-        In_neighbor [agent, neighbor_num]
+        In_agent [bacth,agents,128]
+        In_neighbor [agents, neighbor_num]
         l: number of neighborhoods (in my code, l=num_neighbor+1,because l include itself)
-        d: dimension of agent's embedding
+        d: dimension of agents's embedding
         dv: dimension of each head
         dout: dimension of output
         nv: number of head (multi-head attention)
     output:
-        -hidden state: [batch,agent,32]
-        -attention: [batch,agent,neighbor]
+        -hidden state: [batch,agents,32]
+        -attention: [batch,agents,neighbor]
     """
     def __init__(self, d=128, dv=16, d_out=128, nv=8, suffix=-1):
         super(MultiHeadAttModel, self).__init__(aggr='add')
@@ -255,8 +255,8 @@ class CoLightAgent(RLAgent_t):
         #[#agents,batch,feature_dim],[#agents,batch,neighbors,agents],[batch,1,neighbors]
         ->[#agentsxbatch,feature_dim],[#agentsxbatch,neighbors,agents],[batch,1,neighbors]
         """
-        # In: [batch,agent,feature]
-        # In: [batch,agent,neighbors,agents]
+        # In: [batch,agents,feature]
+        # In: [batch,agents,neighbors,agents]
         # In.append(Input(shape=[self.num_agents,self.len_feature],name="feature"))
         # In.append(Input(shape=(self.num_agents,self.num_neighbors,self.num_agents),name="adjacency_matrix"))
         #TODO: keep no phase
@@ -270,7 +270,7 @@ class CoLightAgent(RLAgent_t):
         # att_record_all_layers=Reshape((self.graph_setting["N_LAYERS"],self.num_agents,self.graph_setting["NUM_HEADS"][self.graph_setting["N_LAYERS"]-1],self.graph_setting["NEIGHBOR_NUM"]+1))(att_record_all_layers)
 
         # out = Dense(self.action_space.n,kernel_initializer='random_normal',name='action_layer')(h)
-        # out:[batch,agent,action], att:[batch,layers,agent,head,neighbors]
+        # out:[batch,agents,action], att:[batch,layers,agents,head,neighbors]
         # model=Model(inputs=In,outputs=[out,att_record_all_layers])
         print(model)
         return model
@@ -306,7 +306,7 @@ class CoLightAgent(RLAgent_t):
             att = self.get_attention
             #TODO: implement att
             actions = actions.detach().numpy()
-            return np.argmax(actions, axis=1)  # [batch, agents],[batch,agent,nv,neighbor]
+            return np.argmax(actions, axis=1)  # [batch, agents],[batch,agents,nv,neighbor]
         else:
             actions = self.model.forward(x=dt.x, edge_index=dt.edge_index)
             actions = actions.detach().numpy()
