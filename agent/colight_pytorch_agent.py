@@ -1,4 +1,4 @@
-from .rl_agent_t import RLAgent_t
+from .rl_agent import RLAgent
 import random
 import numpy as np
 from collections import deque, OrderedDict
