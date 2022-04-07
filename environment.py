@@ -8,7 +8,7 @@ class TSCEnv(gym.Env):
     Parameters
     ----------
     world: World object
-    agents: list of agent, corresponding to each intersection in world.intersections
+    agents: list of agents, corresponding to each intersection in world.intersections
     metric: Metric object, used to calculate evaluation metric
     """
 
@@ -16,7 +16,7 @@ class TSCEnv(gym.Env):
         """
         :param world: one world object to interact with agents. Support multi world
         objects in different TSCEnvs.
-        :param agents: single agent, each control all intersections. Or multi agent,
+        :param agents: single agents, each control all intersections. Or multi agents,
         each control one intersection.
         actions is a list of actions, agents is a list of agents.
         :param metric: metrics to evaluate policy.
@@ -25,7 +25,7 @@ class TSCEnv(gym.Env):
         self.world = world
         self.eng = self.world.eng
         self.n_agents = len(agents) * agents[0].sub_agents
-        # test agent number == intersection number
+        # test agents number == intersection number
         assert len(world.intersection_ids) == self.n_agents
         self.agents = agents
         action_dims = [agent.action_space.n * agent.sub_agents for agent in agents]

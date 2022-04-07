@@ -5,11 +5,10 @@ import sys
 from numpy import array as array
 from numpy import float32 as float32
 from numpy import int64 as int64
-from numpy import dtype as dtype
 
 
-@Registry.register_dataset('dataset')
-class OnPolicyDataset(object):
+@Registry.register_dataset('onfly')
+class OnFlyDataset(object):
     def __init__(self, path):
         self.path = path
         self.num_samples = 0

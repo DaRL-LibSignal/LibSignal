@@ -45,7 +45,7 @@ def recurrent(x, output_units, depth, units, activation, use_layernorm, initial_
 
 class Agent:
     """
-    A tensorflow model for the agent with critic and policy (+ target networks)
+    A tensorflow model for the agents with critic and policy (+ target networks)
     """
 
     def __init__(self, dconfig, obs_shape_n, act_space_n):
@@ -71,7 +71,7 @@ class Agent:
                            dconfig.policy_layernorm]
             self.policy_func = lambda *args, **kwargs: mlp(*args, *policy_args, **kwargs)
 
-        with tf.variable_scope(None, 'agent'):
+        with tf.variable_scope(None, 'agents'):
             self.main = self._create('main')
             self.target = self._create('target')
 
@@ -227,7 +227,7 @@ class Objective:
         :param trans: entire tuple of transition (s_t, a_t, r_t, d_t, s_{t+1})
         :param seq_len: Length of trajectories
         :param seq_mask: Binary mask of trajectories
-        :param agent: agent to compute value for
+        :param agent: agents to compute value for
         :param opt: optimizer to use for the policy update
         :param create_summary: whether to create summary ops
         :return: tensor of batched future policy value
