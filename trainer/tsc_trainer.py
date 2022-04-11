@@ -33,6 +33,8 @@ class TSCTrainer(BaseTrainer):
         self.learning_start = Registry.mapping['trainer_mapping']['trainer_setting'].param['learning_start']
         self.update_model_rate = Registry.mapping['trainer_mapping']['trainer_setting'].param['update_model_rate']
         self.update_target_rate = Registry.mapping['trainer_mapping']['trainer_setting'].param['update_target_rate']
+        self.replay_file_dir = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+                                            Registry.mapping['logger_mapping']['logger_setting'].param['replay_dir'])
         # TODO: pass in dataset
         self.prefix = self.args['prefix']
         self.dataset = Registry.mapping['dataset_mapping'][self.args['dataset']](
@@ -43,12 +45,8 @@ class TSCTrainer(BaseTrainer):
         self.test_when_train = self.args['test_when_train']
         self.yellow_time = self.world.intersections[0].yellow_phase_time
         self.log_file = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
-                                     'logger', self.prefix + '.log')
-        self.replay_file_dir = os.path.join(os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
-                                                         'replay'))
-        if not os.path.exists(self.replay_file_dir):
-            os.makedirs(self.replay_file_dir)
-            
+                                     'logger', self.logger.name + '_details.log')
+
     def create_world(self):
         # traffic setting is in the world mapping
         self.world = World(self.cityflow_path,
@@ -58,57 +56,61 @@ class TSCTrainer(BaseTrainer):
         self.metric = TravelTimeMetric(self.world)
 
     def create_agents(self):
-        self.agent = Registry.mapping['model_mapping'][self.args['agent']](self.world, self.args['prefix'])
+        self.agents = []
+        agent = Registry.mapping['model_mapping'][self.args['agent']](self.world, 0)
+        num_agent = int(len(self.world.intersections) / agent.sub_agents)
+        self.agents.append(agent)  # initialized N agents for traffic light control
+        for i in range(1, num_agent):
+            self.agents.append(Registry.mapping['model_mapping'][self.args['agent']](self.world, i))
 
     def create_env(self):
         # TODO: finalized list or non list
-        self.env = TSCEnv(self.world, [self.agent], self.metric)
+        self.env = TSCEnv(self.world, self.agents, self.metric)
 
     def train(self):
         total_decision_num = 0
         flush = 0
         for e in range(self.episodes):
-            last_obs = self.env.reset()  # checked np.array [intersection, feature]
+            last_obs = self.env.reset()  # checked np.array [agent, sub_agent, feature]-> [16, 1, 12][id]
             if e % self.save_rate == self.save_rate - 1:
                 self.env.eng.set_save_replay(True)
-                self.env.eng.set_replay_file(self.replay_file_dir + f"/episode_{e}.txt")
+                if not os.path.exists(self.replay_file_dir):
+                    os.makedirs(self.replay_file_dir)
+                self.env.eng.set_replay_file(self.replay_file_dir + f"/episode_{e}.txt")  # TODO: replay here
             else:
                 self.env.eng.set_save_replay(False)
-            episodes_rewards = np.array([0 for i in range(len(self.world.intersections))], dtype=np.float32)  # checked [intersections,1]
+            episodes_rewards = np.array([0 for _ in range(len(self.world.intersections))], dtype=np.float32)
             episodes_decision_num = 0
             episode_loss = []
             i = 0
             while i < self.steps:
                 if i % self.action_interval == 0:
-                    last_phase = self.agent.get_phase()  # checked np.array [intersection, 1]
-                    # TODO multi_agent, loop
+                    last_phase = np.stack([ag.get_phase() for ag in self.agents])  # [num_agent, sub_agent, feature]
+
                     if total_decision_num > self.learning_start:
-                        actions = self.agent.get_action(last_obs, last_phase, test=False)
+                        actions = []
+                        for idx, ag in enumerate(self.agents):
+                            actions.append(ag.get_action(last_obs[idx], last_phase[idx], test=False))
+                            actions = np.stack(actions)
                     else:
-                        actions = self.agent.sample()  # checked np.array [intersections]
+                        actions = np.stack([ag.sample() for ag in self.agents])  # checked np.array [intersections]
                     reward_list = []
                     for _ in range(self.action_interval):
-                        obs, rewards, dones, _ = self.env.step(actions)  # checked : np.array [intersection, feature]
+                        obs, rewards, dones, _ = self.env.step(np.squeeze(actions))  # reward: [num_agent, subagent]
                         i += 1  # reward: checked np.array [intersection, 1]
-                        reward_list.append(rewards)
+                        reward_list.append(np.stack(rewards))
                     rewards = np.mean(reward_list, axis=0)  # TODO: checked [intersections, 1]
-                    episodes_rewards += rewards  # TODO: check accumulation
+                    episodes_rewards += np.squeeze(rewards)  # TODO: check accumulation
 
-                    cur_phase = self.agent.get_phase()
-                    '''
-                    TODO
-                    1. multi_agent, loop
-                    2. remember order and content
-                    '''
+                    cur_phase = np.stack([ag.get_phase() for ag in self.agents])
                     # TODO: construct database here
-                    self.agent.remember(last_obs, last_phase, actions, rewards, obs, cur_phase,
-                                        f'{e}_{i//self.action_interval}')
-
+                    for idx, ag in enumerate(self.agents):
+                        ag.remember(last_obs[idx], last_phase[idx], actions[idx], rewards[idx],
+                                    obs[idx], cur_phase[idx], f'{e}_{i//self.action_interval}_{ag.rank}')
                     flush += 1
                     if flush == self.buffer_size - 1:
                         flush = 0
-                        # TODO multi_agent, loop
-                        self.dataset.flush(self.agent.replay_buffer)
+                        self.dataset.flush([ag.replay_buffer for ag in self.agents])
 
                     episodes_decision_num += 1
                     total_decision_num += 1
@@ -120,12 +122,13 @@ class TSCTrainer(BaseTrainer):
                     """
                     cur_loss_q = self.agents.replay()  # TODO: train here
                     """
-                    cur_loss_q = self.agent.train()  # TODO: train here
+
+                    cur_loss_q = np.stack([ag.train() for ag in self.agents])  # TODO: train here
 
                     episode_loss.append(cur_loss_q)
                 if total_decision_num > self.learning_start and \
                         total_decision_num % self.update_target_rate == self.update_target_rate - 1:
-                    self.agent.update_target_network()
+                    [ag.update_target_network() for ag in self.agents]
 
                 if all(dones):
                     break
@@ -140,7 +143,7 @@ class TSCTrainer(BaseTrainer):
                 "step:{}/{}, q_loss:{}, rewards:{}".format(i, self.episodes,
                                                            mean_loss, mean_reward))
             if e % self.save_rate == self.save_rate - 1:
-                self.agent.save_model(e=e)
+                [ag.save_model(e=e) for ag in self.agents]
             self.logger.info(
                 "episode:{}/{}, average travel time:{}".format(e, self.episodes, cur_travel_time))
             for j in range(len(self.world.intersections)):
@@ -148,8 +151,8 @@ class TSCTrainer(BaseTrainer):
                     "intersection:{}, mean_episode_reward:{}".format(j, episodes_rewards[j] / episodes_decision_num))
             if self.test_when_train:
                 self.train_test(e)
-        self.dataset.flush(self.agent.queue)
-        self.agent.save_model(e=self.episodes)
+        self.dataset.flush([ag.replaybuffer for ag in self.agents])
+        [ag.save_model(e=self.episodes) for ag in self.agents]
 
     def train_test(self, e):
         obs = self.env.reset()
@@ -157,15 +160,18 @@ class TSCTrainer(BaseTrainer):
         eps_nums = 0
         for i in range(self.test_steps):
             if i % self.action_interval == 0:
-                phases = self.agent.get_phase()
-                actions = self.agent.get_action(obs, phases, test=True)
+                phases = np.stack([ag.get_phase() for ag in self.agents])
+                actions = []
+                for idx, ag in enumerate(self.agents):
+                    actions.append(ag.get_action(obs[idx], phases[idx], test=True))
+                    actions = np.stack(actions)
                 rewards_list = []
                 for _ in range(self.action_interval):
-                    obs, rewards, dones, _ = self.env.step(actions)
+                    obs, rewards, dones, _ = self.env.step(np.squeeze(actions))  # make sure action is [intersection]
                     i += 1
-                    rewards_list.append(rewards)
+                    rewards_list.append(np.stack(rewards))
                 rewards = np.mean(rewards_list, axis=0)
-                ep_rwds += rewards
+                ep_rwds += np.squeeze(rewards)
                 eps_nums += 1
             if all(dones):
                 break
@@ -179,22 +185,25 @@ class TSCTrainer(BaseTrainer):
 
     def test(self, drop_load=False):
         if not drop_load:
-            self.agent.load_model(self.episodes)
+            [ag.load_model(self.episodes) for ag in self.agents]
         attention_mat_list = []
         obs = self.env.reset()
-        ep_rwds = [0 for i in range(len(self.world.intersections))]
+        ep_rwds = np.array([0 for _ in range(len(self.world.intersections))], dtype=np.float32)
         eps_nums = 0
         for i in range(self.test_steps):
             if i % self.action_interval == 0:
-                phases = self.agent.get_phase()
-                actions = self.agent.get_action(obs, phases, test=True)
+                phases = np.stack([ag.get_phase() for ag in self.agents])
+                actions = []
+                for idx, ag in enumerate(self.agents):
+                    actions.append(ag.get_action(obs[idx], phases[idx], test=True))
+                    actions = np.stack(actions)
                 rewards_list = []
                 for _ in range(self.action_interval):
-                    obs, rewards, dones, _ = self.env.step(actions)
+                    obs, rewards, dones, _ = self.env.step(np.squeeze(actions))
                     i += 1
-                    rewards_list.append(rewards)
+                    rewards_list.append(np.stack(rewards))
                 rewards = np.mean(rewards_list, axis=0)
-                ep_rwds += rewards
+                ep_rwds += np.squeeze(rewards)
                 eps_nums += 1
             if all(dones):
                 break
