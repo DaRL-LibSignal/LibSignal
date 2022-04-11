@@ -28,6 +28,7 @@ class BaseTrainer(ABC):
         self.env = None
         self.world = None
         self.agents = None
+        # self.agents = []
         self.metric = None
 
         if torch.cuda.is_available() and not self.cpu:
