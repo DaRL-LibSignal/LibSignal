@@ -51,11 +51,7 @@ class Runner:
 
     def run(self):
         self.config_registry()
-<<<<<<< HEAD
         logger = setup_logging(self.config)
-=======
-        logger = setup_logging()
->>>>>>> 2312795e34799b1a21329694f2158d6e06f582cd
         self.trainer = Registry.mapping['trainer_mapping'][self.config['task']](self.config, logger)
         self.task = Registry.mapping['task_mapping'][self.config['task']](self.trainer)
         start_time = time.time()

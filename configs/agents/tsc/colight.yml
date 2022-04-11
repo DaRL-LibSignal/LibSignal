@@ -13,15 +13,15 @@ model:
   epsilon_decay: 0.9995
   epsilon_min: 0.01
   grad_clip: 5.0
-  neighbor_num: 4
-  neighbor_edge_num: 4
-  n_layers: 1
-  input_dim: [128, 128]
-  output_dim: [128, 128]
-  node_emb_dim: [128, 128]
-  num_heads: [5, 5]
-  node_layer_dims_each_head: [16, 16]
-  output_layers: []
+  NEIGHBOR_NUM: 4
+  NEIGHBOR_EDGE_NUM: 4
+  N_LAYERS: 1
+  INPUT_DIM: [128, 128]
+  OUTPUT_DIM: [128, 128]
+  NODE_EMB_DIM: [128, 128]
+  NUM_HEADS: [5, 5]
+  NODE_LAYER_DIMS_EACH_HEAD: [16, 16]
+  OUTPUT_LAYERS: []
 
 
 trainer:
@@ -46,6 +46,7 @@ logger:
   save_dir: "model"
   data_dir: "dataset"
   get_attention: False
+  ave_model: True
   save_model: True
   save_rate: 20
   train_model: True
@@ -56,17 +57,17 @@ logger:
 traffic:
   one_hot: True
   phase: False
-  action_pattern: "set"
-  min_action_time: 10
-  yellow_time: 5
-  all_red_time: 0
-  num_phases: 8
-  num_lanes: 1
-  action_dim: 2
-  measure_time: 10
-  if_gui: True
-  debug: False
-  interval: 1
   thread_num: 4
-  savereplay: True
-  rltrafficlight: True
+  ACTION_PATTERN: "set"
+  MIN_ACTION_TIME: 10
+  YELLOW_TIME: 5
+  ALL_RED_TIME: 0
+  NUM_PHASES: 8
+  NUM_LANES: 1
+  ACTION_DIM: 2
+  MEASURE_TIME: 10
+  IF_GUI: True
+  DEBUG: False
+  INTERVAL: 1
+  SAVEREPLAY: True
+  RLTRAFFICLIGHT: True
