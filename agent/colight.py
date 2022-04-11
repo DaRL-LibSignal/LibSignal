@@ -23,7 +23,7 @@ from torch_geometric.utils import add_self_loops
 @Registry.register_model('colight')
 class CoLightAgent(RLAgent):
     #  TODO: test multiprocessing effect on agents or need deep copy here
-    def __init__(self, world, prefix):
+    def __init__(self, world, rank):
         super().__init__(world)
         """
         multi-agents in one model-> modify self.action_space, self.reward_generator, self.ob_generator here
@@ -89,7 +89,7 @@ class CoLightAgent(RLAgent):
 
         self.get_attention = Registry.mapping['logger_mapping']['logger_setting'].param['get_attention']
         # train parameters
-        self.prefix = prefix
+        self.rank = rank
         self.gamma = Registry.mapping['model_mapping']['model_setting'].param['gamma']
         self.grad_clip = Registry.mapping['model_mapping']['model_setting'].param['grad_clip']
         self.epsilon = Registry.mapping['model_mapping']['model_setting'].param['epsilon']

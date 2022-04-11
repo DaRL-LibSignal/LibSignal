@@ -21,7 +21,6 @@ class TSCEnv(gym.Env):
         actions is a list of actions, agents is a list of agents.
         :param metric: metrics to evaluate policy.
         """
-
         self.world = world
         self.eng = self.world.eng
         self.n_agents = len(agents) * agents[0].sub_agents
@@ -44,8 +43,8 @@ class TSCEnv(gym.Env):
             obs = [agent.get_ob() for agent in self.agents]
             rewards = [agent.get_reward() for agent in self.agents]
         else:
-            obs = self.agents[0].get_ob()
-            rewards = self.agents[0].get_reward()
+            obs = [self.agents[0].get_ob()]
+            rewards = [self.agents[0].get_reward()]
         dones = [False] * self.n_agents
         # infos = {"metric": self.metric.update()}
         infos = {}
@@ -55,8 +54,8 @@ class TSCEnv(gym.Env):
     def reset(self):
         self.world.reset()
         if not len(self.agents) == 1:
-            obs = [agent.get_ob() for agent in self.agents]
+            obs = [agent.get_ob() for agent in self.agents]  # [agent, sub_agent==1, feature]
         else:
-            obs = self.agents[0].get_ob()
+            obs = [self.agents[0].get_ob()]  # [agent==1, sub_agent, feature]
         return obs
 
