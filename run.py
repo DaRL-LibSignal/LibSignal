@@ -37,7 +37,7 @@ class Runner:
     def config_registry(self):
         cityflow_setting = json.load(open(self.config['cityflow_path'], 'r'))
         roadnet_path = os.path.join(cityflow_setting['dir'], cityflow_setting['roadnetFile'])
-        if self.config['model'].get('graphic'):
+        if self.config['model'].get('graphic',False):
             interface.Graph_World_Interface(roadnet_path)  # register graphic parameters in Registry class
         interface.Logger_path_Interface(self.config['task'], self.config['agent'], self.config['prefix'])
         if not os.path.exists(Registry.mapping['logger_mapping']['output_path'].path):
@@ -49,7 +49,7 @@ class Runner:
 
     def run(self):
         self.config_registry()
-        logger = setup_logging(self.config['prefix'])
+        logger = setup_logging(self.config)
         self.trainer = Registry.mapping['trainer_mapping'][self.config['task']](self.config, logger)
         self.task = Registry.mapping['task_mapping'][self.config['task']](self.trainer)
         start_time = time.time()

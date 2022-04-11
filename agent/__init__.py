@@ -3,3 +3,4 @@ from .rl_agent import RLAgent
 from .max_pressure_agent import MaxPressureAgent
 from .sotl_agent import SOTLAgent
 from .colight import  CoLightAgent
+from .frap import FRAP_DQNAgent

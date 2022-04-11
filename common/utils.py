@@ -20,7 +20,7 @@ class SeverityLevelBetween(logging.Filter):
         return self.min_level <= record.levelno < self.max_level
 
 
-def setup_logging(prefix):
+def setup_logging(config):
     root = logging.getLogger()
 
     # Perform setup only if logging has not been configured
@@ -52,7 +52,7 @@ def setup_logging(prefix):
             os.makedirs(logger_dir)
         handler_file = logging.FileHandler(os.path.join(
             logger_dir,
-            f"CoLight_{datetime.now().strftime('%Y%m%d-%H%M%S')}.log")
+            f"{config['model']['name']}_{datetime.now().strftime('%Y%m%d-%H%M%S')}.log")
         )
         handler_file.setLevel(logging.INFO)
         root.addHandler(handler_file)

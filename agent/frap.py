@@ -11,7 +11,7 @@ from common.registry import Registry
 # import torch.optim as optim
 # from torchsummary import summary
 
-@Registry.register_model('model_frap')
+@Registry.register_model('frap')
 class FRAP_DQNAgent(RLAgent):
     
     # def __init__(self, action_space, ob_generator, reward_generator, world, config, iid):
@@ -24,9 +24,9 @@ class FRAP_DQNAgent(RLAgent):
         self.ob_length = self.ob_generator.ob_length
 
         self.dic_agent_conf = Registry.mapping['model_mapping']['model_setting']
-        self.dic_traffic_env_conf = convert_str2int(Registry.mapping['world_mapping']['traffic_setting'])
-        self.buffer_size = Registry.mapping['task_mapping']['task_setting'].param['buffer_size']
-        self.replay_buffer = deque(maxlen=self.dic_agent_conf.param["max_len"])
+        self.dic_traffic_env_conf = Registry.mapping['world_mapping']['traffic_setting']
+        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
+        self.replay_buffer = deque(maxlen=self.buffer_size)
         # self.learning_start = Registry.mapping['task_mapping']['task_setting'].param['learning_start']
         # self.update_model_freq = Registry.mapping['task_mapping']['task_setting'].param["update_model_rate"]
         # self.update_target_model_freq = Registry.mapping['task_mapping']['task_setting'].param["update_target_rate"]
@@ -283,22 +283,22 @@ def relation(x, dic_traffic_env_conf):
     constant = constant.repeat(batch_size, 1, 1)
     return constant
 
-def convert_str2int(traffic_settings):
-        """
-        convert from string to number,including:
-        traffic setting[phase_expansion]
-        traffic setting[phase_expansion_4_lane]
-        """
-        dic={}
-        for x in traffic_settings.param['phase_expansion']:
-            dic[int(x)]=traffic_settings.param['phase_expansion'][x]
-        traffic_settings.param['phase_expansion'].clear()    
-        traffic_settings.param['phase_expansion']=copy.deepcopy(dic)
+# def convert_str2int(traffic_settings):
+#         """
+#         convert from string to number,including:
+#         traffic setting[phase_expansion]
+#         traffic setting[phase_expansion_4_lane]
+#         """
+#         dic={}
+#         for x in traffic_settings.param['phase_expansion']:
+#             dic[int(x)]=traffic_settings.param['phase_expansion'][x]
+#         traffic_settings.param['phase_expansion'].clear()    
+#         traffic_settings.param['phase_expansion']=copy.deepcopy(dic)
         
-        dic.clear()
+#         dic.clear()
         
-        for x in traffic_settings.param['phase_expansion_4_lane']:
-            dic[int(x)]=traffic_settings.param['phase_expansion_4_lane'][x]
-        traffic_settings.param['phase_expansion_4_lane'].clear()
-        traffic_settings.param['phase_expansion_4_lane']=dic
-        return traffic_settings
+#         for x in traffic_settings.param['phase_expansion_4_lane']:
+#             dic[int(x)]=traffic_settings.param['phase_expansion_4_lane'][x]
+#         traffic_settings.param['phase_expansion_4_lane'].clear()
+#         traffic_settings.param['phase_expansion_4_lane']=dic
+#         return traffic_settings

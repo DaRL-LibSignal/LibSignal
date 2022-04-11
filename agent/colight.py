@@ -242,28 +242,28 @@ class ColightNet(nn.Module):
         self.action_space = gym.spaces.Discrete(output_dim)
         self.features = input_dim
         self.module_list = nn.ModuleList()
-        self.embedding_MLP = Embedding_MLP(self.features, layers=self.model_dict.get('NODE_EMB_DIM'))
-        for i in range(self.model_dict.get('N_LAYERS')):
-            block = MultiHeadAttModel(d=self.model_dict.get('INPUT_DIM')[i],
-                                      dv=self.model_dict.get('NODE_LAYER_DIMS_EACH_HEAD')[i],
-                                      d_out=self.model_dict.get('OUTPUT_DIM')[i],
-                                      nv=self.model_dict.get('NUM_HEADS')[i],
+        self.embedding_MLP = Embedding_MLP(self.features, layers=self.model_dict.get('node_emb_dim'))
+        for i in range(self.model_dict.get('n_layers')):
+            block = MultiHeadAttModel(d=self.model_dict.get('input_dim')[i],
+                                      dv=self.model_dict.get('node_layer_dims_each_head')[i],
+                                      d_out=self.model_dict.get('output_dim')[i],
+                                      nv=self.model_dict.get('num_heads')[i],
                                       suffix=i)
             self.module_list.append(block)
         output_dict = OrderedDict()
 
-        if len(self.model_dict['OUTPUT_LAYERS']) != 0:
+        if len(self.model_dict['output_layers']) != 0:
             # TODO: dubug this branch
-            for l_idx, l_size in enumerate(self.model_dict['OUTPUT_LAYERS']):
+            for l_idx, l_size in enumerate(self.model_dict['output_layers']):
                 name = f'output_{l_idx}'
                 if l_idx == 0:
                     h = nn.Linear(block.d_out, l_size)
                 else:
-                    h = nn.Linear(self.model_dict.get('OUTPUT_LAYERS')[l_idx - 1], l_size)
+                    h = nn.Linear(self.model_dict.get('output_layers')[l_idx - 1], l_size)
                 output_dict.update({name: h})
                 name = f'relu_{l_idx}'
                 output_dict.update({name: nn.ReLU})
-            out = nn.Linear(self.model_dict['OUTPUT_LAYERS'][-1], self.action_space.n)
+            out = nn.Linear(self.model_dict['output_layers'][-1], self.action_space.n)
         else:
             out = nn.Linear(block.d_out, self.action_space.n)
         name = f'output'
