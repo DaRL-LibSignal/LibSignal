@@ -2,6 +2,7 @@ import pickle
 import numpy as np 
 import json
 import os
+import sys
 import yaml
 import copy
 import logging
@@ -25,12 +26,12 @@ def setup_logging(config):
 
     # Perform setup only if logging has not been configured
     if not root.hasHandlers():
-        root.setLevel(logging.INFO)
+        root.setLevel(logging.DEBUG)
         log_formatter = logging.Formatter(
             "%(asctime)s (%(levelname)s): %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
-        """
+
         # Send INFO to stdout
         handler_out = logging.StreamHandler(sys.stdout)
         handler_out.addFilter(
@@ -44,17 +45,18 @@ def setup_logging(config):
         handler_err.setLevel(logging.WARNING)
         handler_err.setFormatter(log_formatter)
         root.addHandler(handler_err)
-        """
+
         logger_dir = os.path.join(
             Registry.mapping['logger_mapping']['output_path'].path,
             Registry.mapping['logger_mapping']['logger_setting'].param['log_dir'])
         if not os.path.exists(logger_dir):
             os.makedirs(logger_dir)
+
         handler_file = logging.FileHandler(os.path.join(
             logger_dir,
             f"{config['model']['name']}_{datetime.now().strftime('%Y%m%d-%H%M%S')}.log")
         )
-        handler_file.setLevel(logging.INFO)
+        handler_file.setLevel(logging.DEBUG)  # TODO: SET LEVEL
         root.addHandler(handler_file)
         return root
 
