@@ -100,7 +100,6 @@ class CoLightAgent(RLAgent):
         self.batch_size = Registry.mapping['model_mapping']['model_setting'].param['batch_size']
 
         self.model = self._build_model()
-        print(self.model)
         self.target_model = self._build_model()
         self.update_target_network()
         self.criterion = nn.MSELoss(reduction='mean')
@@ -129,7 +128,7 @@ class CoLightAgent(RLAgent):
         phase = []  # sub_agents
         for i in range(len(self.phase_generator)):
             phase.append((self.phase_generator[i][1].generate()))
-        phase = np.array(phase)
+        phase = np.concatenate(phase, dtype=np.int8)
         return phase
 
 
@@ -221,7 +220,8 @@ class CoLightAgent(RLAgent):
         self.target_model.load_state_dict(weights)
 
     def load_model(self, e):
-        model_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path, 'model', f'{e}.pt')
+        model_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+                                  'model', f'{e}_{self.rank}.pt')
         self.model = self._build_model()
         self.model.load_state_dict(torch.load(model_name))
         self.target_model = self._build_model()
@@ -231,7 +231,7 @@ class CoLightAgent(RLAgent):
         path = os.path.join(Registry.mapping['logger_mapping']['output_path'].path, 'model')
         if not os.path.exists(path):
             os.makedirs(path)
-        model_name = os.path.join(path, f'{e}.pt')
+        model_name = os.path.join(path, f'{e}_{self.rank}.pt')
         torch.save(self.target_model.state_dict(), model_name)
 
 
