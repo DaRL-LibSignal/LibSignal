@@ -110,7 +110,7 @@ class TSCTrainer(BaseTrainer):
                     flush += 1
                     if flush == self.buffer_size - 1:
                         flush = 0
-                        self.dataset.flush([ag.replay_buffer for ag in self.agent])
+                        self.dataset.flush([ag.replay_buffer for ag in self.agents])
 
                     episodes_decision_num += 1
                     total_decision_num += 1
