@@ -22,11 +22,12 @@ class OnFlyDataset(object):
         self.ep = ep
         self.act = step//interval
 
-    def flush(self, dq):
+    def flush(self, ldq):
         self.txn = self.env.begin(write=True)
-        for item in dq:
-            self.txn.put(item[0].encode(), str(item[1]).encode())
-            self.num_samples += 1
+        for dq in ldq:
+            for item in dq:
+                self.txn.put(item[0].encode(), str(item[1]).encode())
+                self.num_samples += 1
         self.txn.commit()
         self.txn = None
 

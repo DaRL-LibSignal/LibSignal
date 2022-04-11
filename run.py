@@ -6,6 +6,7 @@ from common.registry import Registry
 from common import interface
 from common.utils import *
 import time
+from datetime import datetime
 import argparse
 
 
@@ -17,9 +18,9 @@ parser.add_argument('--ngpu', type=str, default="-1", help='gpu to be used')  # 
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
 parser.add_argument('-a', '--agent', type=str, default="colight", help="agent type of agents in RL environment")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
-parser.add_argument('-c', '--cityflow_path', type=str, default='configs/cityflow4X4.cfg', help='path to cityflow path')
-parser.add_argument('-p', '--prefix', type=str, default='0', help="the number of predix in this running process")
-parser.add_argument('-s', '--seed', type=int, default=None, help="seed for pytorch backend")
+parser.add_argument('--cityflow_path', type=str, default='configs/cityflow4X4.cfg', help='path to cityflow path')
+parser.add_argument('--prefix', type=str, default='0', help="the number of predix in this running process")
+parser.add_argument('--seed', type=int, default=None, help="seed for pytorch backend")
 
 parser.add_argument('--mask_type', type=int, default=0, help='used to specify the type of softmax')
 parser.add_argument('--debug', type=bool, default=False)
@@ -36,6 +37,7 @@ class Runner:
 
     def config_registry(self):
         cityflow_setting = json.load(open(self.config['cityflow_path'], 'r'))
+
         roadnet_path = os.path.join(cityflow_setting['dir'], cityflow_setting['roadnetFile'])
         if self.config['model'].get('graphic'):
             interface.Graph_World_Interface(roadnet_path)  # register graphic parameters in Registry class
@@ -49,7 +51,7 @@ class Runner:
 
     def run(self):
         self.config_registry()
-        logger = setup_logging(self.config['prefix'])
+        logger = setup_logging()
         self.trainer = Registry.mapping['trainer_mapping'][self.config['task']](self.config, logger)
         self.task = Registry.mapping['task_mapping'][self.config['task']](self.trainer)
         start_time = time.time()
