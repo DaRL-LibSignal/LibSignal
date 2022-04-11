@@ -26,8 +26,10 @@ class BaseTask:
 class TSCTask(BaseTask):
     def run(self):
         try:
-            self.trainer.train()
-            self.trainer.test()
+            if Registry.mapping['logger_mapping']['logger_setting'].param['train_model']:
+                self.trainer.train()
+            if Registry.mapping['logger_mapping']['logger_setting'].param['test_model']:
+                self.trainer.test()
         except RuntimeError as e:
             self._process_error(e)
             raise e

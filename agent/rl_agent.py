@@ -8,9 +8,8 @@ from generator.intersection_phase import IntersectionPhaseGenerator
 @Registry.register_model('rl')
 class RLAgent(BaseAgent):
     def __init__(self, world, intersection_id='intersection_1_1'):
-        super().__init__()
+        super().__init__(world)
         self.id = intersection_id
-        self.world = world
         self.action_space = gym.spaces.Discrete(len(world.id2intersection[intersection_id].phases))
         self.ob_generator = LaneVehicleGenerator(self.world, world.id2intersection[self.id],
                                                  ["lane_count"], in_only=True, average=None)
