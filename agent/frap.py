@@ -16,7 +16,7 @@ class FRAP_DQNAgent(RLAgent):
     
     # def __init__(self, action_space, ob_generator, reward_generator, world, config, iid):
     #     super().__init__(action_space, ob_generator, reward_generator)
-    def __init__(self, world, iid, prefix):
+    def __init__(self, world, iid):
         super().__init__(world,iid)
         
         self.world = world

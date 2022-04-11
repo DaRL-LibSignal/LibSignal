@@ -115,8 +115,7 @@ class TSCTrainer(BaseTrainer):
                     episodes_decision_num += 1
                     total_decision_num += 1
                     last_obs = obs
-                    
-                # TODO multi_agent, loop
+
                 if total_decision_num > self.learning_start and\
                         total_decision_num % self.update_model_rate == self.update_model_rate - 1:
                     """
