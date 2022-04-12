@@ -1,4 +1,5 @@
 import gym
+import numpy as np
 
 
 class TSCEnv(gym.Env):
@@ -37,11 +38,13 @@ class TSCEnv(gym.Env):
         :param actions: keep action as N_agents * 1
         """
         assert len(actions) == self.n_agents
-
         self.world.step(actions)
+
         if not len(self.agents) == 1:
             obs = [agent.get_ob() for agent in self.agents]
+            # obs = np.expand_dims(np.array(obs),axis=1)
             rewards = [agent.get_reward() for agent in self.agents]
+            # rewards = np.expand_dims(np.array(rewards),axis=1)
         else:
             obs = [self.agents[0].get_ob()]
             rewards = [self.agents[0].get_reward()]
@@ -55,6 +58,7 @@ class TSCEnv(gym.Env):
         self.world.reset()
         if not len(self.agents) == 1:
             obs = [agent.get_ob() for agent in self.agents]  # [agent, sub_agent==1, feature]
+            # obs = np.expand_dims(np.array(obs),axis=1)
         else:
             obs = [self.agents[0].get_ob()]  # [agent==1, sub_agent, feature]
         return obs

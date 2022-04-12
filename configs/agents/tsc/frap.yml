@@ -30,6 +30,7 @@ trainer:
 
 logger:
   log_dir: "logger"
+  replay_dir: "replay"
   save_dir: "model"
   data_dir: "dataset"
   get_attention: False

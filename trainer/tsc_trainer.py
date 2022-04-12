@@ -57,6 +57,8 @@ class TSCTrainer(BaseTrainer):
 
     def create_agents(self):
         self.agents = []
+        # for i in self.world.intersections:
+        #     self.agents.append(Registry.mapping['model_mapping'][self.args['agent']](self.world, i.id))
         agent = Registry.mapping['model_mapping'][self.args['agent']](self.world, 0)
         num_agent = int(len(self.world.intersections) / agent.sub_agents)
         self.agents.append(agent)  # initialized N agents for traffic light control
@@ -91,12 +93,12 @@ class TSCTrainer(BaseTrainer):
                         actions = []
                         for idx, ag in enumerate(self.agents):
                             actions.append(ag.get_action(last_obs[idx], last_phase[idx], test=False))
-                            actions = np.stack(actions)
+                        actions = np.stack(actions)
                     else:
                         actions = np.stack([ag.sample() for ag in self.agents])  # checked np.array [intersections]
                     reward_list = []
                     for _ in range(self.action_interval):
-                        obs, rewards, dones, _ = self.env.step(np.squeeze(actions))  # reward: [num_agent, subagent]
+                        obs, rewards, dones, _ = self.env.step(np.squeeze(actions))  # rewards: [num_agent, sub_agent]
                         i += 1  # reward: checked np.array [intersection, 1]
                         reward_list.append(np.stack(rewards))
                     rewards = np.mean(reward_list, axis=0)  # TODO: checked [intersections, 1]
@@ -110,7 +112,7 @@ class TSCTrainer(BaseTrainer):
                     flush += 1
                     if flush == self.buffer_size - 1:
                         flush = 0
-                        self.dataset.flush([ag.replay_buffer for ag in self.agents])
+                        # self.dataset.flush([ag.replay_buffer for ag in self.agents])
 
                     episodes_decision_num += 1
                     total_decision_num += 1
@@ -150,7 +152,7 @@ class TSCTrainer(BaseTrainer):
                     "intersection:{}, mean_episode_reward:{}".format(j, episodes_rewards[j] / episodes_decision_num))
             if self.test_when_train:
                 self.train_test(e)
-        self.dataset.flush([ag.replaybuffer for ag in self.agents])
+        # self.dataset.flush([ag.replay_buffer for ag in self.agents])
         [ag.save_model(e=self.episodes) for ag in self.agents]
 
     def train_test(self, e):
@@ -163,7 +165,7 @@ class TSCTrainer(BaseTrainer):
                 actions = []
                 for idx, ag in enumerate(self.agents):
                     actions.append(ag.get_action(obs[idx], phases[idx], test=True))
-                    actions = np.stack(actions)
+                actions = np.stack(actions)
                 rewards_list = []
                 for _ in range(self.action_interval):
                     obs, rewards, dones, _ = self.env.step(np.squeeze(actions))  # make sure action is [intersection]
@@ -195,7 +197,7 @@ class TSCTrainer(BaseTrainer):
                 actions = []
                 for idx, ag in enumerate(self.agents):
                     actions.append(ag.get_action(obs[idx], phases[idx], test=True))
-                    actions = np.stack(actions)
+                actions = np.stack(actions)
                 rewards_list = []
                 for _ in range(self.action_interval):
                     obs, rewards, dones, _ = self.env.step(np.squeeze(actions))

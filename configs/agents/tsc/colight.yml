@@ -46,7 +46,6 @@ logger:
   save_dir: "model"
   data_dir: "dataset"
   get_attention: False
-  ave_model: True
   save_model: True
   save_rate: 20
   train_model: True
