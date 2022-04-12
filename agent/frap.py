@@ -1,4 +1,3 @@
-import copy
 from . import RLAgent
 import random
 import numpy as np
@@ -8,28 +7,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from common.registry import Registry
-# import torch.optim as optim
-# from torchsummary import summary
+import gym
+from generator.lane_vehicle import LaneVehicleGenerator
+from generator.intersection_phase import IntersectionPhaseGenerator
 
 @Registry.register_model('frap')
 class FRAP_DQNAgent(RLAgent):
-    
-    # def __init__(self, action_space, ob_generator, reward_generator, world, config, iid):
-    #     super().__init__(action_space, ob_generator, reward_generator)
-    def __init__(self, world, iid):
-        super().__init__(world,iid)
+    def __init__(self, world, rank):
+        super().__init__(world)
         
         self.world = world
-        # self.iid = iid
+        self.rank = rank
         self.ob_length = self.ob_generator.ob_length
 
         self.dic_agent_conf = Registry.mapping['model_mapping']['model_setting']
         self.dic_traffic_env_conf = Registry.mapping['world_mapping']['traffic_setting']
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
-        # self.learning_start = Registry.mapping['task_mapping']['task_setting'].param['learning_start']
-        # self.update_model_freq = Registry.mapping['task_mapping']['task_setting'].param["update_model_rate"]
-        # self.update_target_model_freq = Registry.mapping['task_mapping']['task_setting'].param["update_target_rate"]
         self.gamma = self.dic_agent_conf.param["gamma"]
         self.epsilon = self.dic_agent_conf.param["epsilon"]
         self.epsilon_min = self.dic_agent_conf.param["epsilon_min"]
@@ -46,12 +40,21 @@ class FRAP_DQNAgent(RLAgent):
 
         self.action = 0
         self.last_action = 0
-        self.replay_buffer = []
         self.if_test = 0
 
         self.optimizer = torch.optim.Adam(self.model.parameters(
         ), lr=0.005, eps=1e-08)
         self.loss_func = nn.MSELoss()
+
+        self.id = self.world.intersection_ids[self.rank]
+        self.action_space = gym.spaces.Discrete(len(world.id2intersection[self.id].phases))
+        self.ob_generator = LaneVehicleGenerator(self.world, world.id2intersection[self.id],
+                                                 ["lane_count"], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, world.id2intersection[self.id],
+                                                          ['phase'], targets=['cur_phase'], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, world.id2intersection[self.id],
+                                                     ["lane_waiting_count"], in_only=True, average="all",
+                                                     negative=True)
 
     def _build_model(self):
         model = FRAP(
@@ -77,8 +80,9 @@ class FRAP_DQNAgent(RLAgent):
             output[i] = torch.from_numpy(state[i]).float()
         return output
 
-    def get_action(self, ob):
-        if not self.if_test and np.random.rand() <= self.epsilon:
+    def get_action(self, ob, phase, test):
+        # TODO check self.test->test
+        if not test and np.random.rand() <= self.epsilon:
             self.action = self.action_space.sample()
             return self.action
         state = {}
@@ -94,17 +98,19 @@ class FRAP_DQNAgent(RLAgent):
         weights = self.model.state_dict()
         self.target_model.load_state_dict(weights)
 
-    def remember(self, ob, action, reward, next_ob):
+    def remember(self, ob, last_phase, action, reward, next_ob,cur_phase, key):
         last_state = {"cur_phase": self.last_action, "lane_num_vehicle": ob}
         state = {"cur_phase": action, "lane_num_vehicle": next_ob}
-        self.replay_buffer.append((self.convert_state_to_input(
-            last_state), action, reward, self.convert_state_to_input(state)))
+        self.replay_buffer.append((key, (self.convert_state_to_input(last_state), action, reward, self.convert_state_to_input(state))))
+        # self.replay_buffer.append((self.convert_state_to_input(
+        #     last_state), action, reward, self.convert_state_to_input(state)))
 
     def train(self):
         if len(self.replay_buffer) < self.batch_size:
             return
         samples = random.sample(self.replay_buffer, self.batch_size)
-        for input_list, action, reward, next_input in samples:
+        for _, data in samples:
+            input_list, action, reward, next_input = data
             out = self.target_model(self.to_tensor(next_input), train=False)
             target = reward + self.gamma * torch.max(out, dim=1)[0]
             target_f = self.model(self.to_tensor(input_list), train=False)
