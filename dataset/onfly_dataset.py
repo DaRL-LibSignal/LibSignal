@@ -27,7 +27,7 @@ class OnFlyDataset(object):
         for dq in ldq:
             for item in dq:
                 self.txn.put(item[0].encode(), str(item[1]).encode())
-                self.num_samples += 1
+            self.num_samples += 1
         self.txn.commit()
         self.txn = None
 

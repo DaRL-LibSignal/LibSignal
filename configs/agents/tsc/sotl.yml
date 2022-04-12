@@ -3,31 +3,25 @@ includes:
 
 
 model:
-  name: dqn
-  graphic: False
-  vehicle_max: 1
-  learning_rate: 0.001
-  batch_size: 64
-  gamma: 0.95
-  epsilon: 0.1
-  epsilon_decay: 0.995
-  epsilon_min: 0.01
-  grad_clip: 5.0
-  NEIGHBOR_NUM: 4
-  NEIGHBOR_EDGE_NUM: 4
+  name: sotl
+  min_green_vehicle: 20
+  max_red_vehicle: 30
+  t_min: 10
 
 
 trainer:
   thread: 4
   ngpu: -1
-  learning_start: 1000
-  buffer_size: 5000
+  episodes: 1
+  buffer_size: 0
   steps: 3600
   test_steps: 3600
   action_interval: 10
-  episodes: 200
-  update_model_rate: 1
-  update_target_rate: 10
+  learning_rate: 0
+  learning_start: 0
+  update_model_rate: 0
+  update_target_rate: 0
+
   # save_dir: data/output_data/task_name/dataset_dir/model_name
   # load_dir: data/output_data/task_name/dataset_dir/model_name
   # log_dir: log/task_name/dataset_dir/model_name/
@@ -36,20 +30,17 @@ trainer:
 logger:
   log_dir: "logger"
   replay_dir: "replay"
-  save_dir: "model"
   data_dir: "dataset"
   get_attention: False
-  ave_model: True
-  save_model: True
-  save_rate: 20
-  train_model: True
+  save_rate: 0
+  train_model: False
   test_model: True
   load_model: False
 
 
 traffic:
-  one_hot: True
-  phase: True
+  one_hot: False
+  phase: False
   ACTION_PATTERN: "set"
   MIN_ACTION_TIME: 10
   YELLOW_TIME: 5

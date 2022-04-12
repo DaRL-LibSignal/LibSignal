@@ -1,9 +1,10 @@
 from . import RLAgent
 from common.registry import Registry
+from agent import utils
 import numpy as np
 import os
 import random
-from collections import OrderedDict, deque
+from collections import deque
 import gym
 
 from generator.lane_vehicle import LaneVehicleGenerator
@@ -32,17 +33,17 @@ class DQNAgent(RLAgent):
 
         # get generator for each DQNAgent
         inter_id = self.world.intersection_ids[self.rank]
-        inter_obj = self.world.intersections[inter_id]
+        inter_obj = self.world.id2intersection[inter_id]
         self.ob_generator = LaneVehicleGenerator(self.world, inter_obj, ['lane_count'], in_only=True, average=None)
         self.phase_generator = IntersectionPhaseGenerator(world, inter_obj, ["phase"],
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_count"],
                                                      in_only=True, average='all', negative=True)
-        self.action_space = gym.spaces.Discrete(len(self.world.intersections[inter_id].phases))
+        self.action_space = gym.spaces.Discrete(len(self.world.id2intersection[inter_id].phases))
 
         if self.phase:
             if self.one_hot:
-                self.ob_length = self.ob_generator.ob_length + len(self.world.intersections[inter_id].phases)
+                self.ob_length = self.ob_generator.ob_length + len(self.world.id2intersection[inter_id].phases)
             else:
                 self.ob_length = self.ob_generator.ob_length + 1
         else:
@@ -58,7 +59,6 @@ class DQNAgent(RLAgent):
         self.batch_size = Registry.mapping['model_mapping']['model_setting'].param['batch_size']
 
         self.model = self._build_model()
-        print(self.model)
         self.target_model = self._build_model()
         self.update_target_network()
         self.criterion = nn.MSELoss(reduction='mean')
@@ -81,7 +81,7 @@ class DQNAgent(RLAgent):
     def get_phase(self):
         phase = []
         phase.append(self.phase_generator.generate())
-        phase = np.array(phase)
+        phase = np.concatenate(phase, dtype=np.int8)
         return phase
 
     def get_action(self, ob, phase, test=False):
@@ -90,9 +90,9 @@ class DQNAgent(RLAgent):
                 return self.sample()
         if self.phase:
             if self.one_hot:
-                feature = np.concatenate(ob, np.eye(phase))
+                feature = np.concatenate([ob, utils.idx2onehot(phase, self.action_space.n)], axis=1)
             else:
-                feature = np.concatenate(ob, phase)
+                feature = np.concatenate([ob, phase], axis=1)
         else:
             feature = ob
         observation = torch.tensor(feature, dtype=torch.float32)
@@ -110,8 +110,62 @@ class DQNAgent(RLAgent):
     def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
         self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
 
-    def _batchwise(self, sample):
-        pass
+    def _batchwise(self, samples):
+        obs_t = np.concatenate([item[1][0] for item in samples])
+        obs_tp = np.concatenate([item[1][4] for item in samples])
+        if self.phase:
+            if self.one_hot:
+                phase_t = np.concatenate([utils.idx2onehot(item[1][1], self.action_space.n) for item in samples])
+                phase_tp = np.concatenate([utils.idx2onehot(item[1][5], self.action_space.n) for item in samples])
+            else:
+                phase_t = np.concatenate([item[1][1] for item in samples])
+                phase_tp = np.concatenate([item[1][5] for item in samples])
+            feature_t = np.concatenate([obs_t, phase_t], axis=1)
+            feature_tp = np.concatenate([obs_tp, phase_tp], axis=1)
+        else:
+            feature_t = obs_t
+            feature_tp = obs_tp
+        state_t = torch.tensor(feature_t, dtype=torch.float32)
+        state_tp = torch.tensor(feature_tp, dtype=torch.float32)
+        rewards = torch.tensor(np.array([item[1][3] for item in samples]), dtype=torch.float32)  # TODO: BETTER WA
+        actions = torch.tensor(np.array([item[1][2] for item in samples]), dtype=torch.long)
+        return state_t, state_tp, rewards, actions
+
+    def train(self):
+        samples = random.sample(self.replay_buffer, self.batch_size)
+        b_t, b_tp, rewards, actions = self._batchwise(samples)
+        out = self.target_model(b_tp, train=False)
+        target = rewards + self.gamma * torch.max(out, dim=1)[0]
+        target_f = self.model(b_t, train=False)
+        for i, action in enumerate(actions):
+            target_f[i][action] = target[i]
+        loss = self.criterion(self.model(b_t, train=True), target_f)
+        self.optimizer.zero_grad()
+        loss.backward()
+        clip_grad_norm_(self.model.parameters(), self.grad_clip)
+        self.optimizer.step()
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+        return loss.clone().detach().numpy()
+
+    def update_target_network(self):
+        weights = self.model.state_dict()
+        self.target_model.load_state_dict(weights)
+
+    def load_model(self, e):
+        model_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+                                  'model', f'{e}_{self.rank}.pt')
+        self.model = self._build_model()
+        self.model.load_state_dict(torch.load(model_name))
+        self.target_model = self._build_model()
+        self.target_model.load_state_dict(torch.load(model_name))
+
+    def save_model(self, e):
+        path = os.path.join(Registry.mapping['logger_mapping']['output_path'].path, 'model')
+        if not os.path.exists(path):
+            os.makedirs(path)
+        model_name = os.path.join(path, f'{e}_{self.rank}.pt')
+        torch.save(self.target_model.state_dict(), model_name)
 
 
 class DQNNet(nn.Module):
