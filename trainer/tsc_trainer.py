@@ -60,6 +60,7 @@ class TSCTrainer(BaseTrainer):
         # for i in self.world.intersections:
         #     self.agents.append(Registry.mapping['model_mapping'][self.args['agent']](self.world, i.id))
         agent = Registry.mapping['model_mapping'][self.args['agent']](self.world, 0)
+        print(agent.model)
         num_agent = int(len(self.world.intersections) / agent.sub_agents)
         self.agents.append(agent)  # initialized N agents for traffic light control
         for i in range(1, num_agent):
@@ -73,7 +74,7 @@ class TSCTrainer(BaseTrainer):
         total_decision_num = 0
         flush = 0
         for e in range(self.episodes):
-            last_obs = self.env.reset()  # checked np.array [agent, sub_agent, feature]-> [16, 1, 12][id]
+            last_obs = self.env.reset()  # agent * [sub_agent, feature]
             if e % self.save_rate == self.save_rate - 1:
                 self.env.eng.set_save_replay(True)
                 if not os.path.exists(self.replay_file_dir):
@@ -87,22 +88,22 @@ class TSCTrainer(BaseTrainer):
             i = 0
             while i < self.steps:
                 if i % self.action_interval == 0:
-                    last_phase = np.stack([ag.get_phase() for ag in self.agents])  # [num_agent, sub_agent, feature]
+                    last_phase = np.stack([ag.get_phase() for ag in self.agents])  # [agent, intersections]
 
                     if total_decision_num > self.learning_start:
                         actions = []
                         for idx, ag in enumerate(self.agents):
                             actions.append(ag.get_action(last_obs[idx], last_phase[idx], test=False))
-                        actions = np.stack(actions)
+                        actions = np.stack(actions)  # [agent, intersections]
                     else:
-                        actions = np.stack([ag.sample() for ag in self.agents])  # checked np.array [intersections]
+                        actions = np.stack([ag.sample() for ag in self.agents])
                     reward_list = []
                     for _ in range(self.action_interval):
-                        obs, rewards, dones, _ = self.env.step(np.squeeze(actions))  # rewards: [num_agent, sub_agent]
-                        i += 1  # reward: checked np.array [intersection, 1]
+                        obs, rewards, dones, _ = self.env.step(np.squeeze(actions))
+                        i += 1
                         reward_list.append(np.stack(rewards))
-                    rewards = np.mean(reward_list, axis=0)  # TODO: checked [intersections, 1]
-                    episodes_rewards += np.squeeze(rewards)  # TODO: check accumulation
+                    rewards = np.mean(reward_list, axis=0)  # [agent, intersection]
+                    episodes_rewards += np.squeeze(rewards)
 
                     cur_phase = np.stack([ag.get_phase() for ag in self.agents])
                     # TODO: construct database here
@@ -141,7 +142,7 @@ class TSCTrainer(BaseTrainer):
             mean_reward = np.sum(episodes_rewards) / episodes_decision_num
             self.writeLog("TRAIN", e, cur_travel_time, mean_loss, mean_reward)
             self.logger.info(
-                "step:{}/{}, q_loss:{}, rewards:{}".format(i, self.episodes,
+                "step:{}/{}, q_loss:{}, rewards:{}".format(i, self.steps,
                                                            mean_loss, mean_reward))
             if e % self.save_rate == self.save_rate - 1:
                 [ag.save_model(e=e) for ag in self.agents]
@@ -180,11 +181,11 @@ class TSCTrainer(BaseTrainer):
         trv_time = self.env.eng.get_average_travel_time()
         # self.logger.info("Final Travel Time is %.4f, and mean rewards %.4f" % (trv_time,mean_rwd))
         self.logger.info(
-            "Test step:{}/{}, travel time :{}, rewards:{}".format(e, self.episodes, trv_time, mean_rwd))
+            "Test step:{}/{}, travel time :{}, rewards:{}".format(e, self.steps, trv_time, mean_rwd))
         self.writeLog("TEST", e, trv_time, 100, mean_rwd)
         return trv_time
 
-    def test(self, drop_load=False):
+    def test(self, drop_load=True):
         if not drop_load:
             [ag.load_model(self.episodes) for ag in self.agents]
         attention_mat_list = []
