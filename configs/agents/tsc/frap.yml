@@ -1,49 +1,49 @@
 includes:
   - configs/agents/tsc/base.yml
 
-trainer: tsc_ng
-
 model:
   name: frap
   n_layers: 2
   rotation: true
   conflict_matrix: true
   merge: multiply
-
-optim:
-  thread: 8
-  ngpu: -1
-  lr: 0.005
-  batch_size: 20
   d_dense: 20
-  max_len: 2000
-  loss_function: mean_squared_error
-  learning_start: 100
-  update_model_freq: 60
-  update_target_model_freq: 80
+  learning_rate: 0.005
+  batch_size: 20
   gamma: 0.95
   epsilon: 0.2
   epsilon_decay: 0.95
   epsilon_min: 0.01
-  steps: 3600
-  test_steps: 3600
+
+trainer: 
+  thread: 4 
+  ngpu: -1 
+  learning_start: 100 
+  buffer_size: 2000 
+  steps: 3600 
+  test_steps: 3600 
   action_interval: 20 
   episodes: 200
-  # test_episodes: 10
-  # TODO need to splice
-  # load_model_dir: ~
-  train_model: true
-  test_model: false
-  save_model: true
-  load_model: false
-  save_rate: 10
-  # TODO need to splice
-  # save_dir: data/output_data/task_name/dataset_dir/model_name
-  # load_dir: data/output_data/task_name/dataset_dir/model_name
-  # log_dir: log/task_name/dataset_dir/model_name/
+  update_model_rate: 60
+  update_target_rate: 80
+  # loss_function: mean_squared_error
 
-traffic_env:
+logger:
+  log_dir: "logger"
+  replay_dir: "replay"
+  save_dir: "model"
+  data_dir: "dataset"
+  get_attention: False
+  save_model: True
+  save_rate: 20
+  train_model: True
+  test_model: False
+  load_model: False
+
+traffic:
   n_leg: 4
+  thread_num: 4
+  debug: False
 
   dic_feature_dim:
     d_cur_phase: !!python/tuple [8]
