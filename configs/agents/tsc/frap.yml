@@ -42,7 +42,7 @@ logger:
 
 traffic:
   n_leg: 4
-  thread_num: 4
+  THREADNUM: 4
   debug: False
 
   dic_feature_dim:

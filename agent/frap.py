@@ -10,6 +10,7 @@ from common.registry import Registry
 import gym
 from generator.lane_vehicle import LaneVehicleGenerator
 from generator.intersection_phase import IntersectionPhaseGenerator
+from common.utils import action_convert
 
 @Registry.register_model('frap')
 class FRAP_DQNAgent(RLAgent):
@@ -18,8 +19,8 @@ class FRAP_DQNAgent(RLAgent):
         
         self.world = world
         self.rank = rank
-        self.ob_length = self.ob_generator.ob_length
-
+        self.id = self.world.intersection_ids[self.rank]
+        # params initial
         self.dic_agent_conf = Registry.mapping['model_mapping']['model_setting']
         self.dic_traffic_env_conf = Registry.mapping['world_mapping']['traffic_setting']
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
@@ -30,31 +31,30 @@ class FRAP_DQNAgent(RLAgent):
         self.epsilon_decay = self.dic_agent_conf.param["epsilon_decay"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
-
         self.num_phases = len(self.dic_traffic_env_conf.param["phase"])
         self.num_actions = len(self.dic_traffic_env_conf.param["phase"])
+
+        # create generators
+        self.action_space = gym.spaces.Discrete(len(self.world.id2intersection[self.id].phases))
+        self.ob_generator = LaneVehicleGenerator(self.world, self.world.id2intersection[self.id],
+                                                 ["lane_count"], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, self.world.id2intersection[self.id],
+                                                          ['phase'], targets=['cur_phase'], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, self.world.id2intersection[self.id],
+                                                     ["lane_waiting_count"], in_only=True, average="all",
+                                                     negative=True)
+        self.ob_length = self.ob_generator.ob_length
 
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_network()
-
-        self.action = 0
-        self.last_action = 0
-        self.if_test = 0
-
         self.optimizer = torch.optim.Adam(self.model.parameters(
         ), lr=0.005, eps=1e-08)
         self.loss_func = nn.MSELoss()
 
-        self.id = self.world.intersection_ids[self.rank]
-        self.action_space = gym.spaces.Discrete(len(world.id2intersection[self.id].phases))
-        self.ob_generator = LaneVehicleGenerator(self.world, world.id2intersection[self.id],
-                                                 ["lane_count"], in_only=True, average=None)
-        self.phase_generator = IntersectionPhaseGenerator(self.world, world.id2intersection[self.id],
-                                                          ['phase'], targets=['cur_phase'], negative=False)
-        self.reward_generator = LaneVehicleGenerator(self.world, world.id2intersection[self.id],
-                                                     ["lane_waiting_count"], in_only=True, average="all",
-                                                     negative=True)
+        self.action = 0
+        self.last_action = 0
+        self.if_test = 0   
 
     def _build_model(self):
         model = FRAP(
@@ -63,15 +63,18 @@ class FRAP_DQNAgent(RLAgent):
 
     def convert_state_to_input(self, s):
         inputs = {}
+        # get one hot dic
         if self.num_phases == 2:
             dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion_4_lane"]
         else:
             dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion"]
         for feature in self.dic_traffic_env_conf.param["list_state_feature"]:
             if feature == "cur_phase":
+                # size:(1,action_space)--(1,8)
                 inputs[feature] = np.array([dic_phase_expansion[s[feature]+1]])
             else:
-                inputs[feature] = np.array([s[feature]])
+                # size:(1,lane_num)--(1,12)
+                inputs[feature] = np.array(s[feature])
         return inputs
 
     def to_tensor(self, state):
@@ -80,11 +83,33 @@ class FRAP_DQNAgent(RLAgent):
             output[i] = torch.from_numpy(state[i]).float()
         return output
 
+    def get_ob(self):
+        x_obs = []
+        x_obs.append(self.ob_generator.generate())
+        x_obs = np.array(x_obs, dtype=np.float32)
+        return x_obs
+
+    def get_reward(self):
+        rewards = []
+        rewards.append(self.reward_generator.generate())
+        rewards = np.squeeze(np.array(rewards)) * 12
+        return rewards
+
+    def get_phase(self):
+        phase = []
+        phase.append(self.phase_generator.generate())
+        # phase = np.concatenate(phase, dtype=np.int8)
+        phase = (np.concatenate(phase)).astype(np.int8)
+        return phase
+
     def get_action(self, ob, phase, test):
-        # TODO check self.test->test
+        """
+        ob:(1,12)
+        phase:(1,)
+        """
         if not test and np.random.rand() <= self.epsilon:
             self.action = self.action_space.sample()
-            return self.action
+            return action_convert(self.action,type='array')
         state = {}
         state["cur_phase"] = self.world.id2intersection[self.id].current_phase
         self.last_action = state["cur_phase"]
@@ -92,7 +117,10 @@ class FRAP_DQNAgent(RLAgent):
         state_ = self.to_tensor(self.convert_state_to_input(state))
         q_values = self.model(state_)
         self.action = torch.argmax(q_values, dim=1).item()
-        return self.action
+        return action_convert(self.action,type='array')
+
+    def sample(self):
+        return np.random.randint(0, self.action_space.n, self.sub_agents)
 
     def update_target_network(self):
         weights = self.model.state_dict()
@@ -100,7 +128,7 @@ class FRAP_DQNAgent(RLAgent):
 
     def remember(self, ob, last_phase, action, reward, next_ob,cur_phase, key):
         last_state = {"cur_phase": self.last_action, "lane_num_vehicle": ob}
-        state = {"cur_phase": action, "lane_num_vehicle": next_ob}
+        state = {"cur_phase": action_convert(action,type='num'), "lane_num_vehicle": next_ob}
         self.replay_buffer.append((key, (self.convert_state_to_input(last_state), action, reward, self.convert_state_to_input(state))))
         # self.replay_buffer.append((self.convert_state_to_input(
         #     last_state), action, reward, self.convert_state_to_input(state)))
@@ -112,6 +140,8 @@ class FRAP_DQNAgent(RLAgent):
         for _, data in samples:
             input_list, action, reward, next_input = data
             out = self.target_model(self.to_tensor(next_input), train=False)
+            # (b,8)
+            # (batch)
             target = reward + self.gamma * torch.max(out, dim=1)[0]
             target_f = self.model(self.to_tensor(input_list), train=False)
             target_f[0][action] = target

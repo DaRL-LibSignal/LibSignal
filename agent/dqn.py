@@ -81,7 +81,8 @@ class DQNAgent(RLAgent):
     def get_phase(self):
         phase = []
         phase.append(self.phase_generator.generate())
-        phase = np.concatenate(phase, dtype=np.int8)
+        # phase = np.concatenate(phase, dtype=np.int8)
+        phase = (np.concatenate(phase)).astype(np.int8)
         return phase
 
     def get_action(self, ob, phase, test=False):

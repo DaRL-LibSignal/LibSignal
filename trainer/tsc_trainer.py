@@ -50,7 +50,7 @@ class TSCTrainer(BaseTrainer):
     def create_world(self):
         # traffic setting is in the world mapping
         self.world = World(self.cityflow_path,
-                           Registry.mapping['world_mapping']['traffic_setting'].param['thread_num'])
+                           Registry.mapping['world_mapping']['traffic_setting'].param['THREADNUM'])
 
     def create_metric(self):
         self.metric = TravelTimeMetric(self.world)
@@ -90,7 +90,7 @@ class TSCTrainer(BaseTrainer):
                 if i % self.action_interval == 0:
                     last_phase = np.stack([ag.get_phase() for ag in self.agents])  # [agent, intersections]
 
-                    if total_decision_num > self.learning_start:
+                    if total_decision_num >=0:
                         actions = []
                         for idx, ag in enumerate(self.agents):
                             actions.append(ag.get_action(last_obs[idx], last_phase[idx], test=False))
@@ -118,7 +118,7 @@ class TSCTrainer(BaseTrainer):
                     episodes_decision_num += 1
                     total_decision_num += 1
                     last_obs = obs
-
+                    
                 if total_decision_num > self.learning_start and\
                         total_decision_num % self.update_model_rate == self.update_model_rate - 1:
                     """
