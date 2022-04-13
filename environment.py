@@ -58,4 +58,3 @@ class TSCEnv(gym.Env):
         else:
             obs = [self.agents[0].get_ob()]  # [agent==1, sub_agent, feature]
         return obs
-
