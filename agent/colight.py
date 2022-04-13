@@ -379,7 +379,7 @@ class MultiHeadAttModel(MessagePassing):
 
         alpha_i = ecexp_i / normst_i  # [5, 64]
         alpha_i_expand = alpha_i.repeat(self.dv, 1, 1)
-        alpha_i_expand = torch.permute(alpha_i_expand, (1, 2, 0))  # [5, 64, 16]
+        alpha_i_expand = alpha_i_expand.permute((1, 2, 0))  # [5, 64, 16]
 
         hidden_neighbor = F.relu(self.hidden_embedding(x_j))
         hidden_neighbor = hidden_neighbor.view(hidden_neighbor.shape[:-1][0], self.nv, self.dv)

@@ -3,6 +3,7 @@ from common.registry import Registry
 import gym
 from generator.lane_vehicle import LaneVehicleGenerator
 from generator.intersection_phase import IntersectionPhaseGenerator
+import random
 
 
 @Registry.register_model('rl')
@@ -30,8 +31,12 @@ class RLAgent(BaseAgent):
         assert len(reward) == 1
         return reward[0]
 
-    def get_action(self, ob, phase):
+    def get_action(self):
         return self.action_space.sample()
+    
+    def sample(self):
+        return random.randint(0,self.action_space.n-1)
+    
     """
     def choose(self, **kwargs):
         raise NotImplementedError

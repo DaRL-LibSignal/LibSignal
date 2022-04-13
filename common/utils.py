@@ -21,9 +21,8 @@ class SeverityLevelBetween(logging.Filter):
         return self.min_level <= record.levelno < self.max_level
 
 
-def setup_logging():
-    log_time = datetime.now().strftime('%Y%m%d-%H%M%S')
-    root = logging.getLogger(f'{log_time}')
+def setup_logging(config):
+    root = logging.getLogger()
 
     # Perform setup only if logging has not been configured
     if not root.hasHandlers():
@@ -55,7 +54,7 @@ def setup_logging():
 
         handler_file = logging.FileHandler(os.path.join(
             logger_dir,
-            f'{log_time}.log')
+            f"{config['model']['name']}_{datetime.now().strftime('%Y%m%d-%H%M%S')}.log")
         )
         handler_file.setLevel(logging.DEBUG)  # TODO: SET LEVEL
         root.addHandler(handler_file)
