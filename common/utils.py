@@ -283,15 +283,4 @@ def build_config(args):
     for key in args_dict:
         config.update({key: args_dict[key]})  # short access for important param
     return config
-
-def action_convert(action, type='None'):
-    """
-    convert actions format: array<-->number
-    """
-    if type=='None':
-        return action
-    elif type == 'num':
-        return action[0]
-    else: # type=='array'
-        return np.array([action])
     
