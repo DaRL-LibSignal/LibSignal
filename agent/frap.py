@@ -37,7 +37,6 @@ class FRAP_DQNAgent(RLAgent):
 
         # create generators
         inter_obj = self.world.id2intersection[self.id]
-        # assert self.rank==
         self.action_space = gym.spaces.Discrete(
             len(self.world.id2intersection[self.id].phases))
         self.ob_generator = LaneVehicleGenerator(self.world, inter_obj,
@@ -58,6 +57,7 @@ class FRAP_DQNAgent(RLAgent):
 
         self.action = 0
         self.last_action = 0
+        self.replay_buffer = []
         # self.if_test = 0
 
     def _build_model(self):
@@ -84,7 +84,8 @@ class FRAP_DQNAgent(RLAgent):
     def to_tensor(self, state):
         output = {}
         for i in state:
-            output[i] = torch.tensor(state[i], dtype=torch.float32)
+            output[i] = torch.from_numpy(state[i]).float()
+            # output[i] = torch.tensor(state[i], dtype=torch.float32)
         return output
 
     def get_ob(self):
@@ -93,11 +94,15 @@ class FRAP_DQNAgent(RLAgent):
         x_obs = np.array(x_obs, dtype=np.float32)
         return x_obs
 
+    # def get_reward(self):
+    #     rewards = []
+    #     rewards.append(self.reward_generator.generate())
+    #     rewards = np.squeeze(np.array(rewards)) * 12
+    #     return rewards
     def get_reward(self):
-        rewards = []
-        rewards.append(self.reward_generator.generate())
-        rewards = np.squeeze(np.array(rewards)) * 12
-        return rewards
+        reward = self.reward_generator.generate()
+        assert len(reward) == 1
+        return reward[0]
 
     def get_phase(self):
         phase = []
@@ -112,18 +117,22 @@ class FRAP_DQNAgent(RLAgent):
         phase:(1,)
         """
         if not test and np.random.rand() <= self.epsilon:
-            action = self.sample()
-            self.action = action_convert(action, 'num')
-            return action
+            # action = self.sample()
+            # self.action = action_convert(action, 'num')
+            # return action
+            self.action = self.action_space.sample()
+            return action_convert(self.action,'array')
         state = {}
         state["cur_phase"] = self.world.id2intersection[self.id].current_phase
         self.last_action = state["cur_phase"]
         state["lane_num_vehicle"] = ob
         state_ = self.to_tensor(self.convert_state_to_input(state))
         q_values = self.model(state_)
-        actions = q_values.clone().detach().numpy()
-        self.action = np.argmax(actions, axis=1)
-        return self.action
+        # actions = q_values.clone().detach().numpy()
+        # action = np.argmax(actions, axis=1)
+        # self.action = action_convert(action,'num')
+        self.action = torch.argmax(q_values, dim=1).item()
+        return action_convert(self.action,'array')
 
     def sample(self):
         return np.random.randint(0, self.action_space.n, self.sub_agents)
@@ -150,7 +159,7 @@ class FRAP_DQNAgent(RLAgent):
             out = self.target_model(self.to_tensor(next_input), train=False)
             target = reward + self.gamma * torch.max(out, dim=1)[0]
             target_f = self.model(self.to_tensor(input_list), train=False)
-            target_f[0][action] = target
+            target_f[0][action] = target[0]
         loss = self.loss_func(self.model(
             self.to_tensor(input_list), train=True), target_f)
         self.optimizer.zero_grad()
@@ -189,7 +198,7 @@ class FRAP(nn.Module):
         for feature_name in self.dic_traffic_env_conf.param["list_state_feature"]:
             if "phase" in feature_name:  # cur_phase
                 _shape = (
-                    self.dic_traffic_env_conf.param["dic_feature_dim"]["d_" + feature_name],)
+                    self.dic_traffic_env_conf.param["dic_feature_dim"]["d_" + feature_name][0],)
             else:  # vehicle
                 _shape = (self.ob_length,)
 
@@ -296,7 +305,8 @@ class FRAP(nn.Module):
             lane_num_vehicle = torch.cat([E, S, W, N], dim=0)
             lane_num_vehicle = torch.unsqueeze(lane_num_vehicle, 0)
             return lane_num_vehicle
-        else:
+        # else:
+        if self.dic_input_node["lane_num_vehicle"].size()[-1] == 8:
             return self.dic_input_node["lane_num_vehicle"]
 
 

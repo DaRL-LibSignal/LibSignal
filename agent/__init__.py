@@ -5,3 +5,5 @@ from .colight import CoLightAgent
 from .dqn import DQNAgent
 from .sotl import SOTLAgent
 from .frap import FRAP_DQNAgent
+from .presslight import PressLightAgent
+

@@ -1,5 +1,6 @@
 __pycache__/
 *.DS_Store
 .idea/
+.vscode/
 data/output_data
 .ipynb
