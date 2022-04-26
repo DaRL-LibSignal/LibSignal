@@ -16,7 +16,7 @@ parser.add_argument('--thread', type=int, default=4, help='number of threads')  
 parser.add_argument('--ngpu', type=str, default="-1", help='gpu to be used')  # choose gpu card
 
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
-parser.add_argument('-a', '--agent', type=str, default="presslight", help="agent type of agents in RL environment")
+parser.add_argument('-a', '--agent', type=str, default="frap", help="agent type of agents in RL environment")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
 parser.add_argument('--cityflow_path', type=str, default='configs/cityflow4X4.cfg', help='path to cityflow path')
 parser.add_argument('--prefix', type=str, default='0', help="the number of predix in this running process")

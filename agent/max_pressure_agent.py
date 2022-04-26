@@ -1,5 +1,9 @@
 from . import BaseAgent
+from . import RLAgent
+from common.registry import Registry
 
+
+@Registry.register_model('maxpressure')
 class MaxPressureAgent(BaseAgent):
     """
     Agent using Max-Pressure method to control traffic light

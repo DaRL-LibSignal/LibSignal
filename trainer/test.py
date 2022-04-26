@@ -7,7 +7,7 @@ from trainer.base_trainer import BaseTrainer
 from world import World
 
 
-@Registry.register_trainer("tsc_frap")
+@Registry.register_trainer("tsc")
 class TSCTrainer(BaseTrainer):
     def __init__(
         self,
@@ -86,18 +86,18 @@ class TSCTrainer(BaseTrainer):
             i = 0
             while i < self.steps:
                 if i % self.action_interval == 0:
-                    last_phase = np.stack([ag.get_phase() for ag in self.agents])  # [agent, intersections]
+                    last_phase = np.stack([ag.get_phase() for ag in self.agents])  # [agent, sub_agent]
                     actions = []
                     for idx, ag in enumerate(self.agents):
                         actions.append(ag.get_action(last_obs[idx], last_phase[idx], test=False))
                     actions = np.stack(actions)  # [agent, intersections]
                     reward_list = []
                     for _ in range(self.action_interval):
-                        obs, rewards, dones, _ = self.env.step(np.squeeze(actions))
+                        obs, rewards, dones, _ = self.env.step(actions.flatten())
                         i += 1
                         reward_list.append(np.stack(rewards))
                     rewards = np.mean(reward_list, axis=0)  # [agent, intersection]
-                    episodes_rewards += np.squeeze(rewards)
+                    episodes_rewards += rewards.flatten()
 
                     cur_phase = np.stack([ag.get_phase() for ag in self.agents])
                     # TODO: construct database here
@@ -163,11 +163,11 @@ class TSCTrainer(BaseTrainer):
                 actions = np.stack(actions)
                 rewards_list = []
                 for _ in range(self.action_interval):
-                    obs, rewards, dones, _ = self.env.step(np.squeeze(actions))  # make sure action is [intersection]
+                    obs, rewards, dones, _ = self.env.step(actions.flatten())  # make sure action is [intersection]
                     i += 1
                     rewards_list.append(np.stack(rewards))
                 rewards = np.mean(rewards_list, axis=0)
-                ep_rwds += np.squeeze(rewards)
+                ep_rwds += rewards.flatten()
                 eps_nums += 1
             if all(dones):
                 break
@@ -195,11 +195,11 @@ class TSCTrainer(BaseTrainer):
                 actions = np.stack(actions)
                 rewards_list = []
                 for _ in range(self.action_interval):
-                    obs, rewards, dones, _ = self.env.step(np.squeeze(actions))
+                    obs, rewards, dones, _ = self.env.step(actions.flatten())
                     i += 1
                     rewards_list.append(np.stack(rewards))
                 rewards = np.mean(rewards_list, axis=0)
-                ep_rwds += np.squeeze(rewards)
+                ep_rwds += rewards.flatten()
                 eps_nums += 1
             if all(dones):
                 break

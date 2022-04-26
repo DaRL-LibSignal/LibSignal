@@ -3,27 +3,42 @@ import torch
 import torch.nn as nn
 from collections import OrderedDict
 
-def idx2onehot(arr, spices):
-    result = np.zeros((arr.shape[0], spices))
-    result[range(arr.shape[0]), arr] = 1
+
+def idx2onehot(arr, spices, dict_phase=None):
+    if not dict_phase:
+        result = np.zeros((arr.shape[0], spices))
+        result[range(arr.shape[0]), arr] = 1
+    else:
+        result = (np.array(dict_phase[arr[0]+1])).reshape(-1, len(dict_phase))
     return result
 
-def action_convert(action, type='None'):
-    """
-    convert actions format: array<-->number
-    """
-    if type=='array':
-        return np.array([action])
-    elif type == 'num':
-        return action[0]
-    return action
+def remove_right_lane(ob):
+    if ob.shape[-1] == 8:
+        return ob
+    elif ob.shape[-1] == 12:
+        N = ob[::, 1:3]
+        E = ob[::, 4:6]
+        S = ob[::, 7:9]
+        W = ob[::, 10:12]
+        return np.concatenate((E, S, W, N), axis=1)
+
+# def action_convert(action, type='None'):
+#     """
+#     convert actions format: array<-->number
+#     """
+#     if type=='array':
+#         return np.array([action])
+#     elif type == 'num':
+#         return action[0]
+#     return action
+
 
 class GetDataSet(torch.utils.data.Dataset):
     # initial, get data
     def __init__(self, data_root, data_label):
         self.data = data_root
         self.label = data_label
-    
+
     def __getitem__(self, index):
         '''
         index: obtained by dividing the data according to batchsize
@@ -67,10 +82,10 @@ class CNN(nn.Module):
                 (
                     "conv_2",
                     nn.Conv2d(
-                        in_channels=32,  
-                        out_channels=16,  
-                        kernel_size=3,  
-                        stride=2, 
+                        in_channels=32,
+                        out_channels=16,
+                        kernel_size=3,
+                        stride=2,
                         padding=1,
                         bias=False,
                     )),

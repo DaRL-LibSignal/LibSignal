@@ -37,7 +37,7 @@ class PressLightAgent(RLAgent):
         self.phase_generator = IntersectionPhaseGenerator(world, inter_obj, ["phase"],
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(world, inter_obj, ["pressure"], average="all", negative=True)
-        self.action_space = gym.spaces.Discrete(len(self.world.id2intersection[inter_id].phases))
+        self.action_space = gym.spaces.Discrete(len(inter_obj.phases))
         if self.phase:
             if self.one_hot:
                 self.ob_length = self.ob_generator.ob_length + len(inter_obj.phases) # 32
@@ -73,7 +73,6 @@ class PressLightAgent(RLAgent):
     def get_reward(self):
         rewards = []
         rewards.append(self.reward_generator.generate())
-        # TODO check 12
         rewards = np.squeeze(np.array(rewards))
         return rewards
 
@@ -110,7 +109,6 @@ class PressLightAgent(RLAgent):
         self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
 
     def _batchwise(self, samples):
-        # TODO check dims
         # (64,24)
         obs_t = np.concatenate([item[1][0] for item in samples])
         obs_tp = np.concatenate([item[1][4] for item in samples])

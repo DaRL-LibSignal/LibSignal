@@ -272,7 +272,7 @@ class IntelliLightAgent(RLAgent):
         Y = []
 
         # get average state-action reward
-        if :
+        if self.separate_memory:
             self.average_reward = self._cal_average_separate(self.memory)
         else:
             self.average_reward = self._cal_average(self.memory)

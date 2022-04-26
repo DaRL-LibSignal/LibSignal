@@ -29,7 +29,7 @@ class TSCTask(BaseTask):
             if Registry.mapping['logger_mapping']['logger_setting'].param['train_model']:
                 self.trainer.train()
             if Registry.mapping['logger_mapping']['logger_setting'].param['test_model']:
-                self.trainer.test()
+                self.trainer.test(drop_load=False)
         except RuntimeError as e:
             self._process_error(e)
             raise e
