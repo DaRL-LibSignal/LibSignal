@@ -24,11 +24,12 @@ from torch_geometric.utils import add_self_loops
 class CoLightAgent(RLAgent):
     #  TODO: test multiprocessing effect on agents or need deep copy here
     def __init__(self, world, rank):
-        super().__init__(world)
+        super().__init__(world, world.intersection_ids[rank])
         """
         multi-agents in one model-> modify self.action_space, self.reward_generator, self.ob_generator here
         """
         #  general setting of world and model structure
+        # TODO: different phases matching
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
@@ -106,6 +107,38 @@ class CoLightAgent(RLAgent):
         self.optimizer = optim.RMSprop(self.model.parameters(),
                                        lr=self.learning_rate,
                                        alpha=0.9, centered=False, eps=1e-7)
+
+    def reset(self):
+        observation_generators = []
+        for inter in self.world.intersections:
+            node_id = inter.id
+            node_idx = self.graph['node_id2idx'][node_id]
+            tmp_generator = LaneVehicleGenerator(self.world, inter, ['lane_count'], in_only=True, average=None)
+            observation_generators.append((node_idx, tmp_generator))
+        sorted(observation_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
+        self.ob_generator = observation_generators
+
+        #  get reward generator for CoLightAgent
+        rewarding_generators = []
+        for inter in self.world.intersections:
+            node_id = inter.id
+            node_idx = self.graph['node_id2idx'][node_id]
+            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"],
+                                                 in_only=True, average='all', negative=True)
+            rewarding_generators.append((node_idx, tmp_generator))
+        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
+        self.reward_generator = rewarding_generators
+
+        #  phase generator
+        phasing_generators = []
+        for inter in self.world.intersections:
+            node_id = inter.id
+            node_idx = self.graph['node_id2idx'][node_id]
+            tmp_generator = IntersectionPhaseGenerator(self.world, inter, ['phase'],
+                                                       targets=['cur_phase'], negative=False)
+            phasing_generators.append((node_idx, tmp_generator))
+        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
+        self.phase_generator = phasing_generators
 
     def get_ob(self):
         x_obs = []  # sub_agents * lane_nums,

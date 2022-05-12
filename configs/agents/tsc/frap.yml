@@ -23,7 +23,7 @@ trainer:
   steps: 3600 
   test_steps: 3600 
   action_interval: 20 
-  episodes: 200
+  episodes: 100
   update_model_rate: 60
   update_target_rate: 80
   # loss_function: mean_squared_error

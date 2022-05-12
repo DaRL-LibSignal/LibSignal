@@ -15,7 +15,7 @@ from generator.intersection_phase import IntersectionPhaseGenerator
 class FRAP_DQNAgent(RLAgent):
     def __init__(self, world, rank):
         super().__init__(world)
-        
+
         self.world = world
         self.rank = rank
         self.ob_length = self.ob_generator.ob_length

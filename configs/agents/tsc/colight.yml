@@ -32,7 +32,7 @@ trainer:
   steps: 3600
   test_steps: 3600
   action_interval: 10
-  episodes: 200
+  episodes: 100
   update_model_rate: 1
   update_target_rate: 10
   # save_dir: data/output_data/task_name/dataset_dir/model_name
