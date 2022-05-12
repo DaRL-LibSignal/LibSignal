@@ -4,7 +4,7 @@ from common.metric import TravelTimeMetric
 from environment import TSCEnv
 from common.registry import Registry
 from trainer.base_trainer import BaseTrainer
-from world import World
+from world.world_cityflow import World
 
 @Registry.register_trainer("tsc_frap")
 class TSCTrainer(BaseTrainer):

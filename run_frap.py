@@ -1,17 +1,11 @@
-import os.path
 from environment import TSCEnv
-from world import World
+from world.world_cityflow import World
 from task.traffic_light_multi import TrafficLightDQNMulti
 from metric import TravelTimeMetric
 import argparse
-import logging
-from datetime import datetime
 from common.utils import *
 from common.registry import Registry
 from common import interface
-from agent import colight
-from agent import frap
-from common.onpolicy_dataset import OnPolicyDataset
 
 # parseargs
 parser = argparse.ArgumentParser(description='Run Example')

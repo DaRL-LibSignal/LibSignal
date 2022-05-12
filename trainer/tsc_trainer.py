@@ -4,7 +4,6 @@ from common.metric import TravelTimeMetric
 from environment import TSCEnv
 from common.registry import Registry
 from trainer.base_trainer import BaseTrainer
-from world import World
 
 
 @Registry.register_trainer("tsc")
@@ -49,8 +48,8 @@ class TSCTrainer(BaseTrainer):
 
     def create_world(self):
         # traffic setting is in the world mapping
-        self.world = World(self.cityflow_path,
-                           Registry.mapping['world_mapping']['traffic_setting'].param['thread_num'])
+        self.world = Registry.mapping['world_mapping'][self.args['world']](
+            self.path, Registry.mapping['world_mapping']['traffic_setting'].param['thread_num'])
 
     def create_metric(self):
         self.metric = TravelTimeMetric(self.world)
@@ -74,14 +73,18 @@ class TSCTrainer(BaseTrainer):
         total_decision_num = 0
         flush = 0
         for e in range(self.episodes):
+            # TODO: check this reset agent
             last_obs = self.env.reset()  # agent * [sub_agent, feature]
+            for a in self.agents:
+                a.reset()
             if e % self.save_rate == self.save_rate - 1:
-                self.env.eng.set_save_replay(True)
+                # self.env.eng.set_save_replay(True)
                 if not os.path.exists(self.replay_file_dir):
                     os.makedirs(self.replay_file_dir)
-                self.env.eng.set_replay_file(self.replay_file_dir + f"/episode_{e}.txt")  # TODO: replay here
+                # self.env.eng.set_replay_file(self.replay_file_dir + f"/episode_{e}.txt")  # TODO: replay here
             else:
-                self.env.eng.set_save_replay(False)
+                pass
+                # self.env.eng.set_save_replay(False)
             episodes_rewards = np.array([0 for _ in range(len(self.world.intersections))], dtype=np.float32)
             episodes_decision_num = 0
             episode_loss = []
@@ -138,7 +141,7 @@ class TSCTrainer(BaseTrainer):
                 mean_loss = np.mean(np.array(episode_loss))
             else:
                 mean_loss = 0
-            cur_travel_time = self.env.eng.get_average_travel_time()
+            cur_travel_time = self.env.world.get_average_travel_time()
             mean_reward = np.sum(episodes_rewards) / episodes_decision_num
             self.writeLog("TRAIN", e, cur_travel_time, mean_loss, mean_reward)
             self.logger.info(
@@ -158,6 +161,8 @@ class TSCTrainer(BaseTrainer):
 
     def train_test(self, e):
         obs = self.env.reset()
+        for a in self.agents:
+            a.reset()
         ep_rwds = [0 for _ in range(len(self.world.intersections))]
         eps_nums = 0
         for i in range(self.test_steps):
@@ -178,7 +183,7 @@ class TSCTrainer(BaseTrainer):
             if all(dones):
                 break
         mean_rwd = np.sum(ep_rwds) / eps_nums
-        trv_time = self.env.eng.get_average_travel_time()
+        trv_time = self.env.world.get_average_travel_time()
         # self.logger.info("Final Travel Time is %.4f, and mean rewards %.4f" % (trv_time,mean_rwd))
         self.logger.info(
             "Test step:{}/{}, travel time :{}, rewards:{}".format(e, self.steps, trv_time, mean_rwd))
@@ -190,8 +195,12 @@ class TSCTrainer(BaseTrainer):
             [ag.load_model(self.episodes) for ag in self.agents]
         attention_mat_list = []
         obs = self.env.reset()
+        for a in self.agents:
+            a.reset()
         ep_rwds = np.array([0 for _ in range(len(self.world.intersections))], dtype=np.float32)
         eps_nums = 0
+        lane_delay = np.array([value for _, value in self.env.world.get_lane_delay().items()]).mean()
+        lane_queue_length = np.array([value for _, value in self.env.world.get_lane_queue_length().items()]).mean()
         for i in range(self.test_steps):
             if i % self.action_interval == 0:
                 phases = np.stack([ag.get_phase() for ag in self.agents])
@@ -207,11 +216,18 @@ class TSCTrainer(BaseTrainer):
                 rewards = np.mean(rewards_list, axis=0)
                 ep_rwds += np.squeeze(rewards)
                 eps_nums += 1
+                lane_delay += np.array([value for _, value in self.env.world.get_lane_delay().items()]).mean()
+                lane_queue_length += np.array(
+                    [value for _, value in self.env.world.get_lane_queue_length().items()]).mean()
             if all(dones):
                 break
         mean_rwd = np.sum(ep_rwds) / eps_nums
-        trv_time = self.env.eng.get_average_travel_time()
+        trv_time = self.env.world.get_average_travel_time()
+        lane_delay = lane_delay / self.episodes
+        lane_queue_length = lane_queue_length / self.episodes
         self.logger.info("Final Travel Time is %.4f, and mean rewards %.4f" % (trv_time, mean_rwd))
+        self.logger.info("Final average lane delay is %.4f." % lane_delay)
+        self.logger.info("Final lane length is %.4f." % lane_queue_length)
         # TODO: add attention record
         if Registry.mapping['logger_mapping']['logger_setting'].param['get_attention']:
             pass

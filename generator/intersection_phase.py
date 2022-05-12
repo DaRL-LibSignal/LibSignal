@@ -1,5 +1,3 @@
-import numpy as np
-import math
 # from .base import BaseGenerator
 
 
@@ -44,7 +42,7 @@ class IntersectionPhaseGenerator():
 
 
 if __name__ == "__main__":
-    from world import World
+    from world.world_cityflow import World
 
     world = World("examples/configs.json", thread_num=1)
     laneVehicle = IntersectionPhaseGenerator(world, world.intersections[0],
