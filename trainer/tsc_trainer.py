@@ -111,6 +111,10 @@ class TSCTrainer(BaseTrainer):
                     cur_phase = np.stack([ag.get_phase() for ag in self.agents])
                     # TODO: construct database here
                     for idx, ag in enumerate(self.agents):
+                        # TODO: test for PFRL
+                        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'ppo_pfrl':
+                            ag.do_observe(obs[idx], cur_phase[idx], rewards[idx], dones[idx])
+
                         ag.remember(last_obs[idx], last_phase[idx], actions[idx], rewards[idx],
                                     obs[idx], cur_phase[idx], f'{e}_{i//self.action_interval}_{ag.rank}')
                     flush += 1
@@ -154,7 +158,7 @@ class TSCTrainer(BaseTrainer):
             for j in range(len(self.world.intersections)):
                 self.logger.debug(
                     "intersection:{}, mean_episode_reward:{}".format(j, episodes_rewards[j] / episodes_decision_num))
-            if self.test_when_train:
+            if self.test_when_train and Registry.mapping['model_mapping']['model_setting'].param['name'] != 'ppo_pfrl':
                 self.train_test(e)
         # self.dataset.flush([ag.replay_buffer for ag in self.agents])
         [ag.save_model(e=self.episodes) for ag in self.agents]
@@ -177,6 +181,7 @@ class TSCTrainer(BaseTrainer):
                     obs, rewards, dones, _ = self.env.step(np.squeeze(actions))  # make sure action is [intersection]
                     i += 1
                     rewards_list.append(np.stack(rewards))
+
                 rewards = np.mean(rewards_list, axis=0)
                 ep_rwds += np.squeeze(rewards)
                 eps_nums += 1
@@ -213,6 +218,7 @@ class TSCTrainer(BaseTrainer):
                     obs, rewards, dones, _ = self.env.step(np.squeeze(actions))
                     i += 1
                     rewards_list.append(np.stack(rewards))
+
                 rewards = np.mean(rewards_list, axis=0)
                 ep_rwds += np.squeeze(rewards)
                 eps_nums += 1
