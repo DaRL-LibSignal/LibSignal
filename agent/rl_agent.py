@@ -35,7 +35,7 @@ class RLAgent(BaseAgent):
         return self.action_space.sample()
     
     def sample(self):
-        return random.randint(0,self.action_space.n-1)
+        return random.randint(0, self.action_space.n-1)
     
     """
     def choose(self, **kwargs):
