@@ -21,7 +21,11 @@ class PPOAgent(RLAgent):
     def __init__(self, world, rank):
         super().__init__(world, world.intersection_ids[rank])
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
-        self.replay_buffer = deque(maxlen=self.buffer_size)
+        self.replay_buffer_env = deque(maxlen=self.buffer_size)
+        self.replay_buffer_prob = deque(maxlen=self.buffer_size)
+        # TODO: delete later
+        self.env_buffer_count = 0
+        self.prob_buffer_count = 0
 
         self.world = world
         self.sub_agents = 1
@@ -58,10 +62,15 @@ class PPOAgent(RLAgent):
         self.learning_rate = Registry.mapping['model_mapping']['model_setting'].param['learning_rate']
         self.vehicle_max = Registry.mapping['model_mapping']['model_setting'].param['vehicle_max']
         self.batch_size = Registry.mapping['model_mapping']['model_setting'].param['batch_size']
+        self.update_interval = Registry.mapping['model_mapping']['model_setting'].param['update_interval']
+        assert(self.update_interval == self.buffer_size)
 
-        self.model = self._build_model()
-        self.target_model = self._build_model()
-        self.update_target_network()
+        # generate samples
+        self.actor = Actor(self.ob_length, self.action_space.n)
+        # update policy
+        self.critic = Critic(self.ob_length)
+
+
         self.criterion = nn.MSELoss(reduction='mean')
         self.optimizer = optim.RMSprop(self.model.parameters(),
                                        lr=self.learning_rate,
@@ -97,9 +106,6 @@ class PPOAgent(RLAgent):
         return phase
 
     def get_action(self, ob, phase, test=False):
-        if not test:
-            if np.random.rand() <= self.epsilon:
-                return self.sample()
         if self.phase:
             if self.one_hot:
                 feature = np.concatenate([ob, utils.idx2onehot(phase, self.action_space.n)], axis=1)
@@ -107,6 +113,14 @@ class PPOAgent(RLAgent):
                 feature = np.concatenate([ob, phase], axis=1)
         else:
             feature = ob
+
+        if not test:
+            probs = self.actor.model.predict(np.reshape(feature, [1, self.actor.state_dim]))
+            self.replay_buffer_prob.append(probs)
+            self.prob_buffer_count += 1
+            action = np.random.choice(self.action_space.n, p=probs[0])
+            return action
+
         observation = torch.tensor(feature, dtype=torch.float32)
         actions = self.model(observation, train=True)
         actions = actions.clone().detach().numpy()
@@ -115,23 +129,36 @@ class PPOAgent(RLAgent):
     def sample(self):
         return np.random.randint(0, self.action_space.n, self.sub_agents)
 
-    def _build_model(self):
-        model = DQNNet(self.ob_length, self.action_space.n)
-        return model
-
     def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
-        self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
+        self.replay_buffer_env.append((key, (np.reshape(last_obs, [1, self.ob_generator.ob_length]),
+                                             np.reshape(last_phase, [1, 1]),
+                                             np.reshape(actions, [1, 1]),
+                                             np.reshape(rewards * 0.01, [1, 1]),
+                                             np.reshape(obs, [1, self.ob_generator.ob_length]),
+                                             np.reshape(cur_phase), [1, 1])))
+        self.env_buffer_count += 1
+        self._check_buffer_update()
 
-    def _batchwise(self, samples):
-        obs_t = np.concatenate([item[1][0] for item in samples])
-        obs_tp = np.concatenate([item[1][4] for item in samples])
+    def _check_buffer_update(self):
+        assert(self.env_buffer_count == self.prob_buffer_count)
+        if self.env_buffer_count == self.update_interval:
+            self.AC_train()
+
+    def _prepare_data(self):
+        obs_t = np.concatenate([item[1][0] for item in self.replay_buffer_env])
+        obs_tp = np.concatenate([item[1][4] for item in self.replay_buffer_env])
+        old_policy = np.concatenate([item for item in self.replay_buffer_prob])
+        actions = np.concatenate([item[1][2] for item in self.replay_buffer_env])
+        rewards = np.concatenate([item[1][3] for item in self.replay_buffer_env])
         if self.phase:
             if self.one_hot:
-                phase_t = np.concatenate([utils.idx2onehot(item[1][1], self.action_space.n) for item in samples])
-                phase_tp = np.concatenate([utils.idx2onehot(item[1][5], self.action_space.n) for item in samples])
+                phase_t = np.concatenate([utils.idx2onehot(item[1][1], self.action_space.n)
+                                          for item in self.replay_buffer_env])
+                phase_tp = np.concatenate([utils.idx2onehot(item[1][5], self.action_space.n)
+                                           for item in self.replay_buffer_env])
             else:
-                phase_t = np.concatenate([item[1][1] for item in samples])
-                phase_tp = np.concatenate([item[1][5] for item in samples])
+                phase_t = np.concatenate([item[1][1] for item in self.replay_buffer_env])
+                phase_tp = np.concatenate([item[1][5] for item in self.replay_buffer_env])
             feature_t = np.concatenate([obs_t, phase_t], axis=1)
             feature_tp = np.concatenate([obs_tp, phase_tp], axis=1)
         else:
@@ -139,11 +166,20 @@ class PPOAgent(RLAgent):
             feature_tp = obs_tp
         state_t = torch.tensor(feature_t, dtype=torch.float32)
         state_tp = torch.tensor(feature_tp, dtype=torch.float32)
-        rewards = torch.tensor(np.array([item[1][3] for item in samples]), dtype=torch.float32)  # TODO: BETTER WA
-        actions = torch.tensor(np.array([item[1][2] for item in samples]), dtype=torch.long)
-        return state_t, state_tp, rewards, actions
+        return state_t, state_tp,
+
+    def AC_train(self):
+
+
+        for e in range(self.epochs):
+            index = random.shuffle(list(range(self.buffer_size)))
+
+
 
     def train(self):
+        # TODO: we do not train here
+        pass
+
         samples = random.sample(self.replay_buffer, self.batch_size)
         b_t, b_tp, rewards, actions = self._batchwise(samples)
         out = self.target_model(b_tp, train=False)
@@ -161,8 +197,7 @@ class PPOAgent(RLAgent):
         return loss.clone().detach().numpy()
 
     def update_target_network(self):
-        weights = self.model.state_dict()
-        self.target_model.load_state_dict(weights)
+        pass
 
     def load_model(self, e):
         model_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
@@ -180,17 +215,39 @@ class PPOAgent(RLAgent):
         torch.save(self.target_model.state_dict(), model_name)
 
 
-class PPONet(nn.Module):
+class Actor(object):
     def __init__(self, input_dim, output_dim):
-        super(PPONet, self).__init__()
-        self.dense_1 = nn.Linear(input_dim, 20)
-        self.dense_2 = nn.Linear(20, 20)
-        self.dense_3 = nn.Linear(20, output_dim)
+        self.state_dim = input_dim
+        self.action_dim = output_dim
+        self.model = self._build_model()
+
+    def _build_model(self):
+        model = PPO_ActDQN(self.state_dim, self.action_dim)
+        return model
+
+
+class Critic(object):
+    def __init__(self, input_dim):
+        self.state_dim = input_dim
+        self.model = self._build_model()
+
+
+    def _build_model(self):
+        model = PPO_CrtDQN(self.state_dim)
+        return model
+
+
+class PPO_ActDQN(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(PPO_ActDQN, self).__init__()
+        self.dense_1 = nn.Linear(input_dim, 32)
+        self.dense_2 = nn.Linear(32, 16)
+        self.dense_3 = nn.Linear(16, output_dim)
 
     def _forward(self, x):
         x = F.relu(self.dense_1(x))
         x = F.relu(self.dense_2(x))
-        x = self.dense_3(x)
+        x = nn.Softmax(self.dense_3(x))
         return x
 
     def forward(self, x, train=True):
@@ -199,3 +256,30 @@ class PPONet(nn.Module):
         else:
             with torch.no_grad():
                 return self._forward(x)
+
+
+class PPO_CrtDQN(nn.Module):
+    def __init__(self, input_dim):
+        super(PPO_CrtDQN, self).__init__()
+        self.dense_1 = nn.Linear(input_dim, 32)
+        self.dense_2 = nn.Linear(32, 16)
+        self.dense_3 = nn.Linear(16, 16)
+        self.dense_4 = nn.Linear(16, 1)
+
+    def _forward(self, x):
+        x = F.relu(self.dense_1(x))
+        x = F.relu(self.dense_2(x))
+        x = F.relu(self.dense_3(x))
+        x = self.dense_4(x)
+        return x
+
+    def forward(self, x, train=True):
+        if train:
+            return self._forward(x)
+        else:
+            with torch.no_grad():
+                return self._forward(x)
+
+    def
+
+

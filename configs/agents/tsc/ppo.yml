@@ -3,10 +3,11 @@ includes:
 
 
 model:
-  name: ppo_pfrl
+  name: ppo
   graphic: False
   vehicle_max: 1
-  learning_rate: 0.0001
+  learning_rate: 0.001
+  update_interval: 1024
   batch_size: 64
   gamma: 0.95
   epsilon: 0.1
@@ -20,12 +21,12 @@ model:
 trainer:
   thread: 4
   ngpu: -1
-  learning_start: -1
-  buffer_size: 5000
+  learning_start: 1000
+  buffer_size: 1024
   steps: 3600
   test_steps: 3600
   action_interval: 10
-  episodes: 2000
+  episodes: 100
   update_model_rate: 1
   update_target_rate: 10
   # save_dir: data/output_data/task_name/dataset_dir/model_name

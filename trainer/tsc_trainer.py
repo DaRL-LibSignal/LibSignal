@@ -160,6 +160,8 @@ class TSCTrainer(BaseTrainer):
                     "intersection:{}, mean_episode_reward:{}".format(j, episodes_rewards[j] / episodes_decision_num))
             if self.test_when_train and Registry.mapping['model_mapping']['model_setting'].param['name'] != 'ppo_pfrl':
                 self.train_test(e)
+            for ag in self.agents:
+                ag.pr()
         # self.dataset.flush([ag.replay_buffer for ag in self.agents])
         [ag.save_model(e=self.episodes) for ag in self.agents]
 

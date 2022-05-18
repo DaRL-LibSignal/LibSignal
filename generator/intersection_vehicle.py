@@ -183,8 +183,6 @@ class IntersectionVehicleGenerator():
         self.action_interval = action_interval
         self.time = self.world.eng.get_current_time()
 
-
-
         fns = {fn:self.world.get_info(fn) for fn in self.fns}
         ret = [self.result_functions[res](fns) for res in self.targets]
 

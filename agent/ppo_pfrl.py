@@ -138,6 +138,9 @@ class IPPO_pfrl(RLAgent):
     def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
         self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
 
+    def pr(self):
+        print(self.agent.get_statistics())
+
     def _build_model(self):
         """
         self.agent = PPO(self.model, self.optimizer, gpu=self.device.index,
@@ -170,18 +173,16 @@ class IPPO_pfrl(RLAgent):
                 lecun_init(nn.Linear(64, 1))
             )
         )
-        self.optimizer = optim.RMSprop(self.model.parameters(),
-                                       lr=self.learning_rate,
-                                       alpha=0.9, centered=False, eps=1e-7)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=2.5e-4, eps=1e-5)
         self.agent = PPO(self.model, self.optimizer,
                          phi=lambda x: np.asarray(x, dtype=np.float32),
                          clip_eps=0.1,
                          clip_eps_vf=None,
-                         update_interval=256,
+                         update_interval=1024,
                          minibatch_size=256,
-                         epochs=1,
+                         epochs=4,
                          standardize_advantages=True,
-                         entropy_coef=0.00001,
+                         entropy_coef=0.001,
                          max_grad_norm=0.5)
 
     def load_model(self, e):

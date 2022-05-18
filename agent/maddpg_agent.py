@@ -37,6 +37,7 @@ def p_train(make_obs_ph_n, act_space_n, p_index, p_func, q_func, optimizer, grad
         p_func_vars = U.scope_vars(U.absolute_scope_name("p_func_{}".format(env_index)))
 
         # wrap parameters in distribution
+        # TODO: LOGITS AND SMAPLE
         act_pd = act_pdtype_n[p_index].pdfromflat(p)
 
         act_sample = act_pd.sample()
@@ -44,6 +45,7 @@ def p_train(make_obs_ph_n, act_space_n, p_index, p_func, q_func, optimizer, grad
 
         act_input_n = act_ph_n + []
         act_input_n[p_index] = act_pd.sample()
+        # TODO: should be onehot, justify here
         q_input = tf.concat(obs_ph_n + act_input_n, 1)
         if local_q_func:
             q_input = tf.concat([obs_ph_n[p_index], act_input_n[p_index]], 1)
@@ -74,7 +76,7 @@ def q_train(make_obs_ph_n, act_space_n, q_index, q_func, optimizer, grad_norm_cl
     with tf.variable_scope(scope, reuse=reuse):
         # create distribtuions
         act_pdtype_n = [U.make_pdtype(act_space) for act_space in act_space_n]
-
+        # TODO: check full observation dimension
         # set up placeholders
         obs_ph_n = make_obs_ph_n
         act_ph_n = [act_pdtype_n[i].sample_placeholder([None], name="action"+str(i)) for i in range(len(act_space_n))]
@@ -83,6 +85,7 @@ def q_train(make_obs_ph_n, act_space_n, q_index, q_func, optimizer, grad_norm_cl
         q_input = tf.concat(obs_ph_n + act_ph_n, 1)
         if local_q_func:
             q_input = tf.concat([obs_ph_n[q_index], act_ph_n[q_index]], 1)
+            # TODO: notice here
         q = q_func(q_input, 1, scope="q_func_{}".format(env_index), num_units=num_units)[:,0]
         q_func_vars = U.scope_vars(U.absolute_scope_name("q_func_{}".format(env_index)))
 
@@ -95,6 +98,7 @@ def q_train(make_obs_ph_n, act_space_n, q_index, q_func, optimizer, grad_norm_cl
         optimize_expr = U.minimize_and_clip(optimizer, loss, q_func_vars, grad_norm_clipping)
 
         # Create callable functions
+        # TODO: see target_ph is here
         train = U.function(inputs=obs_ph_n + act_ph_n + [target_ph], outputs=loss, updates=[optimize_expr])
         q_values = U.function(obs_ph_n + act_ph_n, q)
 
