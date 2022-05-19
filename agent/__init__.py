@@ -6,3 +6,4 @@ from .dqn import DQNAgent
 from .sotl import SOTLAgent
 from .frap import FRAP_DQNAgent
 from .ppo_pfrl import IPPO_pfrl
+from .maddpg import MADDPGAgent

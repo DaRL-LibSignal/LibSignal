@@ -59,11 +59,18 @@ class TSCTrainer(BaseTrainer):
         # for i in self.world.intersections:
         #     self.agents.append(Registry.mapping['model_mapping'][self.args['agent']](self.world, i.id))
         agent = Registry.mapping['model_mapping'][self.args['agent']](self.world, 0)
-        print(agent.model)
+        if Registry.mapping['model_mapping']['model_setting'].param['name'] != 'maddpg':
+            print(agent.model)
         num_agent = int(len(self.world.intersections) / agent.sub_agents)
         self.agents.append(agent)  # initialized N agents for traffic light control
         for i in range(1, num_agent):
             self.agents.append(Registry.mapping['model_mapping'][self.args['agent']](self.world, i))
+        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg':
+            for ag in self.agents:
+                ag.link_agents(self.agents)
+            print(ag.q_model)
+            print(ag.p_model)
+
 
     def create_env(self):
         # TODO: finalized list or non list
@@ -116,7 +123,7 @@ class TSCTrainer(BaseTrainer):
                             ag.do_observe(obs[idx], cur_phase[idx], rewards[idx], dones[idx])
 
                         ag.remember(last_obs[idx], last_phase[idx], actions[idx], rewards[idx],
-                                    obs[idx], cur_phase[idx], f'{e}_{i//self.action_interval}_{ag.rank}')
+                                    obs[idx], cur_phase[idx], f'{e}_{i//self.action_interval}_{ag.id}')
                     flush += 1
                     if flush == self.buffer_size - 1:
                         flush = 0
@@ -161,7 +168,8 @@ class TSCTrainer(BaseTrainer):
             if self.test_when_train and Registry.mapping['model_mapping']['model_setting'].param['name'] != 'ppo_pfrl':
                 self.train_test(e)
             for ag in self.agents:
-                ag.pr()
+                #ag.pr()
+                pass
         # self.dataset.flush([ag.replay_buffer for ag in self.agents])
         [ag.save_model(e=self.episodes) for ag in self.agents]
 

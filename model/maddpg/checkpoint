@@ -1,0 +1,3 @@
+model_checkpoint_path: "maddpg_9.ckpt"
+all_model_checkpoint_paths: "maddpg_6.ckpt"
+all_model_checkpoint_paths: "maddpg_9.ckpt"

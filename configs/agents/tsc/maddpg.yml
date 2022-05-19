@@ -4,7 +4,7 @@ includes:
 
 model:
   name: maddpg
-  local_q_func: False
+  local_q_learn: False
   graphic: False
   vehicle_max: 1
   learning_rate: 0.001
@@ -21,8 +21,8 @@ model:
 trainer:
   thread: 4
   ngpu: -1
-  learning_start: 1000
-  buffer_size: 10000
+  learning_start: 500
+  buffer_size: 500
   steps: 3600
   test_steps: 3600
   action_interval: 10
@@ -50,7 +50,7 @@ logger:
 
 traffic:
   one_hot: False
-  phase: Fasle
+  phase: False
   thread_num: 4
   ACTION_PATTERN: "set"
   MIN_ACTION_TIME: 10
