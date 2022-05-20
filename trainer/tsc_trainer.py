@@ -77,6 +77,7 @@ class TSCTrainer(BaseTrainer):
         self.env = TSCEnv(self.world, self.agents, self.metric)
 
     def train(self):
+        best_q_loss = np.inf
         total_decision_num = 0
         flush = 0
         for e in range(self.episodes):
@@ -170,6 +171,15 @@ class TSCTrainer(BaseTrainer):
             for ag in self.agents:
                 #ag.pr()
                 pass
+            """
+            if best_q_loss > mean_loss:
+                best_q_loss = mean_loss
+                for ag in self.agents:
+                    ag.save_model(e)
+            else:
+                for ag in self.agents:
+                    ag.load_best_model()
+            """
         # self.dataset.flush([ag.replay_buffer for ag in self.agents])
         [ag.save_model(e=self.episodes) for ag in self.agents]
 
@@ -201,7 +211,7 @@ class TSCTrainer(BaseTrainer):
         trv_time = self.env.world.get_average_travel_time()
         # self.logger.info("Final Travel Time is %.4f, and mean rewards %.4f" % (trv_time,mean_rwd))
         self.logger.info(
-            "Test step:{}/{}, travel time :{}, rewards:{}".format(e, self.steps, trv_time, mean_rwd))
+            "Test step:{}/{}, travel time :{}, rewards:{}".format(i, self.steps, trv_time, mean_rwd))
         self.writeLog("TEST", e, trv_time, 100, mean_rwd)
         return trv_time
 
@@ -245,6 +255,7 @@ class TSCTrainer(BaseTrainer):
         self.logger.info("Final average lane delay is %.4f." % lane_delay)
         self.logger.info("Final lane length is %.4f." % lane_queue_length)
         # TODO: add attention record
+
         if Registry.mapping['logger_mapping']['logger_setting'].param['get_attention']:
             pass
         return trv_time
