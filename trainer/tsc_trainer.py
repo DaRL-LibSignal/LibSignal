@@ -107,7 +107,10 @@ class TSCTrainer(BaseTrainer):
                             actions.append(ag.get_action(last_obs[idx], last_phase[idx], test=False))
                         actions = np.stack(actions)  # [agent, intersections]
                     else:
-                        actions = np.stack([ag.sample() for ag in self.agents])
+                        actions = []
+                        for idx, ag in enumerate(self.agents):
+                            actions.append(ag.get_action(last_obs[idx], last_phase[idx], test=False))
+                        actions = np.stack(actions)  # [agent, intersections]
                     if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg':
                         actions_prob = []
                         for idx, ag in enumerate(self.agents):
@@ -218,7 +221,7 @@ class TSCTrainer(BaseTrainer):
         trv_time = self.env.world.get_average_travel_time()
         # self.logger.info("Final Travel Time is %.4f, and mean rewards %.4f" % (trv_time,mean_rwd))
         self.logger.info(
-            "Test step:{}/{}, travel time :{}, rewards:{}".format(i, self.steps, trv_time, mean_rwd))
+            "Test step:{}/{}, travel time :{}, rewards:{}".format(e, self.episodes, trv_time, mean_rwd))
         self.writeLog("TEST", e, trv_time, 100, mean_rwd)
         return trv_time
 

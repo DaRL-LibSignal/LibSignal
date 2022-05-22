@@ -66,6 +66,7 @@ class MADDPGAgent(RLAgent):
         self.best_epoch = 0
         # param
         self.local_q_learn = Registry.mapping['model_mapping']['model_setting'].param['local_q_learn']
+        self.action = 0
         self.last_action = 0
         self.q_length = 0
 
@@ -118,6 +119,8 @@ class MADDPGAgent(RLAgent):
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_count"],
                                                      in_only=True, average='all', negative=True)
+        self.action = 0
+        self.last_action = 0
 
     def get_ob(self):
         x_obs = []
@@ -129,6 +132,10 @@ class MADDPGAgent(RLAgent):
         rewards = []
         rewards.append(self.reward_generator.generate())
         rewards = np.squeeze(np.array(rewards))
+        rewards = rewards + (self.action == self.last_action) * 2
+        if type(rewards) == np.float64:
+            rewards = np.array(rewards, dtype=np.float64)[np.newaxis]
+        self.last_action = self.action
         return rewards
 
     def get_phase(self):
@@ -153,6 +160,7 @@ class MADDPGAgent(RLAgent):
         actions = self.G_softmax(actions)
         actions = actions.clone().detach().numpy()
         actions = np.argmax(actions, axis=1)
+        self.action = actions
         return actions
 
     def get_action_prob(self, ob, phase):
@@ -177,6 +185,7 @@ class MADDPGAgent(RLAgent):
         prob = F.softmax(p - torch.log(-torch.log(u)), dim=1)
         """
         prob = F.gumbel_softmax(p)
+        #F.softmax(model_out - torch.log(-torch.log(u)), dim=-1)
         return prob
 
     def _batchwise(self, samples):
@@ -196,7 +205,9 @@ class MADDPGAgent(RLAgent):
             feature_tp = obs_tp
         state_t = torch.tensor(feature_t, dtype=torch.float32)
         state_tp = torch.tensor(feature_tp, dtype=torch.float32)
-        rewards = torch.tensor(np.array([item[1][3] for item in samples])[:, np.newaxis], dtype=torch.float32)  # TODO: BETTER WA
+        t = [item[1][3] for item in samples]
+        rewards = torch.tensor(np.concatenate([item[1][3] for item in samples])[:, np.newaxis], dtype=torch.float32)  # TODO: BETTER WA
+
         # TODO: reshape
         actions_prob = torch.cat([item[1][2] for item in samples], dim=0)
         return state_t, state_tp, rewards, actions_prob
@@ -255,7 +266,8 @@ class MADDPGAgent(RLAgent):
         else:
             action_list[self.rank] = p_prob
             full_action_t_q = torch.cat(action_list, dim=1)
-            pq_input = torch.cat((full_b_t.detach(), full_action_t_q), dim=1)
+            #pq_input = torch.cat((full_b_t.detach(), full_action_t_q), dim=1)
+            pq_input = torch.cat((full_b_t, full_action_t_q), dim=1)
 
         # todo: test here
         p_loss = torch.mul(-1, torch.mean(self.q_model(pq_input, train=True)))
@@ -270,8 +282,12 @@ class MADDPGAgent(RLAgent):
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
         """
+        self.pr(loss_of_q, loss_of_p, rewards_list[self.rank], q, target_q)
         # TODO: q loss or p loss ?
         return loss_of_q.clone().detach().numpy()
+
+    def pr(self, loss_of_q, loss_of_p, reward, q, target_q):
+        print(loss_of_q.data, loss_of_p.data, torch.mean(reward).data, torch.mean(q).data, torch.mean(target_q).data)
 
     def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
         self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))

@@ -8,7 +8,7 @@ model:
   graphic: False
   vehicle_max: 1
   learning_rate: 0.001
-  batch_size: 1024
+  batch_size: 256
   gamma: 0.95
   epsilon: 0.5
   epsilon_decay: 0.995
@@ -21,14 +21,14 @@ model:
 trainer:
   thread: 4
   ngpu: -1
-  learning_start: 2000
-  buffer_size: 2000
+  learning_start: 5000
+  buffer_size: 5000
   steps: 3600
   test_steps: 3600
-  action_interval: 10
+  action_interval: 20
   episodes: 2000
-  update_model_rate: 100
-  update_target_rate: 100
+  update_model_rate: 30
+  update_target_rate: 30
   # save_dir: data/output_data/task_name/dataset_dir/model_name
   # load_dir: data/output_data/task_name/dataset_dir/model_name
   # log_dir: log/task_name/dataset_dir/model_name/

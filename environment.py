@@ -55,7 +55,6 @@ class TSCEnv(gym.Env):
         dones = [False] * self.n_agents
         # infos = {"metric": self.metric.update()}
         infos = {}
-
         return obs, rewards, dones, infos
 
     def reset(self):

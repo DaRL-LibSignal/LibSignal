@@ -41,6 +41,8 @@ def p_train(make_obs_ph_n, act_space_n, p_index, p_func, q_func, optimizer, grad
         act_pd = act_pdtype_n[p_index].pdfromflat(p)
 
         act_sample = act_pd.sample()
+        test_1 = act_pd.flatparam()
+        test_2 = p
         p_reg = tf.reduce_mean(tf.square(act_pd.flatparam()))
 
         act_input_n = act_ph_n + []
@@ -93,7 +95,7 @@ def q_train(make_obs_ph_n, act_space_n, q_index, q_func, optimizer, grad_norm_cl
 
         # viscosity solution to Bellman differential equation in place of an initial condition
         q_reg = tf.reduce_mean(tf.square(q))
-        loss = q_loss + 1e-3 * q_reg
+        loss = q_loss  # + 1e-3 * q_reg
 
         optimize_expr = U.minimize_and_clip(optimizer, loss, q_func_vars, grad_norm_clipping)
 
