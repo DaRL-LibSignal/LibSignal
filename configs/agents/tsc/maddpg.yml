@@ -8,10 +8,10 @@ model:
   graphic: False
   vehicle_max: 1
   learning_rate: 0.001
-  batch_size: 256
+  batch_size: 1024
   gamma: 0.95
-  epsilon: 0.1
-  epsilon_decay: 0.95
+  epsilon: 0.5
+  epsilon_decay: 0.995
   epsilon_min: 0.01
   grad_clip: 0.5
   NEIGHBOR_NUM: 4
@@ -21,14 +21,14 @@ model:
 trainer:
   thread: 4
   ngpu: -1
-  learning_start: 1000
-  buffer_size: 1000
+  learning_start: 2000
+  buffer_size: 2000
   steps: 3600
   test_steps: 3600
   action_interval: 10
   episodes: 2000
-  update_model_rate: 360
-  update_target_rate: 360
+  update_model_rate: 100
+  update_target_rate: 100
   # save_dir: data/output_data/task_name/dataset_dir/model_name
   # load_dir: data/output_data/task_name/dataset_dir/model_name
   # log_dir: log/task_name/dataset_dir/model_name/

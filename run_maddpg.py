@@ -151,7 +151,7 @@ def train():
                     loss = None
                     for agent in agents:
                         loss = agent.update(agents, train_step)
-                        # print(loss)
+                        print(loss)
                         # if loss is not None:
                         #     print(loss[0], loss[1])
 

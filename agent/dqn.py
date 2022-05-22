@@ -108,7 +108,8 @@ class DQNAgent(RLAgent):
         else:
             feature = ob
         observation = torch.tensor(feature, dtype=torch.float32)
-        actions = self.model(observation, train=True)
+        # TODO: notice here
+        actions = self.model(observation, train=False)
         actions = actions.clone().detach().numpy()
         return np.argmax(actions, axis=1)
 

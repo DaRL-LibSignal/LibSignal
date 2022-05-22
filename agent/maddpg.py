@@ -95,12 +95,20 @@ class MADDPGAgent(RLAgent):
         self.target_q_model = self._build_model(self.q_length, 1)
         self.p_model = self._build_model(self.ob_length, self.action_space.n)
         self.target_p_model = self._build_model(self.ob_length, self.action_space.n)
-        self.update_target_network()
+        self.sync_network()
 
         self.criterion = nn.MSELoss(reduction='mean')
         self.q_optimizer = optim.Adam(self.q_model.parameters(), lr=self.learning_rate)
         self.p_optimizer = optim.Adam(self.p_model.parameters(), lr=self.learning_rate)
+        """
+        self.p_optimizer = optim.RMSprop(self.p_model.parameters(),
+                                         lr=self.learning_rate,
+                                         alpha=0.9, centered=False, eps=1e-7)
+        self.q_optimizer = optim.RMSprop(self.q_model.parameters(),
+                                         lr=self.learning_rate,
+                                         alpha=0.9, centered=False, eps=1e-7)
 
+        """
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]
         inter_obj = self.world.id2intersection[inter_id]
@@ -120,7 +128,7 @@ class MADDPGAgent(RLAgent):
     def get_reward(self):
         rewards = []
         rewards.append(self.reward_generator.generate())
-        rewards = np.squeeze(np.array(rewards)) * 12
+        rewards = np.squeeze(np.array(rewards))
         return rewards
 
     def get_phase(self):
@@ -141,11 +149,24 @@ class MADDPGAgent(RLAgent):
         else:
             feature = ob
         observation = torch.tensor(feature, dtype=torch.float32)
-        actions = self.p_model(observation, train=True)
+        actions = self.p_model(observation, train=False)
         actions = self.G_softmax(actions)
         actions = actions.clone().detach().numpy()
         actions = np.argmax(actions, axis=1)
         return actions
+
+    def get_action_prob(self, ob, phase):
+        if self.phase:
+            if self.one_hot:
+                feature = np.concatenate([ob, utils.idx2onehot(phase, self.action_space.n)], axis=1)
+            else:
+                feature = np.concatenate([ob, phase], axis=1)
+        else:
+            feature = ob
+        observation = torch.tensor(feature, dtype=torch.float32)
+        actions = self.p_model(observation, train=False)
+        actions_prob = self.G_softmax(actions)
+        return actions_prob
 
     def sample(self):
         return np.random.randint(0, self.action_space.n, self.sub_agents)
@@ -177,9 +198,8 @@ class MADDPGAgent(RLAgent):
         state_tp = torch.tensor(feature_tp, dtype=torch.float32)
         rewards = torch.tensor(np.array([item[1][3] for item in samples])[:, np.newaxis], dtype=torch.float32)  # TODO: BETTER WA
         # TODO: reshape
-        actions = torch.tensor(np.array([utils.idx2onehot(item[1][2], self.action_space.n).squeeze() for item in samples]),
-                               dtype=torch.long)
-        return state_t, state_tp, rewards, actions
+        actions_prob = torch.cat([item[1][2] for item in samples], dim=0)
+        return state_t, state_tp, rewards, actions_prob
 
     def train(self):
         b_t_list = []
@@ -190,15 +210,15 @@ class MADDPGAgent(RLAgent):
         sample_index = random.sample(list(range(self.buffer_size)), self.batch_size)
         for ag in self.agents:
             samples = np.array(list(ag.replay_buffer), dtype=object)[sample_index]
-            b_t, b_tp, rewards, actions = self._batchwise(samples)
+            b_t, b_tp, rewards, actions = ag._batchwise(samples)
             b_t_list.append(b_t)
             b_tp_list.append(b_tp)
             rewards_list.append(rewards)
             action_list.append(actions)
         target_act_next_list = []
         for i, ag in enumerate(self.agents):
-            target_act_next = self.target_p_model(b_tp_list[i], train=False)
-            target_act_next = self.G_softmax(target_act_next)
+            target_act_next = ag.target_p_model(b_tp_list[i], train=False)
+            target_act_next = ag.G_softmax(target_act_next)
             target_act_next_list.append(target_act_next)
         full_b_t = torch.cat(b_t_list, dim=1)
         full_b_tp = torch.cat(b_tp_list, dim=1)
@@ -206,7 +226,7 @@ class MADDPGAgent(RLAgent):
         full_action_t = torch.cat(action_list, dim=1)
         # combine b_t and corresponding full_actions
         if self.local_q_learn:
-            q_input_target = torch.cat((b_tp_list[self.rank], action_list[self.rank]), dim=1)
+            q_input_target = torch.cat((b_tp_list[self.rank], full_action_tp[self.rank]), dim=1)
             q_input = torch.cat((b_t_list[self.rank], full_action_t), dim=1)
         else:
             q_input_target = torch.cat((full_b_tp, full_action_tp), dim=1)
@@ -220,36 +240,36 @@ class MADDPGAgent(RLAgent):
         # update q network
         q_reg = torch.mean(torch.square(q))
         q_loss = self.criterion(q, target_q)
-        loss_of_q = q_loss + 1e-3 * q_reg
-
-        # update p network
-        p = self.p_model(b_t_list[self.rank], train=True)
-        p_reg = torch.mean(torch.square(p))
-
-        p_prob = self.G_softmax(p)
-        if self.local_q_learn:
-            pq_input = torch.cat((b_t_list[self.rank], action_list[self.rank]), dim=1)
-        else:
-            action_list[self.rank] = p_prob
-            full_action_t_q = torch.cat(action_list, dim=1)
-            pq_input = torch.cat((full_b_t, full_action_t_q), dim=1)
-
-        p_loss = -torch.mean(self.q_model(pq_input, train=False))
-        loss_of_p = p_loss + p_reg * 1e-3
-
+        loss_of_q = q_loss
         self.q_optimizer.zero_grad()
         loss_of_q.backward()
         clip_grad_norm_(self.q_model.parameters(), self.grad_clip)
         self.q_optimizer.step()
 
+        # update p network
+        p = self.p_model(b_t_list[self.rank], train=True)
+        p_prob = self.G_softmax(p)
+        p_reg = torch.mean(torch.square(p))
+        if self.local_q_learn:
+            pq_input = torch.cat((b_t_list[self.rank], p_prob), dim=1)
+        else:
+            action_list[self.rank] = p_prob
+            full_action_t_q = torch.cat(action_list, dim=1)
+            pq_input = torch.cat((full_b_t.detach(), full_action_t_q), dim=1)
+
+        # todo: test here
+        p_loss = torch.mul(-1, torch.mean(self.q_model(pq_input, train=True)))
+        loss_of_p = p_loss + p_reg * 1e-3
+
         self.p_optimizer.zero_grad()
         loss_of_p.backward()
         clip_grad_norm_(self.p_model.parameters(), self.grad_clip)
-        self.p_optimizer.step()
 
+        self.p_optimizer.step()
+        """
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-
+        """
         # TODO: q loss or p loss ?
         return loss_of_q.clone().detach().numpy()
 
@@ -261,10 +281,17 @@ class MADDPGAgent(RLAgent):
         return model
 
     def update_target_network(self):
-        q_weights = self.q_model.state_dict()
-        self.target_q_model.load_state_dict(q_weights)
+        polyak = 1.0 - 1e-2
+        for t_param, param in zip(self.target_q_model.parameters(), self.q_model.parameters()):
+            t_param.data.copy_(t_param.data * polyak + (1 - polyak) * param.data)
+        for t_param, param in zip(self.target_p_model.parameters(), self.p_model.parameters()):
+            t_param.data.copy_(t_param.data * polyak + (1 - polyak) * param.data)
+
+    def sync_network(self):
         p_weights = self.p_model.state_dict()
         self.target_p_model.load_state_dict(p_weights)
+        q_weights = self.q_model.state_dict()
+        self.target_q_model.load_state_dict(q_weights)
 
     def load_model(self, e):
         model_p_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
@@ -275,7 +302,7 @@ class MADDPGAgent(RLAgent):
         self.model_p = self._build_model(self.ob_length, self.action_space.n)
         self.model_q.load_state_dict(torch.load(model_q_name))
         self.model_p.load_state_dict(torch.load(model_p_name))
-        self.update_target_network()
+        self.sync_network()
 
     def save_model(self, e):
         path_p = os.path.join(Registry.mapping['logger_mapping']['output_path'].path, 'model_p')
@@ -296,7 +323,7 @@ class MADDPGAgent(RLAgent):
                                     'model_q', f'{self.best_epoch}_{self.rank}.pt')
         self.q_model.load_state_dict(torch.load(model_q_name))
         self.p_model.load_state_dict(torch.load(model_p_name))
-        self.update_target_network()
+        self.sync_network()
 
 
 class DQNNet(nn.Module):

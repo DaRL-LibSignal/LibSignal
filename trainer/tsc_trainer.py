@@ -108,6 +108,10 @@ class TSCTrainer(BaseTrainer):
                         actions = np.stack(actions)  # [agent, intersections]
                     else:
                         actions = np.stack([ag.sample() for ag in self.agents])
+                    if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg':
+                        actions_prob = []
+                        for idx, ag in enumerate(self.agents):
+                            actions_prob.append(ag.get_action_prob(last_obs[idx], last_phase[idx]))
                     reward_list = []
                     for _ in range(self.action_interval):
                         obs, rewards, dones, _ = self.env.step(np.squeeze(actions))
@@ -122,9 +126,12 @@ class TSCTrainer(BaseTrainer):
                         # TODO: test for PFRL
                         if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'ppo_pfrl':
                             ag.do_observe(obs[idx], cur_phase[idx], rewards[idx], dones[idx])
-
-                        ag.remember(last_obs[idx], last_phase[idx], actions[idx], rewards[idx],
-                                    obs[idx], cur_phase[idx], f'{e}_{i//self.action_interval}_{ag.id}')
+                        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg':
+                            ag.remember(last_obs[idx], last_phase[idx], actions_prob[idx], rewards[idx],
+                                        obs[idx], cur_phase[idx], f'{e}_{i // self.action_interval}_{ag.id}')
+                        else:
+                            ag.remember(last_obs[idx], last_phase[idx], actions[idx], rewards[idx],
+                                        obs[idx], cur_phase[idx], f'{e}_{i//self.action_interval}_{ag.id}')
                     flush += 1
                     if flush == self.buffer_size - 1:
                         flush = 0
