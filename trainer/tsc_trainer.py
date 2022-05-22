@@ -83,8 +83,8 @@ class TSCTrainer(BaseTrainer):
         for e in range(self.episodes):
             # TODO: check this reset agent
             last_obs = self.env.reset()  # agent * [sub_agent, feature]
-            for a in self.agents:
-                a.reset()
+            #for a in self.agents:
+            #    a.reset()
             if e % self.save_rate == self.save_rate - 1:
                 # self.env.eng.set_save_replay(True)
                 if not os.path.exists(self.replay_file_dir):
@@ -195,8 +195,8 @@ class TSCTrainer(BaseTrainer):
 
     def train_test(self, e):
         obs = self.env.reset()
-        for a in self.agents:
-            a.reset()
+        #for a in self.agents:
+        #    a.reset()
         ep_rwds = [0 for _ in range(len(self.world.intersections))]
         eps_nums = 0
         for i in range(self.test_steps):

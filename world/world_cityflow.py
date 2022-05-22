@@ -357,6 +357,17 @@ class World(object):
         for I in self.intersections:
             I.reset()
         self._update_infos()
+        # reset vehicles info
+        self.reset_vehicle_info()
+
+    def reset_vehicle_info(self):
+        """reset vehicle infos,including waiting_time, trajectory,etc."""
+        self.vehicle_waiting_time = {} # key: vehicle_id, value: the waiting time of this vehicle since last halt.
+        self.vehicle_trajectory = {} # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
+        self.history_vehicles = set()
+        self.dic_lane_vehicle_previous_step = {key: None for key in self.all_lanes}
+        self.dic_lane_vehicle_current_step = {key: None for key in self.all_lanes}
+        self.dic_vehicle_arrive_leave_time = dict()
 
     def _update_infos(self):
         self.info = {}

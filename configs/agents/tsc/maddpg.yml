@@ -7,12 +7,12 @@ model:
   local_q_learn: False
   graphic: False
   vehicle_max: 1
-  learning_rate: 0.001
+  learning_rate: 0.01
   batch_size: 256
   gamma: 0.95
   epsilon: 0.5
-  epsilon_decay: 0.995
-  epsilon_min: 0.01
+  epsilon_decay: 0.99
+  epsilon_min: 0
   grad_clip: 0.5
   NEIGHBOR_NUM: 4
   NEIGHBOR_EDGE_NUM: 4

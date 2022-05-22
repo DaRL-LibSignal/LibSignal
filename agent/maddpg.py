@@ -180,11 +180,12 @@ class MADDPGAgent(RLAgent):
         return np.random.randint(0, self.action_space.n, self.sub_agents)
 
     def G_softmax(self, p):
-        """
-        u = torch.rand(self.action_space.n)
-        prob = F.softmax(p - torch.log(-torch.log(u)), dim=1)
-        """
-        prob = F.gumbel_softmax(p)
+
+        #u = torch.rand(self.action_space.n)
+
+        #prob = F.softmax(p - torch.log(-torch.log(u)), dim=1)
+
+        prob = F.softmax(p, dim=1)
         #F.softmax(model_out - torch.log(-torch.log(u)), dim=-1)
         return prob
 
@@ -278,11 +279,10 @@ class MADDPGAgent(RLAgent):
         clip_grad_norm_(self.p_model.parameters(), self.grad_clip)
 
         self.p_optimizer.step()
-        """
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-        """
-        self.pr(loss_of_q, loss_of_p, rewards_list[self.rank], q, target_q)
+
+        #self.pr(loss_of_q, loss_of_p, rewards_list[self.rank], q, target_q)
         # TODO: q loss or p loss ?
         return loss_of_q.clone().detach().numpy()
 
