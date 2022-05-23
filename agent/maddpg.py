@@ -100,7 +100,7 @@ class MADDPGAgent(RLAgent):
 
         self.criterion = nn.MSELoss(reduction='mean')
         self.q_optimizer = optim.Adam(self.q_model.parameters(), lr=self.learning_rate)
-        self.p_optimizer = optim.Adam(self.p_model.parameters(), lr=self.learning_rate)
+        self.p_optimizer = optim.Adam(self.p_model.parameters(), lr=self.learning_rate * 0.1)
         """
         self.p_optimizer = optim.RMSprop(self.p_model.parameters(),
                                          lr=self.learning_rate,
@@ -156,10 +156,12 @@ class MADDPGAgent(RLAgent):
         else:
             feature = ob
         observation = torch.tensor(feature, dtype=torch.float32)
-        actions = self.p_model(observation, train=False)
-        actions = self.G_softmax(actions)
+        actions_o = self.p_model(observation, train=False)
+        #actions = torch.argmax(actions_o, dim=1)
+        actions_prob = self.G_softmax(actions_o)
+        actions = torch.argmax(actions_prob, dim=1)
         actions = actions.clone().detach().numpy()
-        actions = np.argmax(actions, axis=1)
+        self.last_action = self.action
         self.action = actions
         return actions
 
@@ -181,12 +183,11 @@ class MADDPGAgent(RLAgent):
 
     def G_softmax(self, p):
 
-        #u = torch.rand(self.action_space.n)
+        u = torch.rand(self.action_space.n)
 
-        #prob = F.softmax(p - torch.log(-torch.log(u)), dim=1)
+        prob = F.softmax((p - torch.log(-torch.log(u))/10000), dim=1)
 
-        prob = F.softmax(p, dim=1)
-        #F.softmax(model_out - torch.log(-torch.log(u)), dim=-1)
+        #prob = F.softmax(p, dim=1)
         return prob
 
     def _batchwise(self, samples):
@@ -272,15 +273,17 @@ class MADDPGAgent(RLAgent):
 
         # todo: test here
         p_loss = torch.mul(-1, torch.mean(self.q_model(pq_input, train=True)))
-        loss_of_p = p_loss + p_reg * 1e-3
+        loss_of_p = p_loss #+ p_reg * 1e-3
 
         self.p_optimizer.zero_grad()
         loss_of_p.backward()
         clip_grad_norm_(self.p_model.parameters(), self.grad_clip)
 
         self.p_optimizer.step()
+        """
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
+        """
 
         #self.pr(loss_of_q, loss_of_p, rewards_list[self.rank], q, target_q)
         # TODO: q loss or p loss ?
@@ -294,6 +297,10 @@ class MADDPGAgent(RLAgent):
 
     def _build_model(self, input_dim, output_dim):
         model = DQNNet(input_dim, output_dim)
+        return model
+
+    def _build_actor(self, input_dim, output_dim):
+        model = Actor(input_dim, output_dim)
         return model
 
     def update_target_network(self):
@@ -353,6 +360,27 @@ class DQNNet(nn.Module):
         x = F.relu(self.dense_1(x))
         x = F.relu(self.dense_2(x))
         x = self.dense_3(x)
+        return x
+
+    def forward(self, x, train=True):
+        if train:
+            return self._forward(x)
+        else:
+            with torch.no_grad():
+                return self._forward(x)
+
+
+class Actor(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(Actor, self).__init__()
+        self.dense_1 = nn.Linear(input_dim, 128)
+        self.dense_2 = nn.Linear(128, 128)
+        self.dense_3 = nn.Linear(128, output_dim)
+
+    def _forward(self, x):
+        x = F.relu(self.dense_1(x))
+        x = F.relu(self.dense_2(x))
+        x = F.tanh(self.dense_3(x))
         return x
 
     def forward(self, x, train=True):

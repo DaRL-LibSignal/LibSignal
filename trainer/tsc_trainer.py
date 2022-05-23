@@ -97,6 +97,9 @@ class TSCTrainer(BaseTrainer):
             episodes_decision_num = 0
             episode_loss = []
             i = 0
+            if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg':
+                for ag in self.agents:
+                    ag.epsilon = ag.epsilon * 0.99
             while i < self.steps:
                 if i % self.action_interval == 0:
                     last_phase = np.stack([ag.get_phase() for ag in self.agents])  # [agent, intersections]
