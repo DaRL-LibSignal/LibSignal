@@ -4,9 +4,6 @@ __pycache__/
 .vscode/
 data/output_data
 .ipynb
-<<<<<<< HEAD
 *.sh
-=======
 data/raw_data/grid4x4/*.xml
 data/raw_data/grid4x4/*.pdf
->>>>>>> c9e0f6d3a23887a5f24015a4ed75bf97be5217de
