@@ -91,12 +91,12 @@ class FRAP_DQNAgent(RLAgent):
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_waiting_count"], in_only=True, average="all",
                                                      negative=True)
-        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_waiting_count"], in_only=True,
-                                                     negative=False)
-        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_delay"], in_only=True, average="all",
-                                                     negative=False)
+        # self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+        #                                              ["lane_waiting_count"], in_only=True,
+        #                                              negative=False)
+        # self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+        #                                              ["lane_delay"], in_only=True, average="all",
+        #                                              negative=False)
 
 
     def _build_model(self):

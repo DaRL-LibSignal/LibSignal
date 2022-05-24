@@ -28,15 +28,12 @@ class SOTLAgent(BaseAgent):
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter, ["lane_waiting_count"],
                                                      in_only=True, average='all', negative=True)
-        self.queue = LaneVehicleGenerator(self.world, self.inter,
-                                                     ["lane_waiting_count"], in_only=True,
-                                                     negative=False)
-
-        # self.throughput = IntersectionVehicleGenerator(self.world, self.inter,
-        #                                                   ['throughput'], targets=['cur_throughput'], negative=False)
-        self.delay = LaneVehicleGenerator(self.world, self.inter,
-                                                     ["lane_delay"], in_only=True,
-                                                     negative=False)
+        # self.queue = LaneVehicleGenerator(self.world, self.inter,
+        #                                              ["lane_waiting_count"], in_only=True,
+        #                                              negative=False)
+        # self.delay = LaneVehicleGenerator(self.world, self.inter,
+        #                                              ["lane_delay"], in_only=True,
+        #                                              negative=False)
         self.action_space = gym.spaces.Discrete(len(self.inter.phases))
 
     def reset(self):
@@ -48,15 +45,12 @@ class SOTLAgent(BaseAgent):
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter, ["lane_waiting_count"],
                                                      in_only=True, average='all', negative=True)
-        self.queue = LaneVehicleGenerator(self.world, self.inter,
-                                                     ["lane_waiting_count"], in_only=True,
-                                                     negative=False)
-
-        # self.throughput = IntersectionVehicleGenerator(self.world, self.inter,
-        #                                                   ['throughput'], targets=['cur_throughput'], negative=False)
-        self.delay = LaneVehicleGenerator(self.world, self.inter,
-                                                     ["lane_delay"], in_only=True,
-                                                     negative=False)
+        # self.queue = LaneVehicleGenerator(self.world, self.inter,
+        #                                              ["lane_waiting_count"], in_only=True,
+        #                                              negative=False)
+        # self.delay = LaneVehicleGenerator(self.world, self.inter,
+        #                                              ["lane_delay"], in_only=True,
+        #                                              negative=False)
 
 
     def reset(self):
