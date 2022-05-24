@@ -82,21 +82,16 @@ else:
 def parse_args():
     parser = argparse.ArgumentParser()
     # sumo2cityflow
-    # parser.add_argument("--sumonet", type=str,default='LibSignalSpare/data/raw_data/grid_4x4/grid4x4.net.xml')
-    # parser.add_argument("--cityflownet", type=str,default='LibSignalSpare/data/raw_data/grid_4x4/grid4x4_roadnet_red.json')
-    # parser.add_argument("--sumofile", type=str,default='LibSignalSpare/data/raw_data/grid_4x4/grid4x4_1.rou.xml')
-    # parser.add_argument("--cityflowfile", type=str,default='LibSignalSpare/data/raw_data/grid_4x4/grid4x4_1_flow.json')
-    # parser.add_argument("--sumocfg", type=str,default='LibSignalSpare/data/raw_data/grid_4x4/grid4x4.sumocfg')
     parser.add_argument("--or_sumonet", type=str,
-                        default='grid_4x4/grid4x4.net.xml')
+                        default='cologne1/cologne1.net.xml')
     parser.add_argument("--cityflownet", type=str,
-                        default='grid_4x4/grid4x4_roadnet_red.json')
+                        default='cologne1/cologne1_roadnet_red.json')
     parser.add_argument("--or_sumoflow", type=str,
-                        default='grid_4x4/grid4x4_1.rou.xml')
+                        default='cologne1/cologne1.rou.xml')
     parser.add_argument("--cityflowflow", type=str,
-                        default='grid_4x4/grid4x4_flow.json')
+                        default='cologne1/cologne1_flow.json')
     parser.add_argument("--sumocfg", type=str,
-                        default='grid_4x4/grid4x4.sumocfg')
+                        default='cologne1/cologne1.sumocfg')
 
     # cityflow2sumo
     parser.add_argument("--or_cityflownet", type=str,
@@ -510,11 +505,15 @@ def get_final_roads(net):
         end_intersection = edge.getToNode()
         end_coord = end_intersection.getCoord()
         tmp_points = edge.getShape()
-        points=[]
+        points = []
+        # points.append({"x":start_coord[0],"y":start_coord[1]})
+        # length_p = len(tmp_points)
+        # for i in range(length_p):
+        #     points.append({"x":tmp_points[i][0],"y":tmp_points[i][1]})
+        # points.append({"x":end_coord[0],"y":end_coord[1]})
         points.append({"x":start_coord[0],"y":start_coord[1]})
         length_p = len(tmp_points)
         for i in range(1,length_p-1):
-        # for p_idx, point in tmp_points:
             points.append({"x":tmp_points[i][0],"y":tmp_points[i][1]})
         points.append({"x":end_coord[0],"y":end_coord[1]})
         road = {

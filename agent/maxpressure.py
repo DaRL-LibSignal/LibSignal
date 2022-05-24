@@ -25,13 +25,13 @@ class MaxPressureAgent(BaseAgent):
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj, ["lane_count"],
                                                      in_only=True, average='all', negative=True)
         
-        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_waiting_count"], in_only=True,
-                                                     negative=False)
+        # self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+        #                                              ["lane_waiting_count"], in_only=True,
+        #                                              negative=False)
 
-        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_delay"], in_only=True,
-                                                     negative=False)
+        # self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+        #                                              ["lane_delay"], in_only=True,
+        #                                              negative=False)
         self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
         
         # the minimum duration of time of one phase
@@ -48,13 +48,13 @@ class MaxPressureAgent(BaseAgent):
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj, ["lane_count"],
                                                      in_only=True, average='all', negative=True)
         
-        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_waiting_count"], in_only=True,
-                                                     negative=False)
+        # self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+        #                                              ["lane_waiting_count"], in_only=True,
+        #                                              negative=False)
 
-        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_delay"], in_only=True,
-                                                     negative=False)
+        # self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+        #                                              ["lane_delay"], in_only=True,
+        #                                              negative=False)
 
     def get_ob(self):
         x_obs = []
