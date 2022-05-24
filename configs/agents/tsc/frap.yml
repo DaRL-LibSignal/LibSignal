@@ -23,10 +23,17 @@ trainer:
   buffer_size: 5000 
   steps: 3600 
   test_steps: 3600 
+<<<<<<< HEAD
   action_interval: 20
   episodes: 200
   update_model_rate: 1
   update_target_rate: 10
+=======
+  action_interval: 20 
+  episodes: 100
+  update_model_rate: 60
+  update_target_rate: 80
+>>>>>>> c9e0f6d3a23887a5f24015a4ed75bf97be5217de
   # loss_function: mean_squared_error
 
 logger:

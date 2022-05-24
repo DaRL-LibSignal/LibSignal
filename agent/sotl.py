@@ -59,6 +59,16 @@ class SOTLAgent(BaseAgent):
                                                      negative=False)
 
 
+    def reset(self):
+        inter_id = self.world.intersection_ids[self.rank]
+        inter_obj = self.world.id2intersection[inter_id]
+        self.inter = inter_obj
+        self.ob_generator = LaneVehicleGenerator(self.world, inter_obj, ['lane_waiting_count'], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, inter_obj, ["phase"],
+                                                          targets=["cur_phase"], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_count"],
+                                                     in_only=True, average='all', negative=True)
+
     def get_phase(self):
         phase = []
         phase.append(self.phase_generator.generate())
@@ -81,6 +91,7 @@ class SOTLAgent(BaseAgent):
     def get_action(self, ob, phase, test=True):
         lane_waiting_count = self.world.get_info("lane_waiting_count")
         action = self.inter.current_phase
+        # TODO: we assume current_phase_time always greater than yellow_Phase_time
         if self.inter.current_phase_time >= self.t_min:
             num_green_vehicles = sum([lane_waiting_count[lane] for
                                       lane in self.inter.phase_available_startlanes[self.inter.current_phase]])

@@ -79,7 +79,7 @@ class TSCTrainer(BaseTrainer):
                 self.env.eng.set_save_replay(True)
                 if not os.path.exists(self.replay_file_dir):
                     os.makedirs(self.replay_file_dir)
-                self.env.eng.set_replay_file(self.replay_file_dir + f"/episode_{e}.txt")  # TODO: replay here
+                # self.env.eng.set_replay_file(self.replay_file_dir + f"/episode_{e}.txt")  # TODO: replay here
             else:
                 pass
                 # self.env.eng.set_save_replay(False)
@@ -114,6 +114,10 @@ class TSCTrainer(BaseTrainer):
                     cur_phase = np.stack([ag.get_phase() for ag in self.agents])
                     # TODO: construct database here
                     for idx, ag in enumerate(self.agents):
+                        # TODO: test for PFRL
+                        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'ppo_pfrl':
+                            ag.do_observe(obs[idx], cur_phase[idx], rewards[idx], dones[idx])
+
                         ag.remember(last_obs[idx], last_phase[idx], actions[idx], rewards[idx],
                                     obs[idx], cur_phase[idx], f'{e}_{i//self.action_interval}_{ag.rank}')
                     flush += 1
@@ -216,6 +220,8 @@ class TSCTrainer(BaseTrainer):
         ep_delay = np.array([0 for _ in range(len(self.world.intersections))], dtype=np.float32)
         ep_throughput = 0
         eps_nums = 0
+        lane_delay = np.array([value for _, value in self.env.world.get_lane_delay().items()]).mean()
+        lane_queue_length = np.array([value for _, value in self.env.world.get_lane_queue_length().items()]).mean()
         for i in range(self.test_steps):
             if i % self.action_interval == 0:
                 phases = np.stack([ag.get_phase() for ag in self.agents])
@@ -233,6 +239,9 @@ class TSCTrainer(BaseTrainer):
                 rewards = np.mean(rewards_list, axis=0)
                 ep_rwds += rewards.flatten()
                 eps_nums += 1
+                lane_delay += np.array([value for _, value in self.env.world.get_lane_delay().items()]).mean()
+                lane_queue_length += np.array(
+                    [value for _, value in self.env.world.get_lane_queue_length().items()]).mean()
             if all(dones):
                 break
         mean_rwd = np.sum(ep_rwds) / eps_nums

@@ -8,3 +8,4 @@ from .frap import FRAP_DQNAgent
 from .presslight import PressLightAgent
 from .fixedtime import FixedTimeAgent
 
+from .ppo_pfrl import IPPO_pfrl

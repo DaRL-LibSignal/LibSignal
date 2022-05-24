@@ -8,9 +8,9 @@ import numpy as np
 
 @Registry.register_model('rl')
 class RLAgent(BaseAgent):
-    def __init__(self, world, intersection_id='intersection_1_1'):
+    def __init__(self, world, intersection_ids):
         super().__init__(world)
-        self.id = intersection_id
+        self.id = intersection_ids
         self.inter_obj = self.world.id2intersection[self.id]
         self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
         self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj,
