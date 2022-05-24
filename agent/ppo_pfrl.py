@@ -138,9 +138,6 @@ class IPPO_pfrl(RLAgent):
     def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
         self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
 
-    def pr(self):
-        print(self.agent.get_statistics())
-
     def _build_model(self):
         """
         self.agent = PPO(self.model, self.optimizer, gpu=self.device.index,

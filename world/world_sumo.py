@@ -322,6 +322,7 @@ class World(object):
         # restart eng
         self.run = 0
         self.inside_vehicles = dict()
+
         self.vehicles = dict()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
@@ -390,6 +391,7 @@ class World(object):
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
             self.inside_vehicles.update({v: self.cur_time()})
+
         exiting_v = self.eng.simulation.getArrivedIDList()
         for v in exiting_v:
             self.vehicles.update({v: self.cur_time() - self.inside_vehicles[v]})
@@ -403,6 +405,7 @@ class World(object):
         self.run = 0
         self.vehicles = dict()
         self.inside_vehicles = dict()
+
         # TODO: check when to close traci
         traci.start(self.sumo_cmd, label=self.connection_name)
         # TODO: set trip info output

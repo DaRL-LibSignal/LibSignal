@@ -65,6 +65,30 @@ class CoLightAgent(RLAgent):
         sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
         self.reward_generator = rewarding_generators
 
+        #  get queue generator for CoLightAgent
+        queues = []
+        for inter in self.world.intersections:
+            node_id = inter.id
+            node_idx = self.graph['node_id2idx'][node_id]
+            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"], 
+                                                 in_only=True, negative=False)
+            queues.append((node_idx, tmp_generator))
+        # now generator's order is according to its index in graph
+        sorted(queues, key=lambda x: x[0])
+        self.queue = queues
+
+        #  get delay generator for CoLightAgent
+        delays = []
+        for inter in self.world.intersections:
+            node_id = inter.id
+            node_idx = self.graph['node_id2idx'][node_id]
+            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_delay"], 
+                                                 in_only=True, average="all", negative=False)
+            delays.append((node_idx, tmp_generator))
+        # now generator's order is according to its index in graph
+        sorted(delays, key=lambda x: x[0])
+        self.delay = delays
+
         #  phase generator
         phasing_generators = []
         for inter in self.world.intersections:
@@ -161,9 +185,28 @@ class CoLightAgent(RLAgent):
         phase = []  # sub_agents
         for i in range(len(self.phase_generator)):
             phase.append((self.phase_generator[i][1].generate()))
-        phase = np.concatenate(phase, dtype=np.int8)
+        phase = (np.concatenate(phase)).astype(np.int8)
+        # phase = np.concatenate(phase, dtype=np.int8)
         return phase
 
+    def get_queue(self):
+        """
+        get delay of intersection
+        return: value(one intersection) or [intersections,](multiple intersections)
+        """
+        queue = []
+        for i in range(len(self.queue)):
+            queue.append((self.queue[i][1].generate()))
+        tmp_queue = np.squeeze(np.array(queue))
+        queue = np.sum(tmp_queue, axis=1 if len(tmp_queue.shape)==2 else 0)
+        return queue
+
+    def get_delay(self):
+        delay = []
+        for i in range(len(self.delay)):
+            delay.append((self.delay[i][1].generate()))
+        delay = np.squeeze(np.array(delay))
+        return delay # [intersections,]
 
     def get_action(self, ob, phase, test=False):
         """
@@ -251,6 +294,12 @@ class CoLightAgent(RLAgent):
     def update_target_network(self):
         weights = self.model.state_dict()
         self.target_model.load_state_dict(weights)
+
+    def load_model(self, e):
+        model_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+                                  'model', f'{e}_{self.rank}.pt')
+        self.model = self._build_model()
+        self.model.load_state_dict(torch.load(model_name))
         self.target_model = self._build_model()
         self.target_model.load_state_dict(torch.load(model_name))
 
@@ -299,7 +348,7 @@ class ColightNet(nn.Module):
 
     def forward(self, x, edge_index, train=True):
         h = self.embedding_MLP.forward(x, train)
-        #TODO: implement att
+        # TODO: implement att
         for mdl in self.module_list:
             h = mdl.forward(h, edge_index, train)
         if train:
@@ -392,7 +441,8 @@ class MultiHeadAttModel(MessagePassing):
 
         h_source = F.relu(self.W_source(x_j))
         h_source = h_source.view(h_source.shape[:-1][0], self.nv, self.dv)
-        neighbor_repr = h_source.permute(1, 0, 2)   #[nv, E, dv]
+
+        neighbor_repr = h_source.permute(1, 0, 2)  # [nv, E, dv]
         index = edge_index[1]  # which is target
 
         e_i = torch.mul(agent_repr, neighbor_repr).sum(-1)  # [5, 64]

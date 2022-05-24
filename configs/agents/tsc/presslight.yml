@@ -1,0 +1,101 @@
+includes:
+  - configs/agents/tsc/base.yml
+
+
+model:
+  name: presslight
+  d_dense: 20
+  n_layer: 2
+  patience: 10
+  normal_factor: 20
+  graphic: False
+  learning_rate: 0.001
+  batch_size: 64
+  gamma: 0.95
+  epsilon: 0.1
+  epsilon_decay: 0.995
+  epsilon_min: 0.01
+  grad_clip: 5.0
+
+
+
+trainer:
+  thread: 4
+  ngpu: -1
+  learning_start: 1000
+  meta_test_start: 100
+  buffer_size: 5000
+  steps: 3600
+  test_steps: 3600
+  action_interval: 10
+  episodes: 200
+  update_model_rate: 1
+  update_target_rate: 10
+  meta_test_update_model_rate: 10
+  meta_test_update_target_model_rate: 200
+
+
+logger:
+  log_dir: "logger"
+  replay_dir: "replay"
+  save_dir: "model"
+  data_dir: "dataset"
+  get_attention: False
+  ave_model: True
+  save_model: True
+  save_rate: 20
+  train_model: True
+  test_model: True
+  load_model: False
+
+
+traffic:
+  one_hot: True
+  phase: True
+  thread_num: 4
+  ACTION_PATTERN: "set"
+  NUM_INTERSECTIONS: 1
+  MIN_ACTION_TIME: 10
+  YELLOW_TIME: 5
+  ALL_RED_TIME: 0
+  NUM_PHASES: 8
+  NUM_LANES: 1
+  ACTION_DIM: 2
+  MEASURE_TIME: 10
+  list_state_feature: 
+    - cur_phase
+    - lane_num_vehicle
+  dic_reward_info: 
+    - flickering: 0
+    - sum_lane_queue_length: 0
+    - sum_lane_wait_time: 0
+    - sum_lane_num_vehicle_left: 0
+    - sum_duration_vehicle_left: 0
+    - sum_num_vehicle_been_stopped_thres01: 0
+    - sum_num_vehicle_been_stopped_thres1: -0.25
+    - pressure: 0
+  line_num: 
+    - left: 1
+    - right: 1
+    - straight: 1
+  IF_GUI: True
+  DEBUG: False
+  INTERVAL: 1
+  SAVEREPLAY: True
+  RLTRAFFICLIGHT: True
+  dic_feature_dim:
+    d_lane_queue_length: !!python/tuple [4]
+    d_lane_num_vehicle: !!python/tuple [4]
+    d_coming_vehicle: !!python/tuple [4]
+    d_leaving_vehicle: !!python/tuple [4]
+    d_lane_num_vehicle_been_stopped_thres1: !!python/tuple [4]
+    d_cur_phase: !!python/tuple [1]
+    d_next_phase: !!python/tuple [1]
+    d_time_this_phase: !!python/tuple [1]
+    d_terminal: !!python/tuple [1]
+    d_lane_sum_waiting_time: !!python/tuple [4]
+    d_vehicle_position_img: !!python/tuple [4,60]
+    d_vehicle_speed_img: !!python/tuple [4,60]
+    d_vehicle_waiting_time_img: !!python/tuple [4,60]
+    d_pressure: !!python/tuple [1]
+    d_adjacency_matrix: !!python/tuple [2]

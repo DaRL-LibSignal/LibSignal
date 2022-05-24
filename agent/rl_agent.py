@@ -1,9 +1,9 @@
 from . import BaseAgent
 from common.registry import Registry
 import gym
-from generator.lane_vehicle import LaneVehicleGenerator
-from generator.intersection_phase import IntersectionPhaseGenerator
+from generator import LaneVehicleGenerator, IntersectionPhaseGenerator, IntersectionVehicleGenerator
 import random
+import numpy as np
 
 
 @Registry.register_model('rl')
@@ -11,14 +11,21 @@ class RLAgent(BaseAgent):
     def __init__(self, world, intersection_ids):
         super().__init__(world)
         self.id = intersection_ids
-        self.action_space = gym.spaces.Discrete(len(world.id2intersection[intersection_ids].phases))
-        self.ob_generator = LaneVehicleGenerator(self.world, world.id2intersection[self.id],
+        self.inter_obj = self.world.id2intersection[self.id]
+        self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
+        self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj,
                                                  ["lane_count"], in_only=True, average=None)
-        self.phase_generator = IntersectionPhaseGenerator(self.world, world.id2intersection[self.id],
+        self.phase_generator = IntersectionPhaseGenerator(self.world, self.inter_obj,
                                                           ['phase'], targets=['cur_phase'], negative=False)
-        self.reward_generator = LaneVehicleGenerator(self.world, world.id2intersection[self.id],
+        self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_waiting_count"], in_only=True, average="all",
                                                      negative=True)
+        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+                                          ["lane_waiting_count"], in_only=True,
+                                          negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+                                          ["lane_delay"], in_only=True, average="all",
+                                          negative=False)
 
     def get_ob(self):
         return self.ob_generator.generate()
@@ -35,7 +42,28 @@ class RLAgent(BaseAgent):
         return self.action_space.sample()
     
     def sample(self):
-        return random.randint(0, self.action_space.n-1)
+        return random.randint(0,self.action_space.n-1)
+
+    def get_queue(self):
+        """
+        get queue of intersection
+        return: value
+        """
+        queue = []
+        queue.append(self.queue.generate())
+        # sum of lane nums
+        queue = np.sum(np.squeeze(np.array(queue)))
+        return queue
+
+    def get_delay(self):
+        """
+        get delay of intersection
+        return: value
+        """
+        delay = []
+        delay.append(self.delay.generate())
+        delay = np.sum(np.squeeze(np.array(delay)))
+        return delay
     
     """
     def choose(self, **kwargs):

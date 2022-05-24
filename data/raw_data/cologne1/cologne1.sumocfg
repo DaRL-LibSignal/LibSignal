@@ -1,7 +1,15 @@
 <configuration>
   <input>
     <net-file value="cologne1.net.xml"/>
+<<<<<<< HEAD
 	<route-files value="cologne1.rou.xml"/>
+=======
+<<<<<<< HEAD
+	<route-files value="cologne1_1.rou.xml"/>
+=======
+	<route-files value="cologne1.rou.xml"/>
+>>>>>>> c9e0f6d3a23887a5f24015a4ed75bf97be5217de
+>>>>>>> 9f7d74002fe59a7075f302ad837fdeccea874e6c
   </input>
   <time>
     <begin value="25200"/>

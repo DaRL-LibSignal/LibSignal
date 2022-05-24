@@ -8,20 +8,21 @@ model:
   conflict_matrix: true
   merge: multiply
   d_dense: 20
-  learning_rate: 0.005
-  batch_size: 20
+  learning_rate: 0.001
+  batch_size: 64
   gamma: 0.95
-  epsilon: 0.2
-  epsilon_decay: 0.95
+  epsilon: 0.1
+  epsilon_decay: 0.995
   epsilon_min: 0.01
+  grad_clip: 5.0
 
 trainer: 
   thread: 4 
-  ngpu: -1 
-  learning_start: 100 
-  buffer_size: 2000 
+  ngpu: -1
+  learning_start: 1000
+  buffer_size: 5000 
   steps: 3600 
-  test_steps: 3600 
+  test_steps: 3600
   action_interval: 20 
   episodes: 100
   update_model_rate: 60
@@ -37,10 +38,12 @@ logger:
   save_model: True
   save_rate: 20
   train_model: True
-  test_model: False
+  test_model: True
   load_model: False
 
 traffic:
+  one_hot: True
+  phase: True
   n_leg: 4
   thread_num: 4
   debug: False
@@ -74,7 +77,7 @@ traffic:
   #   right: 1
   #   straight: 1
 
-  phase: ['NT_ST','WT_ET','NL_SL','WL_EL','NL_NT','SL_ST','WL_WT','EL_ET']
+  phases: ['NT_ST','WT_ET','NL_SL','WL_EL','NL_NT','SL_ST','WL_WT','EL_ET']
   
   list_lane_order: ['ET','EL','ST','SL','WT','WL','NT','NL']
 

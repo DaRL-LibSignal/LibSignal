@@ -7,6 +7,7 @@ import numpy as np
 from math import atan2, pi
 import sys
 
+
 # TODO: THIS IS Y/X  But we keep it right now
 def _get_direction(road, out=True):
     if out:
@@ -41,11 +42,25 @@ class Intersection(object):
         self.phase_available_lanelinks = []
         self.phase_available_startlanes = []
 
-        # define yellow phases, currently default to 0
+        self.if_sumo = True if "gt_virtual" in intersection else False
 
-        self.yellow_phase_id = [0]
-        self.yellow_phase_time = 5
-
+        # create yellow phases
+        # in cityflow, currently default to 0
+        # but in sumo, must find yellow phases idx
+        phases = intersection["trafficLight"]["lightphases"]
+        self.all_phases = [i for i in range(len(phases))]
+        if self.if_sumo:
+            self.yellow_phase_id = [i for i in range(len(phases)) if phases[i]['time'] == 5 or phases[i]['time'] == 3]
+            self.phases = [i for i in range(len(phases)) if phases[i]['time'] != 5 and phases[i]['time'] != 3]
+            # self.phases_time = [phases[i]['time'] for i in self.phases]
+            # self.yellow_phase_time = min([phases[i]['time'] for i in range(len(phases)) if phases[i]['time']==5 or phases[i]['time']==3])
+            self.yellow_phase_time = 3
+        else:
+            self.yellow_phase_id = [0]
+            self.yellow_phase_time = 5
+            self.phases = [i for i in range(len(phases)) if
+                           not i in self.yellow_phase_id]  # mapping from model output to cityflow phase id
+            # self.phases_time = [phases[i]['time'] for i in self.phases]
         # parsing links and phases
         for roadlink in intersection["roadLinks"]:
             self.roadlinks.append((roadlink["startRoad"], roadlink["endRoad"]))
@@ -60,8 +75,6 @@ class Intersection(object):
 
         self.startlanes = list(set(self.startlanes))
 
-        phases = intersection["trafficLight"]["lightphases"]
-        self.phases = [i for i in range(len(phases)) if not i in self.yellow_phase_id] # mapping from model output to cityflow phase id
         for i in self.phases:
             phase = phases[i]
             self.phase_available_roadlinks.append(phase["availableRoadLinks"])
@@ -93,6 +106,9 @@ class Intersection(object):
         self.in_roads = [self.roads[i] for i, x in enumerate(self.outs) if not x]
 
     def _change_phase(self, phase, interval):
+        """
+        phase: true phase id (including yellows)
+        """
         self.eng.set_tl_phase(self.id, phase)
         self._current_phase = phase
         self.current_phase_time = interval
@@ -113,7 +129,12 @@ class Intersection(object):
                 self.current_phase_time += interval
             else:
                 if self.yellow_phase_time > 0:
-                    self._change_phase(self.yellow_phase_id[0], interval)
+                    # TODO in sumo,the yellow_phase may other id
+                    # find self.all_phases[(self._current_phase+1)%len(self.all_phases)]
+                    if self.if_sumo:
+                        self._change_phase(self.all_phases[(self._current_phase + 1) % len(self.all_phases)], interval)
+                    else:
+                        self._change_phase(self.yellow_phase_id[0], interval)
                     self.action_before_yellow = action
                 else:
                     self._change_phase(self.phases[action], interval)
@@ -132,6 +153,7 @@ class Intersection(object):
         self.action_before_yellow = None
         self.action_executed = None
 
+
 @Registry.register_world('cityflow')
 class World(object):
     """
@@ -148,12 +170,23 @@ class World(object):
         self.interval = cityflow_config["interval"]
 
         # get all non virtual intersections
-        self.intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
+        # judge whether the file is convert from sumo file,
+        # (in sumo_convert file, the "virtual" value of all intersections are set to "False"),
+        # if so, then must use "gt_virtual" to create non-virtual intersections,
+        # if not, just use "virtual" to create.
+        if_sumo = True if "gt_virtual" in self.roadnet["intersections"][0] else False
+        if if_sumo:
+            self.intersections = [i for i in self.roadnet["intersections"] if not i["gt_virtual"]]
+        else:
+            self.intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
         self.intersection_ids = [i["id"] for i in self.intersections]
 
         # create non-virtual Intersections
         print("creating intersections...")
-        non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
+        if if_sumo:
+            non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["gt_virtual"]]
+        else:
+            non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
         self.intersections = [Intersection(i, self) for i in non_virtual_intersections]
         # if len(self.intersections) == 6:
         #     self.intersections = self.intersections[0:5]
@@ -167,12 +200,14 @@ class World(object):
         print("parsing roads...")
         self.all_roads = []
         self.all_lanes = []
+        self.all_lanes_speed = {}
 
         for road in self.roadnet["roads"]:
             self.all_roads.append(road["id"])
             i = 0
-            for _ in road["lanes"]:
+            for lane in road["lanes"]:
                 self.all_lanes.append(road["id"] + "_" + str(i))
+                self.all_lanes_speed[road["id"] + "_" + str(i)] = lane['maxSpeed']
                 i += 1
 
             iid = road["startIntersection"]
@@ -200,17 +235,87 @@ class World(object):
             "vehicle_trajectory": self.get_vehicle_trajectory,
             "history_vehicles": self.get_history_vehicles,
             "phase": self.get_cur_phase,
-            # "action_executed": self.get_executed_action
+            "throughput": self.get_cur_throughput,
             "averate_travel_time": self.get_average_travel_time
+            # "action_executed": self.get_executed_action
         }
         self.fns = []
         self.info = {}
-
         self.vehicle_waiting_time = {}  # key: vehicle_id, value: the waiting time of this vehicle since last halt.
         self.vehicle_trajectory = {}  # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
         self.history_vehicles = set()
 
+        # # get in_lines and out_lanes
+        # self.list_entering_lanes, self.list_exiting_lanes = self.get_in_out_lanes()
+
+        # record lanes' vehicles to calculate arrive_leave_time
+        self.dic_lane_vehicle_previous_step = {key: None for key in self.all_lanes}
+        self.dic_lane_vehicle_current_step = {key: None for key in self.all_lanes}
+        self.dic_vehicle_arrive_leave_time = dict()  # cumulative
+
         print("world built.")
+
+    def reset_vehicle_info(self):
+        """reset vehicle infos,including waiting_time, trajectory,etc."""
+        self.vehicle_waiting_time = {}  # key: vehicle_id, value: the waiting time of this vehicle since last halt.
+        self.vehicle_trajectory = {}  # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
+        self.history_vehicles = set()
+        self.dic_lane_vehicle_previous_step = {key: None for key in self.all_lanes}
+        self.dic_lane_vehicle_current_step = {key: None for key in self.all_lanes}
+        self.dic_vehicle_arrive_leave_time = dict()
+
+    def _update_arrive_time(self, list_vehicle_arrive):
+        ts = self.eng.get_current_time()
+        # init vehicle enter leave time
+        for vehicle in list_vehicle_arrive:
+            if vehicle not in self.dic_vehicle_arrive_leave_time:
+                self.dic_vehicle_arrive_leave_time[vehicle] = {"enter_time": ts, "leave_time": np.nan,
+                                                               "cost_time": np.nan}
+            else:
+                # print("vehicle: %s already exists in entering lane!"%vehicle)
+                pass
+
+    def _update_left_time(self, list_vehicle_left):
+        ts = self.eng.get_current_time()
+        # update the time for vehicle to leave entering lane
+        for vehicle in list_vehicle_left:
+            try:
+                self.dic_vehicle_arrive_leave_time[vehicle]["leave_time"] = ts
+                self.dic_vehicle_arrive_leave_time[vehicle]["cost_time"] = ts - \
+                                                                           self.dic_vehicle_arrive_leave_time[vehicle][
+                                                                               "enter_time"]
+            except KeyError:
+                print("vehicle not recorded when entering!")
+
+    def update_current_measurements(self):
+        def _change_lane_vehicle_dic_to_list(dic_lane_vehicle):
+            list_lane_vehicle = []
+            for value in dic_lane_vehicle.values():
+                if value:
+                    list_lane_vehicle.extend(value)
+            return list_lane_vehicle
+
+        # contain outflow lanes
+        self.dic_lane_vehicle_current_step = self.eng.get_lane_vehicles()
+
+        # get vehicle list
+        self.list_lane_vehicle_current_step = _change_lane_vehicle_dic_to_list(self.dic_lane_vehicle_current_step)
+        self.list_lane_vehicle_previous_step = _change_lane_vehicle_dic_to_list(self.dic_lane_vehicle_previous_step)
+        list_vehicle_new_arrive = list(
+            set(self.list_lane_vehicle_current_step) - set(self.list_lane_vehicle_previous_step))
+        list_vehicle_new_left = list(
+            set(self.list_lane_vehicle_previous_step) - set(self.list_lane_vehicle_current_step))
+        self._update_arrive_time(list_vehicle_new_arrive)
+        self._update_left_time(list_vehicle_new_left)
+
+    # TODO check whether the result is correct if a vehicle appears multiple times
+    def get_cur_throughput(self):
+        throughput = 0
+        for dic in self.dic_vehicle_arrive_leave_time:
+            vehicle = self.dic_vehicle_arrive_leave_time[dic]
+            if (not np.isnan(vehicle["cost_time"])) and vehicle["leave_time"] <= self.eng.get_current_time():
+                throughput += 1
+        return throughput
 
     def get_executed_action(self):
         actions = []
@@ -252,6 +357,26 @@ class World(object):
     # return [self.dic_lane_waiting_vehicle_count_current_step[lane] for lane in self.list_entering_lanes] + \
     # [-self.dic_lane_waiting_vehicle_count_current_step[lane] for lane in self.list_exiting_lanes]
 
+    # def get_in_out_lanes(self):
+    #     in_lines = []
+    #     out_lines = []
+    #     for i in self.intersections:
+    #         for road in i.in_roads:
+    #             from_zero = (road["startIntersection"] == i.id) if self.RIGHT else (
+    #                     road["endIntersection"] == i.id)
+    #             for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
+    #                 in_lines.append(road["id"] + "_" + str(n))
+    #         for road in i.out_roads:
+    #             from_zero = (road["endIntersection"] == i.id) if self.RIGHT else (
+    #                     road["startIntersection"] == i.id)
+    #             for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
+    #                 out_lines.append(road["id"] + "_" + str(n))
+    #     # add in_lanes of virtual intersections which can be regarded as out_lanes of non-virtual intersections.
+    #     for lane in self.all_lanes:
+    #         if lane not in out_lines:
+    #             out_lines.append(lane)
+    #     return in_lines, out_lines
+
     def get_vehicle_lane(self):
         # get the current lane of each vehicle. {vehicle_id: lane_id}
         vehicle_lane = {}
@@ -287,8 +412,6 @@ class World(object):
 
     def get_lane_delay(self):
         # the delay of each lane: 1 - lane_avg_speed/speed_limit
-        # set speed limit to 11.11 by default
-        speed_limit = 11.11
         lane_vehicles = self.eng.get_lane_vehicles()
         lane_delay = {}
         lanes = self.all_lanes
@@ -302,10 +425,10 @@ class World(object):
                 speed = vehicle_speed[vehicle]
                 lane_avg_speed += speed
             if lane_vehicle_count == 0:
-                lane_avg_speed = speed_limit
+                lane_avg_speed = self.all_lanes_speed[lane]
             else:
                 lane_avg_speed /= lane_vehicle_count
-            lane_delay[lane] = 1 - lane_avg_speed / speed_limit
+            lane_delay[lane] = 1 - lane_avg_speed / self.all_lanes_speed[lane]
         return lane_delay
 
     def get_vehicle_trajectory(self):
@@ -321,13 +444,13 @@ class World(object):
                 if vehicle_lane[vehicle] == self.vehicle_trajectory[vehicle][-1][0]:
                     self.vehicle_trajectory[vehicle][-1][2] += 1
                 else:
-                    self.vehicle_trajectory[vehicle].append([vehicle_lane[vehicle], int(self.eng.get_current_time()), 0])
+                    self.vehicle_trajectory[vehicle].append(
+                        [vehicle_lane[vehicle], int(self.eng.get_current_time()), 0])
         return self.vehicle_trajectory
 
     def get_history_vehicles(self):
         self.history_vehicles.update(self.eng.get_vehicles())
         return self.history_vehicles
-
 
     def _get_roadnet(self, cityflow_config):
         roadnet_file = osp.join(cityflow_config["dir"], cityflow_config["roadnetFile"])
@@ -346,11 +469,16 @@ class World(object):
                 raise Exception("info function %s not exists" % fn)
 
     def step(self, actions=None):
+        #  update previous measurement
+        self.dic_lane_vehicle_previous_step = self.dic_lane_vehicle_current_step
+
         if actions is not None:
             for i, action in enumerate(actions):
                 self.intersections[i].step(action, self.interval)
         self.eng.next_step()
         self._update_infos()
+        # update current measurement
+        self.update_current_measurements()
 
     def reset(self):
         self.eng.reset()
@@ -359,15 +487,6 @@ class World(object):
         self._update_infos()
         # reset vehicles info
         self.reset_vehicle_info()
-
-    def reset_vehicle_info(self):
-        """reset vehicle infos,including waiting_time, trajectory,etc."""
-        self.vehicle_waiting_time = {} # key: vehicle_id, value: the waiting time of this vehicle since last halt.
-        self.vehicle_trajectory = {} # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
-        self.history_vehicles = set()
-        self.dic_lane_vehicle_previous_step = {key: None for key in self.all_lanes}
-        self.dic_lane_vehicle_current_step = {key: None for key in self.all_lanes}
-        self.dic_vehicle_arrive_leave_time = dict()
 
     def _update_infos(self):
         self.info = {}
@@ -382,9 +501,6 @@ class World(object):
 
     def get_lane_queue_length(self):
         return self.eng.get_lane_waiting_vehicle_count()
-
-
-
 
 
 if __name__ == "__main__":

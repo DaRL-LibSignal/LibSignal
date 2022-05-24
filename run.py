@@ -19,7 +19,7 @@ parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to 
 parser.add_argument('-a', '--agent', type=str, default="maxpressure", help="agent type of agents in RL environment")
 parser.add_argument('-w', '--world', type=str, default="cityflow", help="simulator type")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
-parser.add_argument('--path', type=str, default='configs/sumo4x4.cfg', help='path to cityflow path')
+parser.add_argument('--path', type=str, default='configs/cityflow4x4.cfg', help='path to cityflow path')
 parser.add_argument('--prefix', type=str, default='0', help="the number of predix in this running process")
 parser.add_argument('--seed', type=int, default=None, help="seed for pytorch backend")
 

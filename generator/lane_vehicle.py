@@ -3,8 +3,6 @@ from . import BaseGenerator
 from world import world_cityflow, world_sumo
 
 
-#import world_sumo
-
 class LaneVehicleGenerator(BaseGenerator):
     """
     Generate State or Reward based on statistics of lane vehicles.
@@ -14,6 +12,11 @@ class LaneVehicleGenerator(BaseGenerator):
     world : World object
     I : Intersection object
     fns : list of statistics to get, currently support "lane_count", "lane_waiting_count" , "lane_waiting_time_count", "lane_delay" and "pressure"
+        "lane_count": get number of running vehicles on each lane.
+        "lane_waiting_count": get number of waiting vehicles(speed less than 0.1m/s) on each lane.
+        "lane_waiting_time_count": get the sum of waiting time of vehicles on the lane since their last action.
+        "lane_delay": the delay of each lane: 1 - lane_avg_speed/speed_limit.
+
     in_only : boolean, whether to compute incoming lanes only
     average : None or str
         None means no averaging
@@ -113,3 +116,4 @@ if __name__ == "__main__":
     for _ in range(100):
         world.step()
     print(laneVehicle.generate())
+

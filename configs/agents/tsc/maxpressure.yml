@@ -20,10 +20,6 @@ trainer:
   update_model_rate: 0
   update_target_rate: 0
 
-  # save_dir: data/output_data/task_name/dataset_dir/model_name
-  # load_dir: data/output_data/task_name/dataset_dir/model_name
-  # log_dir: log/task_name/dataset_dir/model_name/
-
 
 logger:
   log_dir: "logger"

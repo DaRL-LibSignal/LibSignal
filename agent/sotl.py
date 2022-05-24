@@ -1,6 +1,6 @@
 from . import BaseAgent
 from common.registry import Registry
-from generator import LaneVehicleGenerator, IntersectionPhaseGenerator
+from generator import LaneVehicleGenerator, IntersectionPhaseGenerator, IntersectionVehicleGenerator
 import numpy as np
 import gym
 
@@ -23,12 +23,40 @@ class SOTLAgent(BaseAgent):
         inter_obj = self.world.id2intersection[inter_id]
         self.model = None
         self.inter = inter_obj
-        self.ob_generator = LaneVehicleGenerator(self.world, inter_obj, ['lane_waiting_count'], in_only=True, average=None)
-        self.phase_generator = IntersectionPhaseGenerator(self.world, inter_obj, ["phase"],
+        self.ob_generator = LaneVehicleGenerator(self.world, self.inter, ['lane_waiting_count'], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(world, self.inter, ["phase"],
                                                           targets=["cur_phase"], negative=False)
-        self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_count"],
+        self.reward_generator = LaneVehicleGenerator(self.world, self.inter, ["lane_waiting_count"],
                                                      in_only=True, average='all', negative=True)
-        self.action_space = gym.spaces.Discrete(len(self.world.id2intersection[inter_id].phases))
+        self.queue = LaneVehicleGenerator(self.world, self.inter,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
+
+        # self.throughput = IntersectionVehicleGenerator(self.world, self.inter,
+        #                                                   ['throughput'], targets=['cur_throughput'], negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter,
+                                                     ["lane_delay"], in_only=True,
+                                                     negative=False)
+        self.action_space = gym.spaces.Discrete(len(self.inter.phases))
+
+    def reset(self):
+        inter_id = self.world.intersection_ids[self.rank]
+        inter_obj = self.world.id2intersection[inter_id]
+        self.inter = inter_obj
+        self.ob_generator = LaneVehicleGenerator(self.world, self.inter, ['lane_waiting_count'], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, self.inter, ["phase"],
+                                                          targets=["cur_phase"], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, self.inter, ["lane_waiting_count"],
+                                                     in_only=True, average='all', negative=True)
+        self.queue = LaneVehicleGenerator(self.world, self.inter,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
+
+        # self.throughput = IntersectionVehicleGenerator(self.world, self.inter,
+        #                                                   ['throughput'], targets=['cur_throughput'], negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter,
+                                                     ["lane_delay"], in_only=True,
+                                                     negative=False)
 
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]
@@ -43,7 +71,8 @@ class SOTLAgent(BaseAgent):
     def get_phase(self):
         phase = []
         phase.append(self.phase_generator.generate())
-        phase = np.concatenate(phase, dtype=np.int8)
+        # phase = np.concatenate(phase, dtype=np.int8)
+        phase = (np.concatenate(phase)).astype(np.int8)
         return phase
 
     def get_ob(self):
@@ -72,3 +101,22 @@ class SOTLAgent(BaseAgent):
                 action = (action + 1) % self.action_space.n
 
         return action
+
+    def get_queue(self):
+        queue = []
+        queue.append(self.queue.generate())
+        queue = np.sum(np.squeeze(np.array(queue)))
+        return queue
+
+    def get_delay(self):
+        delay = []
+        delay.append(self.delay.generate())
+        delay = np.sum(np.squeeze(np.array(delay)))
+        return delay
+
+    # def get_throughput(self):
+    #     throughput = []
+    #     throughput.append(self.throughput.generate())
+    #     throughput = np.squeeze(np.array(throughput))
+    #     return throughput
+

@@ -69,8 +69,6 @@ class PPOAgent(RLAgent):
         self.actor = Actor(self.ob_length, self.action_space.n)
         # update policy
         self.critic = Critic(self.ob_length)
-
-
         self.criterion = nn.MSELoss(reduction='mean')
         self.optimizer = optim.RMSprop(self.model.parameters(),
                                        lr=self.learning_rate,
@@ -106,6 +104,9 @@ class PPOAgent(RLAgent):
         return phase
 
     def get_action(self, ob, phase, test=False):
+        if not test:
+            if np.random.rand() <= self.epsilon:
+                return self.sample()
         if self.phase:
             if self.one_hot:
                 feature = np.concatenate([ob, utils.idx2onehot(phase, self.action_space.n)], axis=1)
@@ -113,14 +114,6 @@ class PPOAgent(RLAgent):
                 feature = np.concatenate([ob, phase], axis=1)
         else:
             feature = ob
-
-        if not test:
-            probs = self.actor.model.predict(np.reshape(feature, [1, self.actor.state_dim]))
-            self.replay_buffer_prob.append(probs)
-            self.prob_buffer_count += 1
-            action = np.random.choice(self.action_space.n, p=probs[0])
-            return action
-
         observation = torch.tensor(feature, dtype=torch.float32)
         actions = self.model(observation, train=True)
         actions = actions.clone().detach().numpy()
@@ -166,35 +159,10 @@ class PPOAgent(RLAgent):
             feature_tp = obs_tp
         state_t = torch.tensor(feature_t, dtype=torch.float32)
         state_tp = torch.tensor(feature_tp, dtype=torch.float32)
-        return state_t, state_tp,
-
-    def AC_train(self):
-
-
-        for e in range(self.epochs):
-            index = random.shuffle(list(range(self.buffer_size)))
-
-
 
     def train(self):
         # TODO: we do not train here
         pass
-
-        samples = random.sample(self.replay_buffer, self.batch_size)
-        b_t, b_tp, rewards, actions = self._batchwise(samples)
-        out = self.target_model(b_tp, train=False)
-        target = rewards + self.gamma * torch.max(out, dim=1)[0]
-        target_f = self.model(b_t, train=False)
-        for i, action in enumerate(actions):
-            target_f[i][action] = target[i]
-        loss = self.criterion(self.model(b_t, train=True), target_f)
-        self.optimizer.zero_grad()
-        loss.backward()
-        clip_grad_norm_(self.model.parameters(), self.grad_clip)
-        self.optimizer.step()
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
-        return loss.clone().detach().numpy()
 
     def update_target_network(self):
         pass
@@ -279,7 +247,4 @@ class PPO_CrtDQN(nn.Module):
         else:
             with torch.no_grad():
                 return self._forward(x)
-
-    def
-
 
