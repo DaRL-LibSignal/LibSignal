@@ -4,3 +4,4 @@ __pycache__/
 .vscode/
 data/output_data
 .ipynb
+*.sh

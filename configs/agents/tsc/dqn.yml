@@ -50,6 +50,7 @@ logger:
 traffic:
   one_hot: True
   phase: True
+  thread_num: 4
   ACTION_PATTERN: "set"
   MIN_ACTION_TIME: 10
   YELLOW_TIME: 5
@@ -61,6 +62,5 @@ traffic:
   IF_GUI: True
   DEBUG: False
   INTERVAL: 1
-  THREADNUM: 4
   SAVEREPLAY: True
   RLTRAFFICLIGHT: True

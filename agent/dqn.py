@@ -7,8 +7,7 @@ import random
 from collections import deque
 import gym
 
-from generator.lane_vehicle import LaneVehicleGenerator
-from generator.intersection_phase import IntersectionPhaseGenerator
+from generator import LaneVehicleGenerator, IntersectionPhaseGenerator, IntersectionVehicleGenerator
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -19,7 +18,7 @@ from torch.nn.utils import clip_grad_norm_
 @Registry.register_model('dqn')
 class DQNAgent(RLAgent):
     def __init__(self, world, rank):
-        super().__init__(world)
+        super().__init__(world, world.intersection_ids[rank])
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
@@ -65,6 +64,22 @@ class DQNAgent(RLAgent):
         self.optimizer = optim.RMSprop(self.model.parameters(),
                                        lr=self.learning_rate,
                                        alpha=0.9, centered=False, eps=1e-7)
+
+
+    def reset(self):
+        inter_id = self.world.intersection_ids[self.rank]
+        inter_obj = self.world.id2intersection[inter_id]
+        self.ob_generator = LaneVehicleGenerator(self.world, inter_obj, ['lane_count'], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, inter_obj, ["phase"],
+                                                          targets=["cur_phase"], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_count"],
+                                                     in_only=True, average='all', negative=True)
+        self.queue = LaneVehicleGenerator(self.world, inter_obj,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
+        self.delay = LaneVehicleGenerator(self.world, inter_obj,
+                                                     ["lane_delay"], in_only=True, average="all",
+                                                     negative=False)
 
     def get_ob(self):
         x_obs = []

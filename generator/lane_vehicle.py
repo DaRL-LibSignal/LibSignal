@@ -1,5 +1,6 @@
 import numpy as np
 from . import BaseGenerator
+from world import world_cityflow, world_sumo
 
 class LaneVehicleGenerator(BaseGenerator):
     """
@@ -10,6 +11,11 @@ class LaneVehicleGenerator(BaseGenerator):
     world : World object
     I : Intersection object
     fns : list of statistics to get, currently support "lane_count", "lane_waiting_count" , "lane_waiting_time_count", "lane_delay" and "pressure"
+        "lane_count": get number of running vehicles on each lane.
+        "lane_waiting_count": get number of waiting vehicles(speed less than 0.1m/s) on each lane.
+        "lane_waiting_time_count": get the sum of waiting time of vehicles on the lane since their last action.
+        "lane_delay": the delay of each lane: 1 - lane_avg_speed/speed_limit.
+
     in_only : boolean, whether to compute incoming lanes only
     average : None or str
         None means no averaging
@@ -27,9 +33,21 @@ class LaneVehicleGenerator(BaseGenerator):
             roads = I.in_roads
         else:
             roads = I.roads
-        for road in roads:
-            from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
-            self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
+        # TODO: register it in Registry
+        if isinstance(world, world_sumo.World):
+            for r in roads:
+                if self.world.RIGHT:
+                    tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]), reverse=True)
+                else:
+                    tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]))
+                self.lanes.append(tmp)
+                # TODO: rank lanes by lane ranking [0,1,2], assume we only have one digit for ranking
+        elif isinstance(world, world_cityflow.World):
+            for road in roads:
+                from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
+                self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
+        else:
+            raise Exception('NOT IMPLEMENTED YET')
 
         # subscribe functions
         self.world.subscribe(fns)
@@ -91,9 +109,10 @@ class LaneVehicleGenerator(BaseGenerator):
         return ret
 
 if __name__ == "__main__":
-    from world import World
+    from world.world_cityflow import World
     world = World("examples/configs.json", thread_num=1)
     laneVehicle = LaneVehicleGenerator(world, world.intersections[0], ["count"], False, "road")
     for _ in range(100):
         world.step()
     print(laneVehicle.generate())
+    

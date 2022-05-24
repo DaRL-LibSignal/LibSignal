@@ -37,7 +37,11 @@ class TSCEnv(gym.Env):
         """
         :param actions: keep action as N_agents * 1
         """
-        assert len(actions) == self.n_agents
+        if not actions.shape:
+            assert(self.n_agents == 1)
+            actions = actions[np.newaxis]
+        else:
+            assert len(actions) == self.n_agents
         self.world.step(actions)
 
         if not len(self.agents) == 1:
@@ -62,4 +66,3 @@ class TSCEnv(gym.Env):
         else:
             obs = [self.agents[0].get_ob()]  # [agent==1, sub_agent, feature]
         return obs
-

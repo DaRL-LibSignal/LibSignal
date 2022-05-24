@@ -90,7 +90,6 @@ class IntersectionVehicleGenerator():
         return 0
 
 
-
     def get_passed_vehicles(self, fns):
         vehicle_trajectory = fns["vehicle_trajectory"]
         history_vehicles = fns["history_vehicles"]
@@ -180,7 +179,7 @@ class IntersectionVehicleGenerator():
         return cur_phase
 
 
-    def generate(self, action_interval=5):
+    def generate(self, action_interval=10):
         self.action_interval = action_interval
         self.time = self.world.eng.get_current_time()
 
@@ -195,7 +194,7 @@ class IntersectionVehicleGenerator():
         return ret
 
 if __name__ == "__main__":
-    from world import World
+    from world.world_cityflow import World
     world = World("examples/configs.json", thread_num=1)
     laneVehicle = IntersectionVehicleGenerator(world, world.intersections[0],
                                                ["vehicle_trajectory", "lane_vehicles", "vehicle_distance"],

@@ -12,19 +12,21 @@ import argparse
 
 # parseargs
 parser = argparse.ArgumentParser(description='Run Example')
-parser.add_argument('--thread', type=int, default=4, help='number of threads')  # used in cityflow
+parser.add_argument('--thread_num', type=int, default=4, help='number of threads')  # used in cityflow
 parser.add_argument('--ngpu', type=str, default="-1", help='gpu to be used')  # choose gpu card
 
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
-parser.add_argument('-a', '--agent', type=str, default="frap", help="agent type of agents in RL environment")
+parser.add_argument('-a', '--agent', type=str, default="maxpressure", help="agent type of agents in RL environment")
+parser.add_argument('-w', '--world', type=str, default="cityflow", help="simulator type")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
-parser.add_argument('--cityflow_path', type=str, default='configs/cityflow4X4.cfg', help='path to cityflow path')
+parser.add_argument('--path', type=str, default='configs/cityflow4x4.cfg', help='path to cityflow path')
 parser.add_argument('--prefix', type=str, default='0', help="the number of predix in this running process")
 parser.add_argument('--seed', type=int, default=None, help="seed for pytorch backend")
 
 parser.add_argument('--mask_type', type=int, default=0, help='used to specify the type of softmax')
 parser.add_argument('--debug', type=bool, default=False)
 parser.add_argument('--test_when_train', action="store_false", default=True)
+
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.ngpu
@@ -36,10 +38,10 @@ class Runner:
         self.config_registry()
 
     def config_registry(self):
-        cityflow_setting = json.load(open(self.config['cityflow_path'], 'r'))
+        cityflow_setting = json.load(open(self.config['path'], 'r'))
 
         roadnet_path = os.path.join(cityflow_setting['dir'], cityflow_setting['roadnetFile'])
-        if self.config['model'].get('graphic',False):
+        if self.config['model'].get('graphic', False):
             interface.Graph_World_Interface(roadnet_path)  # register graphic parameters in Registry class
         interface.Logger_path_Interface(self.config['task'], self.config['agent'], self.config['prefix'])
         if not os.path.exists(Registry.mapping['logger_mapping']['output_path'].path):

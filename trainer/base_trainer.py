@@ -16,7 +16,7 @@ class BaseTrainer(ABC):
         name="base"
     ):
         self.args = args
-        self.cityflow_path = args['cityflow_path']
+        self.path = args['path']
         self.seed = args['seed']
         self.logger = logger
         self.debug = args['debug']

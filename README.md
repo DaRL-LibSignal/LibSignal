@@ -14,5 +14,5 @@ conda env create -f requirement.yml
 
 conda activate LibSignal
 
-python run_dqn.py cityflow.cfg
+python run.py --agent dqn --cityflow_path configs/cityflow4X4.cfg
 ```

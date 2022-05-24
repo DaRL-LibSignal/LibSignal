@@ -9,10 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from common.registry import Registry
 import gym
-from generator.lane_vehicle import LaneVehicleGenerator
-from generator.intersection_phase import IntersectionPhaseGenerator
-# from agent.utils import action_convert
-import torch.optim as optim
+from generator import LaneVehicleGenerator, IntersectionPhaseGenerator, IntersectionVehicleGenerator
 from torch.nn.utils import clip_grad_norm_
 from agent import utils
 
@@ -20,7 +17,7 @@ from agent import utils
 @Registry.register_model('frap')
 class FRAP_DQNAgent(RLAgent):
     def __init__(self, world, rank):
-        super().__init__(world)
+        super().__init__(world,world.intersection_ids[rank])
         self.dic_agent_conf = Registry.mapping['model_mapping']['model_setting']
         self.dic_traffic_env_conf = Registry.mapping['world_mapping']['traffic_setting']
         
@@ -82,6 +79,25 @@ class FRAP_DQNAgent(RLAgent):
 
         # self.action = 0
         # self.last_action = 0
+
+    def reset(self):
+        self.inter_id = self.world.intersection_ids[self.rank]
+        self.inter_obj = self.world.id2intersection[self.inter_id]
+        self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
+        self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                 ["lane_count"], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, self.inter_obj,
+                                                          ['phase'], targets=['cur_phase'], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_waiting_count"], in_only=True, average="all",
+                                                     negative=True)
+        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_delay"], in_only=True, average="all",
+                                                     negative=False)
+
 
     def _build_model(self):
         model = FRAP(

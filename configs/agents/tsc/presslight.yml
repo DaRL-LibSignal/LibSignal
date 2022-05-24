@@ -52,6 +52,7 @@ logger:
 traffic:
   one_hot: True
   phase: True
+  thread_num: 4
   ACTION_PATTERN: "set"
   NUM_INTERSECTIONS: 1
   MIN_ACTION_TIME: 10
@@ -80,7 +81,6 @@ traffic:
   IF_GUI: True
   DEBUG: False
   INTERVAL: 1
-  THREADNUM: 4
   SAVEREPLAY: True
   RLTRAFFICLIGHT: True
   dic_feature_dim:
