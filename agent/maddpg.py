@@ -100,7 +100,7 @@ class MADDPGAgent(RLAgent):
 
         self.criterion = nn.MSELoss(reduction='mean')
         self.q_optimizer = optim.Adam(self.q_model.parameters(), lr=self.learning_rate)
-        self.p_optimizer = optim.Adam(self.p_model.parameters(), lr=self.learning_rate * 0.1)
+        self.p_optimizer = optim.Adam(self.p_model.parameters(), lr=self.learning_rate)
         """
         self.p_optimizer = optim.RMSprop(self.p_model.parameters(),
                                          lr=self.learning_rate,
@@ -182,11 +182,8 @@ class MADDPGAgent(RLAgent):
         return np.random.randint(0, self.action_space.n, self.sub_agents)
 
     def G_softmax(self, p):
-
         u = torch.rand(self.action_space.n)
-
-        prob = F.softmax((p - torch.log(-torch.log(u))/10000), dim=1)
-
+        prob = F.softmax((p - torch.log(-torch.log(u))/1), dim=1)
         #prob = F.softmax(p, dim=1)
         return prob
 
@@ -220,7 +217,7 @@ class MADDPGAgent(RLAgent):
         rewards_list = []
         action_list = []
         target_q = 0.0
-        sample_index = random.sample(list(range(self.buffer_size)), self.batch_size)
+        sample_index = random.sample(range(len(self.replay_buffer)), self.batch_size)
         for ag in self.agents:
             samples = np.array(list(ag.replay_buffer), dtype=object)[sample_index]
             b_t, b_tp, rewards, actions = ag._batchwise(samples)
@@ -253,7 +250,7 @@ class MADDPGAgent(RLAgent):
         # update q network
         q_reg = torch.mean(torch.square(q))
         q_loss = self.criterion(q, target_q)
-        loss_of_q = q_loss
+        loss_of_q = q_loss + q_reg * 1e-3
         self.q_optimizer.zero_grad()
         loss_of_q.backward()
         clip_grad_norm_(self.q_model.parameters(), self.grad_clip)
@@ -268,12 +265,12 @@ class MADDPGAgent(RLAgent):
         else:
             action_list[self.rank] = p_prob
             full_action_t_q = torch.cat(action_list, dim=1)
-            #pq_input = torch.cat((full_b_t.detach(), full_action_t_q), dim=1)
-            pq_input = torch.cat((full_b_t, full_action_t_q), dim=1)
+            pq_input = torch.cat((full_b_t.detach(), full_action_t_q), dim=1)
+            #pq_input = torch.cat((full_b_t, full_action_t_q), dim=1)
 
         # todo: test here
         p_loss = torch.mul(-1, torch.mean(self.q_model(pq_input, train=True)))
-        loss_of_p = p_loss #+ p_reg * 1e-3
+        loss_of_p = p_loss + p_reg * 1e-3
 
         self.p_optimizer.zero_grad()
         loss_of_p.backward()

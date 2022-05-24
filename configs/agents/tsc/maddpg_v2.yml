@@ -3,13 +3,17 @@ includes:
 
 
 model:
-  name: maddpg
+  name: maddpg_v2
   local_q_learn: False
   graphic: False
   vehicle_max: 1
-  learning_rate: 0.01
-  batch_size: 256
-  gamma: 0.95
+  alpha: 0.01
+  beta: 0.01
+  tau: 0.01
+  fc1: 64
+  fc2: 64
+  batch_size: 1024
+  gamma: 0.99
   epsilon: 0.5
   epsilon_decay: 0.99
   epsilon_min: 0.01
@@ -21,7 +25,7 @@ model:
 trainer:
   thread: 4
   ngpu: -1
-  learning_start: 5000
+  learning_start: 2000
   buffer_size: 10000
   steps: 3600
   test_steps: 3600
@@ -42,7 +46,7 @@ logger:
   get_attention: False
   ave_model: True
   save_model: True
-  save_rate: 1000
+  save_rate: 3000
   train_model: True
   test_model: True
   load_model: False

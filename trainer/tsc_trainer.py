@@ -59,7 +59,8 @@ class TSCTrainer(BaseTrainer):
         # for i in self.world.intersections:
         #     self.agents.append(Registry.mapping['model_mapping'][self.args['agent']](self.world, i.id))
         agent = Registry.mapping['model_mapping'][self.args['agent']](self.world, 0)
-        if Registry.mapping['model_mapping']['model_setting'].param['name'] != 'maddpg':
+        if Registry.mapping['model_mapping']['model_setting'].param['name'] != 'maddpg' and\
+                Registry.mapping['model_mapping']['model_setting'].param['name'] != "maddpg_v2":
             print(agent.model)
         num_agent = int(len(self.world.intersections) / agent.sub_agents)
         self.agents.append(agent)  # initialized N agents for traffic light control
@@ -70,6 +71,9 @@ class TSCTrainer(BaseTrainer):
                 ag.link_agents(self.agents)
             print(ag.q_model)
             print(ag.p_model)
+        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg_v2':
+            print(self.agents[0].agents[0].actor)
+            print(self.agents[0].agents[0].critic)
 
 
     def create_env(self):
@@ -114,7 +118,8 @@ class TSCTrainer(BaseTrainer):
                         for idx, ag in enumerate(self.agents):
                             actions.append(ag.get_action(last_obs[idx], last_phase[idx], test=False))
                         actions = np.stack(actions)  # [agent, intersections]
-                    if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg':
+                    if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg' or\
+                            Registry.mapping['model_mapping']['model_setting'].param['name'] == "maddpg_v2":
                         actions_prob = []
                         for idx, ag in enumerate(self.agents):
                             actions_prob.append(ag.get_action_prob(last_obs[idx], last_phase[idx]))
@@ -132,7 +137,8 @@ class TSCTrainer(BaseTrainer):
                         # TODO: test for PFRL
                         if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'ppo_pfrl':
                             ag.do_observe(obs[idx], cur_phase[idx], rewards[idx], dones[idx])
-                        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg':
+                        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg' or\
+                            Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg_v2':
                             ag.remember(last_obs[idx], last_phase[idx], actions_prob[idx], rewards[idx],
                                         obs[idx], cur_phase[idx], f'{e}_{i // self.action_interval}_{ag.id}')
                         else:

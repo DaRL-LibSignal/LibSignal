@@ -36,7 +36,7 @@ class DQNAgent(RLAgent):
         inter_obj = self.world.id2intersection[inter_id]
         self.inter = inter_obj
         self.ob_generator = LaneVehicleGenerator(self.world,  self.inter, ['lane_count'], in_only=True, average=None)
-        self.phase_generator = IntersectionPhaseGenerator(world,  self.inter, ["phase"],
+        self.phase_generator = IntersectionPhaseGenerator(self.world,  self.inter, ["phase"],
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world,  self.inter, ["lane_waiting_count"],
                                                      in_only=True, average='all', negative=True)

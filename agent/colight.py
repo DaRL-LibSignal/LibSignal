@@ -251,12 +251,6 @@ class CoLightAgent(RLAgent):
     def update_target_network(self):
         weights = self.model.state_dict()
         self.target_model.load_state_dict(weights)
-
-    def load_model(self, e):
-        model_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
-                                  'model', f'{e}_{self.rank}.pt')
-        self.model = self._build_model()
-        self.model.load_state_dict(torch.load(model_name))
         self.target_model = self._build_model()
         self.target_model.load_state_dict(torch.load(model_name))
 

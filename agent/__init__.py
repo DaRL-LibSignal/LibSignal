@@ -7,3 +7,4 @@ from .sotl import SOTLAgent
 from .frap import FRAP_DQNAgent
 from .ppo_pfrl import IPPO_pfrl
 from .maddpg import MADDPGAgent
+from .maddpg_v2 import MADDPGAgent
