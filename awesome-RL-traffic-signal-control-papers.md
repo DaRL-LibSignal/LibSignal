@@ -1,9 +1,9 @@
 # Reinforcement Learning based Traffic Signal Control Paper Collection
 
-In the paper collection, we collected RL-based traffic signal control papers published in the recent years (2016-2021) on 11 top conferences and journals, namely, AAAI, IJCAI, KDD, CIKM, ICDM, WWW, NIPS, ICLR, SIGSPATIAL, IEEE TKDE and IEEE TITS. In addition, the surveys since 2016 and representative papers mentioned in the surveys are also included. We will continue to update the collection.
-- [Traffic Signal Control Paper Collection](#traffic-prediction-paper-collection)
-  - [Surveys](#surveys)
-  - [NIPS](#nips)
+In the paper collection, we collected RL-based traffic signal control papers published in the recent years (2016-2021) on 11 top conferences and journals, namely, NeurIPS, AAAI, AAMAS, KDD, CIKM, IEEE TITS, ITSC, TR-B and their workshop papers. In addition, the surveys since 2016 and representative papers mentioned in the surveys are also included. We will continue to update the collection.
+- [Traffic Signal Control Paper Collection](#reinforcement-learning-based-traffic-signal-control-paper-collection)
+  - [Surveys](#surveys-and-simulators)
+  - [NeurIPS](#neurips)
   - [AAAI](#aaai)
   - [AAMAS](#aamas)
   - [KDD](#kdd)
@@ -17,7 +17,7 @@ In the paper collection, we collected RL-based traffic signal control papers pub
 - [Contributors](#contributors)
 - [Cite](#cite)
 
-##Surveys & Simulators
+## Surveys and Simulators
 1. **Traffic Signal Control Methods: Current Status, Challenges, and Emerging Trends**. *I Tomar, S Indu, N Pandey*. Data Analytics and Management . 2022. [link](https://link.springer.com/chapter/10.1007/978-981-16-6289-8_14)
 
 1. **Reinforcement learning in urban network traffic signal control: A systematic literature review**. *M Noaeen, A Naik, L Goodman, J Crebo, T Abrar*. Expert Systems with Applications. 2022. [link](https://www.sciencedirect.com/science/article/pii/S0957417422002858)
