@@ -1,6 +1,6 @@
 # Reinforcement Learning based Traffic Signal Control Paper Collection
 
-In the paper collection, we collected RL-based traffic signal control papers published in the recent years (2016-2021) on 11 top conferences and journals, namely, NeurIPS, AAAI, AAMAS, KDD, CIKM, IEEE TITS, ITSC, TR-B and their workshop papers. In addition, the surveys since 2016 and representative papers mentioned in the surveys are also included. We will continue to update the collection.
+In the paper collection, we collected RL-based traffic signal control papers published in the recent years (2016-2021) on 8 top conferences and journals, namely, NeurIPS, AAAI, AAMAS, KDD, CIKM, IEEE TITS, ITSC, TR-B and their workshop papers. In addition, the surveys since 2018 and representative papers mentioned in the surveys are also included. We will continue to update the collection.
 - [Traffic Signal Control Paper Collection](#reinforcement-learning-based-traffic-signal-control-paper-collection)
   - [Surveys](#surveys-and-simulators)
   - [NeurIPS](#neurips)
