@@ -337,15 +337,20 @@ class World(object):
         print('Connection ID', self.connection_name)
 
         self.info_functions = {
+            "vehicles": self.get_vehicles,
             "lane_count": self.get_lane_vehicle_count,
             "lane_waiting_count": self.get_lane_waiting_vehicle_count,
+            "lane_vehicles": self.get_lane_vehicles,
+            "time": self.cur_time,
+            "vehicle_distance": None,
             "pressure": self.get_pressure,
             "lane_waiting_time_count": self.get_lane_waiting_time_count,
-            "lane_vehicles": self.get_lane_vehicles,
-            "get_lane_delay": self.get_lane_delay,
+            "lane_delay": self.get_lane_delay,
+            "vehicle_trajectory": None,
+            "history_vehicles": None,
             "phase": self.get_cur_phase,
-            "vehicles": self.get_vehicles,
-            "time": self.cur_time
+            "throughput": None,
+            "average_travel_time": None
         }
         self.fns = []
         self.info = {}
@@ -490,6 +495,7 @@ class World(object):
     def get_average_travel_time(self):
         return self.get_vehicles()
 
+    # TODO: align with city_flow and provide it to ppo_pfrl
     def get_lane_vehicles(self):
         result = dict()
         for inter in self.intersections:

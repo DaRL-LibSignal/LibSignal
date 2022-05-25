@@ -52,7 +52,7 @@ class TSCEnv(gym.Env):
         else:
             obs = [self.agents[0].get_ob()]
             rewards = [self.agents[0].get_reward()]
-        dones = [False] * self.n_agents
+        dones = [self.eng.get_current_time() >= 3600] * self.n_agents  # modified
         # infos = {"metric": self.metric.update()}
         infos = {}
         return obs, rewards, dones, infos

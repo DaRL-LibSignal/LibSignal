@@ -62,6 +62,7 @@ class MADDPGAgent(RLAgent):
         self.learning_rate = Registry.mapping['model_mapping']['model_setting'].param['learning_rate']
         self.vehicle_max = Registry.mapping['model_mapping']['model_setting'].param['vehicle_max']
         self.batch_size = Registry.mapping['model_mapping']['model_setting'].param['batch_size']
+        self.tau = Registry.mapping['model_mapping']['model_setting'].param['tau']
 
         self.best_epoch = 0
         # param
@@ -243,6 +244,7 @@ class MADDPGAgent(RLAgent):
             q_input = torch.cat((full_b_t, full_action_t), dim=1)
 
         target_q_next = self.target_q_model(q_input_target, train=False)
+
         target_q += rewards_list[self.rank] + self.gamma * target_q_next
 
         q = self.q_model(q_input, train=True)
@@ -257,7 +259,7 @@ class MADDPGAgent(RLAgent):
         self.q_optimizer.step()
 
         # update p network
-        p = self.p_model(b_t_list[self.rank], train=True)
+        p = self.p_model.forward(b_t_list[self.rank], train=True)
         p_prob = self.G_softmax(p)
         p_reg = torch.mean(torch.square(p))
         if self.local_q_learn:
@@ -284,6 +286,7 @@ class MADDPGAgent(RLAgent):
 
         #self.pr(loss_of_q, loss_of_p, rewards_list[self.rank], q, target_q)
         # TODO: q loss or p loss ?
+        print('test')
         return loss_of_q.clone().detach().numpy()
 
     def pr(self, loss_of_q, loss_of_p, reward, q, target_q):
@@ -301,7 +304,7 @@ class MADDPGAgent(RLAgent):
         return model
 
     def update_target_network(self):
-        polyak = 1.0 - 1e-2
+        polyak = 1.0 - self.tau
         for t_param, param in zip(self.target_q_model.parameters(), self.q_model.parameters()):
             t_param.data.copy_(t_param.data * polyak + (1 - polyak) * param.data)
         for t_param, param in zip(self.target_p_model.parameters(), self.p_model.parameters()):

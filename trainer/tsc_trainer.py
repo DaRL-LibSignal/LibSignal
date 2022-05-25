@@ -77,7 +77,6 @@ class TSCTrainer(BaseTrainer):
             print(self.agents[0].agents[0].actor)
             print(self.agents[0].agents[0].critic)
 
-
     def create_env(self):
         # TODO: finalized list or non list
         self.env = TSCEnv(self.world, self.agents, self.metric)
@@ -210,8 +209,8 @@ class TSCTrainer(BaseTrainer):
                 self.logger.debug(
                     "intersection:{}, mean_episode_reward:{},"
                     " mean_queue:{}".format(j, episodes_rewards[j] / episodes_decision_num,
-                                            episodes_queue[j]/episodes_decision_num,
-                                            episodes_delay[j]/episodes_decision_num))
+                                            episodes_queue/episodes_decision_num,
+                                            episodes_delay/episodes_decision_num))
             if self.test_when_train:
                 self.train_test(e)
         # self.dataset.flush([ag.replay_buffer for ag in self.agents])

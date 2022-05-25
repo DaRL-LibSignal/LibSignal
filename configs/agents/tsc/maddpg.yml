@@ -7,7 +7,8 @@ model:
   local_q_learn: False
   graphic: False
   vehicle_max: 1
-  learning_rate: 0.01
+  tau: 0.01
+  learning_rate: 0.001
   batch_size: 256
   gamma: 0.95
   epsilon: 0.5

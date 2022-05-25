@@ -41,7 +41,7 @@ logger:
   get_attention: False
   ave_model: True
   save_model: True
-  save_rate: 20
+  save_rate: 1000
   train_model: True
   test_model: True
   load_model: False
