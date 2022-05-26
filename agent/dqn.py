@@ -43,10 +43,6 @@ class DQNAgent(RLAgent):
                                                      in_only=True, average='all', negative=True)
         self.action_space = gym.spaces.Discrete(len(self.world.id2intersection[inter_id].phases))
 
-
-        self.test_generator = IntersectionVehicleGenerator(self.world, self.inter, ['lane_vehicles'],
-                                                           ["vehicle_map"])
-
         if self.phase:
             if self.one_hot:
                 self.ob_length = self.ob_generator.ob_length + len(self.world.id2intersection[inter_id].phases)

@@ -295,7 +295,6 @@ class World(object):
         self.step_ratio = 1  # TODO: register in Registry later
         self.step_length = 1  # should be 1 in our setting
         self.max_distance = 200 # TODO: set in registry
-
         # get all intersections (dict here)
         self.intersection_ids = self.eng.trafficlight.getIDList()
         # prepare phase information for each intersections
@@ -322,7 +321,7 @@ class World(object):
         # restart eng
         self.run = 0
         self.inside_vehicles = dict()
-
+        self.inside_vehicles_rule = dict()
         self.vehicles = dict()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
@@ -341,7 +340,7 @@ class World(object):
             "lane_count": self.get_lane_vehicle_count,
             "lane_waiting_count": self.get_lane_waiting_vehicle_count,
             "lane_vehicles": self.get_lane_vehicles,
-            "time": self.cur_time,
+            "time": self.get_current_time,
             "vehicle_distance": None,
             "pressure": self.get_pressure,
             "lane_waiting_time_count": self.get_lane_waiting_time_count,
@@ -395,11 +394,11 @@ class World(object):
         # TODO: register vehicles here
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
-            self.inside_vehicles.update({v: self.cur_time()})
-
+            self.inside_vehicles.update({v: self.get_current_time()})
+            self.inside_vehicles_rule.update({v: self.get_current_time()})
         exiting_v = self.eng.simulation.getArrivedIDList()
         for v in exiting_v:
-            self.vehicles.update({v: self.cur_time() - self.inside_vehicles[v]})
+            self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
         self._update_infos()
         self.run += 1
 
@@ -410,7 +409,7 @@ class World(object):
         self.run = 0
         self.vehicles = dict()
         self.inside_vehicles = dict()
-
+        self.inside_vehicles_rule = dict()
         # TODO: check when to close traci
         traci.start(self.sumo_cmd, label=self.connection_name)
         # TODO: set trip info output
@@ -427,9 +426,9 @@ class World(object):
         # TODO: check if its the problem
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
-            self.inside_vehicles.update({v: self.cur_time()})
+            self.inside_vehicles.update({v: self.get_current_time()})
 
-    def cur_time(self):
+    def get_current_time(self):
         result = self.eng.simulation.getTime()
         return result
 
@@ -495,7 +494,6 @@ class World(object):
     def get_average_travel_time(self):
         return self.get_vehicles()
 
-    # TODO: align with city_flow and provide it to ppo_pfrl
     def get_lane_vehicles(self):
         result = dict()
         for inter in self.intersections:
@@ -529,5 +527,3 @@ class World(object):
                 lane_avg_speed /= lane_vehicle_count
             lane_delay[key] = 1 - lane_avg_speed / speed_limit
         return lane_delay
-
-

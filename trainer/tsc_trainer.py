@@ -90,7 +90,7 @@ class TSCTrainer(BaseTrainer):
 
             for a in self.agents:
                 a.reset()
-            if e % self.save_rate == 0:
+            if e % self.save_rate == self.save_rate - 1:
                 self.env.eng.set_save_replay(True)
                 if not os.path.exists(self.replay_file_dir):
                     os.makedirs(self.replay_file_dir)
@@ -172,9 +172,6 @@ class TSCTrainer(BaseTrainer):
                     last_obs = obs
                 if total_decision_num > self.learning_start and\
                         total_decision_num % self.update_model_rate == self.update_model_rate - 1:
-                    """
-                    cur_loss_q = self.agents.replay()  # TODO: train here
-                    """
 
                     cur_loss_q = np.stack([ag.train() for ag in self.agents])  # TODO: train here
 
@@ -325,10 +322,6 @@ class TSCTrainer(BaseTrainer):
         return trv_time
 
     def writeLog(self, mode, step, travel_time, loss, cur_rwd,cur_queue,cur_delay,cur_throughput):
-        """
-        :param mode: "TRAIN" OR "TEST"
-        :param step: int
-        """
         res = self.args['model']['name'] + '\t' + mode + '\t' + str(
             step) + '\t' + "%.1f" % travel_time + '\t' + "%.1f" % loss + "\t" + \
             "%.2f" % cur_rwd + "\t" + "%.2f" % cur_queue + "\t" + "%.2f" % cur_delay + "\t" + "%d" % cur_throughput

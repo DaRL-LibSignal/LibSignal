@@ -5,7 +5,6 @@ import numpy as np
 class TSCEnv(gym.Env):
     """
     Environment for Traffic Signal Control task.
-
     Parameters
     ----------
     world: World object
@@ -52,9 +51,10 @@ class TSCEnv(gym.Env):
         else:
             obs = [self.agents[0].get_ob()]
             rewards = [self.agents[0].get_reward()]
-        dones = [self.eng.get_current_time() >= 3600] * self.n_agents  # modified
+        dones = [False] * self.n_agents
         # infos = {"metric": self.metric.update()}
         infos = {}
+
         return obs, rewards, dones, infos
 
     def reset(self):
