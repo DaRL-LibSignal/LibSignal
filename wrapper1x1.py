@@ -179,12 +179,12 @@ class Wrapper(object):
 
     def test(self):
         warm_up_time = 3600
-        engine = citypb.Engine(os.path.join(os.getcwd(), 'configs/openengin1x1.cfg'), 12)
+        engine = citypb.Engine(os.path.join(os.getcwd(), 'configs/openengine1x1.cfg'), 12)
         start_time = time.time()
         for step in range(warm_up_time):
             for intersection in self.intersections.keys():
                 engine.set_ttl_phase(intersection, (int(engine.get_current_time()) // 30) % 4 + 1)
-            engine.get_lane_vehicles()
+            state = engine.get_lane_vehicles()
             engine.next_step()
             print("t: {}, v: {}".format(step, engine.get_vehicle_count()))
         end_time = time.time()

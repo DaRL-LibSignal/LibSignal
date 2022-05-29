@@ -455,6 +455,10 @@ class World(object):
     def _get_roadnet(self, cityflow_config):
         """
         read information from roadnet file in the config file
+        generate roadnet dictionary based on providec configuration file
+        functions borrowed form openengine CBEngine.py
+        Details:
+        collect roadnet informations.
         {1-'intersections'-(len=N_intersections):
             {11-'id': name of the intersection,
              12-'point': 121: {'x', 'y'}(intersection at this position),
@@ -466,21 +470,26 @@ class World(object):
                  153-'endRoad': end road name,
                  154-'direction': int(same as type)
                  155-'laneLinks(len-N_lane links of road): 
-                    {1651-'startLaneIndex': int(lane index in start road),
-                     1652-'endLaneIndex': int(lane index in end road),
-                     1653-'points(N_points alone this lane': {'x', 'y'}(point pos)
+                    {1551-'startLaneIndex': int(lane index in start road),
+                     1552-'endLaneIndex': int(lane index in end road),
+                     1553-'points(N_points alone this lane': {'x', 'y'}(point pos)
                      }
-                 }
-             16-'trafficLight:
+                 },
+             16-'trafficLight: 
+                {161-'roadLinkIndices'(len=N_road links): [],
+                 162-'lightphases'(len=N_phases): {1621-'time': int(time long),
+                                                    1622-'availableRoadLinks'(len=N_working_roads): []
+                                                    }
+                 },
              17-'virtual': bool
-             }
+             },
          2-'roads'-(len=N_roads ): 
             {21-'id': name of the road,
-             22-'points': {221: {'x', 'y'}(start pos), 222: {'x', 'y'}(end pos)}',
-             23-'lanes'-(N_lanes in this road):
-                {231: {'width': lane width, 'maxSpeed': max speed of each car on this lane}
-                 232: 'startIntersection': lane start,
-                 233: 'endIntersection': lane end
+             22-'points': [221: {'x', 'y'}(start pos), 222: {'x', 'y'}(end pos)],
+             23-'lanes'-(N_lanes in this road): 
+                231: [{'width': lane width, 'maxSpeed': max speed of each car on this lane}]
+                 232-'startIntersection': lane start,
+                 233-'endIntersection': lane end
                  }
              }
          }

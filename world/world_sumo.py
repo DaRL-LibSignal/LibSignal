@@ -186,9 +186,8 @@ class Intersection(object):
             #print("cur phase set: ", self.current_phase)
             pass
 
-    def sudo_step(self, action):
+    def pseudo_step(self, action):
         # TODO: check if change state, yellow phase must less than minimum of action time
-
         # test yellow finished first
         self.virtual_phase = action
         if self.current_phase_time == self.yellow_phase_time:
@@ -221,6 +220,7 @@ class Intersection(object):
                 v_measures = dict()
                 v_measures['name'] = v
                 v_measures['wait'] = self.waiting_times[v] if v in self.waiting_times else 0
+                #TODO: CHEC ITS RIGHT CALCULATION?
                 lane_measures['queue_length'] = lane_measures['queue_length'] + 1
                 v_measures['speed'] = self.eng.vehicle.getSpeed(v)
                 v_measures['position'] = self.eng.vehicle.getLanePosition(v)
@@ -312,11 +312,12 @@ class World(object):
         self.all_lanes = []
         for itsec in self.intersections:
             for road in itsec.road_lane_mapping.keys():
-                if itsec.road_lane_mapping[road]:
+                if itsec.road_lane_mapping[road] and road not in self.all_roads:
                     # append road name into all_roads if road exists
                     self.all_roads.append(road)
                     for lane in itsec.road_lane_mapping[road]:
-                        self.all_lanes.append(lane)
+                        if lane not in self.all_lanes:
+                            self.all_lanes.append(lane)
 
         # restart eng
         self.run = 0
@@ -387,7 +388,7 @@ class World(object):
         # TODO: support interval != 1
         if action is not None:
             for i, intersection in enumerate(self.intersections):
-                intersection.sudo_step(action[i])
+                intersection.pseudo_step(action[i])
             self.step_sim()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)

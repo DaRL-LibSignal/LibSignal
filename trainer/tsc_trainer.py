@@ -91,7 +91,7 @@ class TSCTrainer(BaseTrainer):
             for a in self.agents:
                 a.reset()
             if e % self.save_rate == self.save_rate - 1:
-                self.env.eng.set_save_replay(True)
+             #   self.env.eng.set_save_replay(True)
                 if not os.path.exists(self.replay_file_dir):
                     os.makedirs(self.replay_file_dir)
                 # self.env.eng.set_replay_file(self.replay_file_dir + f"/episode_{e}.txt")  # TODO: replay here
