@@ -1,6 +1,7 @@
 import os
 import sys
 from math import atan2, pi
+import xml.etree.cElementTree as ET
 
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -322,8 +323,9 @@ class World(object):
         # restart eng
         self.run = 0
         self.inside_vehicles = dict()
-        self.inside_vehicles_rule = dict()
+        self.inside_vehicles_planned = self.get_plan_depart_time() # all vehicles appeared in rou.xml
         self.vehicles = dict()
+        self.vehicles_planned = dict()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
 
@@ -349,7 +351,7 @@ class World(object):
             "vehicle_trajectory": None,
             "history_vehicles": None,
             "phase": self.get_cur_phase,
-            "throughput": None,
+            "throughput": self.get_cur_throughput,
             "average_travel_time": None
         }
         self.fns = []
@@ -395,11 +397,11 @@ class World(object):
         # TODO: register vehicles here
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
-            self.inside_vehicles.update({v: self.get_current_time()})
-            self.inside_vehicles_rule.update({v: self.get_current_time()})
+            self.inside_vehicles.update({v: self.cur_time()})
         exiting_v = self.eng.simulation.getArrivedIDList()
         for v in exiting_v:
-            self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
+            self.vehicles.update({v: self.cur_time() - self.inside_vehicles[v]})
+            self.vehicles_planned.update({v: self.cur_time() - self.inside_vehicles_planned[v]})
         self._update_infos()
         self.run += 1
 
@@ -409,8 +411,8 @@ class World(object):
             traci.close()
         self.run = 0
         self.vehicles = dict()
+        self.vehicles_planned = dict()
         self.inside_vehicles = dict()
-        self.inside_vehicles_rule = dict()
         # TODO: check when to close traci
         traci.start(self.sumo_cmd, label=self.connection_name)
         # TODO: set trip info output
@@ -434,15 +436,18 @@ class World(object):
         return result
 
     def get_vehicles(self):
+        assert len(self.vehicles) == len(self.vehicles_planned)
         result = 0
+        result_planned = 0
         count = 0
         for v in self.vehicles.keys():
             count += 1
             result += self.vehicles[v]
+            result_planned += self.vehicles_planned[v]
         if count == 0:
-            return 0
+            return [0, 0]
         else:
-            return result/count
+            return [result/count, result_planned/count]
 
     def subscribe(self, fns):
         if isinstance(fns, str):
@@ -493,6 +498,9 @@ class World(object):
         return result
 
     def get_average_travel_time(self):
+        """
+        return: [real travel time, planned travel time(aligned with Cityflow)]
+        """
         return self.get_vehicles()
 
     def get_lane_vehicles(self):
@@ -503,6 +511,7 @@ class World(object):
         return result
 
     def get_lane_queue_length(self):
+        #TODO: CHECK DEFINATION
         result = dict()
         for inter in self.intersections:
             for key in inter.full_observation.keys():
@@ -528,3 +537,26 @@ class World(object):
                 lane_avg_speed /= lane_vehicle_count
             lane_delay[key] = 1 - lane_avg_speed / speed_limit
         return lane_delay
+
+    def get_plan_depart_time(self):
+        """
+        Get planned depart time for all vehicles appeared in sumo.rou.xml file.
+        In SUMO and Cityflow, travel time = arriving time-planned depart time.
+        Note: Not real depart time, but planned depart time.
+        return: planned depart time of all vehicles.
+        """
+        vehicles_all = dict()
+        tree = ET.parse(self.route)
+        root = tree.getroot()
+        vehicles_all.update({obj.attrib['id']: int(float(obj.attrib['depart'])) \
+            for obj in root.iter('vehicle')})
+        return vehicles_all
+
+    def get_cur_throughput(self):
+        throughput = len(self.vehicles)
+        # TODO: check if only trach left cars
+        return throughput
+
+        
+
+

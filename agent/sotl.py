@@ -17,7 +17,8 @@ class SOTLAgent(BaseAgent):
         # some threshold to deal with phase requests
         self.min_green_vehicle = Registry.mapping['model_mapping']['model_setting'].param['min_green_vehicle']
         self.max_red_vehicle = Registry.mapping['model_mapping']['model_setting'].param['max_red_vehicle']
-        self.t_min = Registry.mapping['model_mapping']['model_setting'].param['t_min']
+        # self.t_min = Registry.mapping['model_mapping']['model_setting'].param['t_min']
+        self.t_min = 5
         # get generator for each SOTL
         inter_id = self.world.intersection_ids[self.rank]
         inter_obj = self.world.id2intersection[inter_id]
@@ -52,16 +53,6 @@ class SOTLAgent(BaseAgent):
         #                                              ["lane_delay"], in_only=True,
         #                                              negative=False)
 
-    def reset(self):
-        inter_id = self.world.intersection_ids[self.rank]
-        inter_obj = self.world.id2intersection[inter_id]
-        self.inter = inter_obj
-        self.ob_generator = LaneVehicleGenerator(self.world, inter_obj, ['lane_waiting_count'], in_only=True, average=None)
-        self.phase_generator = IntersectionPhaseGenerator(self.world, inter_obj, ["phase"],
-                                                          targets=["cur_phase"], negative=False)
-        self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_count"],
-                                                     in_only=True, average='all', negative=True)
-
     def get_phase(self):
         phase = []
         phase.append(self.phase_generator.generate())
@@ -83,16 +74,17 @@ class SOTLAgent(BaseAgent):
 
     def get_action(self, ob, phase, test=True):
         lane_waiting_count = self.world.get_info("lane_waiting_count")
+        assert phase[-1] == self.inter.current_phase
         action = self.inter.current_phase
         # TODO: we assume current_phase_time always greater than yellow_Phase_time
         if self.inter.current_phase_time >= self.t_min:
             num_green_vehicles = sum([lane_waiting_count[lane] for
-                                      lane in self.inter.phase_available_startlanes[self.inter.current_phase]])
+                                        lane in self.inter.phase_available_startlanes[self.inter.current_phase]])
             num_red_vehicles = sum([lane_waiting_count[lane] for lane in self.inter.startlanes])
             num_red_vehicles -= num_green_vehicles
 
-            if num_green_vehicles <= self.min_green_vehicle and num_red_vehicles > self.max_red_vehicle:
-                action = (action + 1) % self.action_space.n
+            if (num_green_vehicles <= self.min_green_vehicle and num_red_vehicles > self.max_red_vehicle) or ((num_green_vehicles == 0 and num_red_vehicles > 0)):
+                action = (self.inter.current_phase+1) % len(self.inter.phases)
 
         return action
 
@@ -107,10 +99,3 @@ class SOTLAgent(BaseAgent):
         delay.append(self.delay.generate())
         delay = np.sum(np.squeeze(np.array(delay)))
         return delay
-
-    # def get_throughput(self):
-    #     throughput = []
-    #     throughput.append(self.throughput.generate())
-    #     throughput = np.squeeze(np.array(throughput))
-    #     return throughput
-

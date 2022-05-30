@@ -2,7 +2,7 @@ includes:
   - configs/agents/tsc/base.yml
 
 model:
-  name: frap
+  name: mplight
   n_layers: 2
   rotation: true
   conflict_matrix: true
@@ -18,7 +18,7 @@ model:
 
 trainer: 
   thread: 4 
-  ngpu: -1
+  ngpu: -1 
   learning_start: 1000
   buffer_size: 5000 
   steps: 3600 

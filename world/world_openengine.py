@@ -232,6 +232,10 @@ class World(object):
             for lane in self.roadnet['roads'][road]['lanes']:
                 self.lane_maxSpeed[lane] = self.roadnet['roads'][road]['maxSpeed']
         print('road parsed')
+        # track vehicles in and out
+        self.vehicles = dict()
+        self.vehicles_cur = dict()
+
 
         self.info_functions = {
             "vehicles": self.get_vehicles,
@@ -432,6 +436,13 @@ class World(object):
             self._update_infos()
             for inter in self.intersections:
                 inter.observe()
+            v_cur = self.eng.get_vehicles()
+            v_new = v_cur - self.vehicles_cur.keys()
+            for v in v_new:
+                self.vehicles_cur[v] = self.eng.get_current_time()
+            v_out = self.vehicles_cur.keys() - v_cur
+            for v in v_out:
+                self.vehicles[v] = self.eng.get_current_time() - self.vehicles_cur.pop(v)
         else:
             raise Exception('provide action in RL or need some spefic design for non-RL agents')
 
@@ -452,6 +463,8 @@ class World(object):
         self.intersections = [Intersection(self.roadnet["intersections"][i], self)
             for i in self.roadnet["intersections"] if not self.roadnet["intersections"][i]["virtual"]]
         self.id2intersection = dict()
+        self.vehicles = dict()
+        self.vehicles_cur = dict()
         for inter in self.intersections:
             self.id2intersection[inter.id] = inter
         self.intersection_ids = [i.id for i in self.intersections]
@@ -546,6 +559,11 @@ class World(object):
                 lane_avg_speed /= lane_vehicle_count
             lane_delay[key] = 1 - lane_avg_speed / speed_limit
         return lane_delay
+
+    def get_cur_throughput(self):
+        througput = len(self.vehicles)
+        return throughput
+    
 
 
 if __name__ == "__main__":

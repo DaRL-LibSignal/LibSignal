@@ -50,8 +50,10 @@ class Intersection(object):
         phases = intersection["trafficLight"]["lightphases"]
         self.all_phases = [i for i in range(len(phases))]
         if self.if_sumo:
-            self.yellow_phase_id = [i for i in range(len(phases)) if phases[i]['time'] == 5 or phases[i]['time'] == 3]
-            self.phases = [i for i in range(len(phases)) if phases[i]['time'] != 5 and phases[i]['time'] != 3]
+            self.yellow_phase_id = [i for i in range(len(phases)) if len(phases[i]['availableRoadLinks'])==0]
+            self.phases = [i for i in range(len(phases)) if len(phases[i]['availableRoadLinks'])!=0]
+            # self.yellow_phase_id = [i for i in range(len(phases)) if phases[i]['time']==5 or phases[i]['time']==3]
+            # self.phases = [i for i in range(len(phases)) if phases[i]['time']!=5 and phases[i]['time']!=3]
             # self.phases_time = [phases[i]['time'] for i in self.phases]
             # self.yellow_phase_time = min([phases[i]['time'] for i in range(len(phases)) if phases[i]['time']==5 or phases[i]['time']==3])
             self.yellow_phase_time = 3
@@ -194,6 +196,7 @@ class World(object):
         # if len(self.intersection_ids) == 6:
         #     self.intersection_ids = self.intersection_ids[0:5]
         self.id2intersection = {i.id: i for i in self.intersections}
+        self.id2idx = {i: idx for idx,i in enumerate(self.id2intersection)}
         print("intersections created.")
 
         # id of all roads and lanes
@@ -538,7 +541,8 @@ class World(object):
         return self.info[info]
 
     def get_average_travel_time(self):
-        return self.eng.get_average_travel_time()
+        tvg_time = self.eng.get_average_travel_time()
+        return [tvg_time, tvg_time]
 
     def get_lane_queue_length(self):
         return self.eng.get_lane_waiting_vehicle_count()
