@@ -2,7 +2,7 @@ includes:
   - configs/agents/tsc/base.yml
 
 model:
-  name: frap
+  name: mplight
   n_layers: 2
   rotation: true
   conflict_matrix: true

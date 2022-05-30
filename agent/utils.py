@@ -13,6 +13,9 @@ def idx2onehot(arr, spices, dict_phase=None):
     return result
 
 def remove_right_lane(ob):
+    """
+    remove right lane in ob, for some models(eg,frap) do not take right lane into account. 
+    """
     if ob.shape[-1] == 8:
         return ob
     elif ob.shape[-1] == 12:

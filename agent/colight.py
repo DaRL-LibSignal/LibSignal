@@ -97,7 +97,7 @@ class CoLightAgent(RLAgent):
             tmp_generator = IntersectionPhaseGenerator(self.world, inter, ['phase'],
                                                        targets=['cur_phase'], negative=False)
             phasing_generators.append((node_idx, tmp_generator))
-        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
+        sorted(phasing_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
         self.phase_generator = phasing_generators
 
         # TODO: add irregular control of signals in the future
@@ -161,7 +161,7 @@ class CoLightAgent(RLAgent):
             tmp_generator = IntersectionPhaseGenerator(self.world, inter, ['phase'],
                                                        targets=['cur_phase'], negative=False)
             phasing_generators.append((node_idx, tmp_generator))
-        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
+        sorted(phasing_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
         self.phase_generator = phasing_generators
 
     def get_ob(self):

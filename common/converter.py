@@ -83,15 +83,15 @@ def parse_args():
     parser = argparse.ArgumentParser()
     # sumo2cityflow
     parser.add_argument("--or_sumonet", type=str,
-                        default='cologne1/cologne1.net.xml')
+                        default='cologne3/cologne3.net.xml')
     parser.add_argument("--cityflownet", type=str,
-                        default='cologne1/cologne1_roadnet_red.json')
+                        default='cologne3/cologne3_roadnet_red.json')
     parser.add_argument("--or_sumoflow", type=str,
-                        default='cologne1/cologne1.rou.xml')
+                        default='cologne3/cologne3.rou.xml')
     parser.add_argument("--cityflowflow", type=str,
-                        default='cologne1/cologne1_flow.json')
+                        default='cologne3/cologne3_flow.json')
     parser.add_argument("--sumocfg", type=str,
-                        default='cologne1/cologne1.sumocfg')
+                        default='cologne3/cologne3.sumocfg')
 
     # cityflow2sumo
     parser.add_argument("--or_cityflownet", type=str,
@@ -188,7 +188,7 @@ def _is_node_virtual(node,tls_dict):
     ids = list(set([e.getFromNode().getID()
                for e in edges] + [e.getToNode().getID() for e in edges]))
     # virtual node just has 2 roads, non-virtual has at least 3 roads.
-    if len(ids) <= 2 or node.getID() not in tls_dict:
+    if len(ids) <= 2 or (node.getID() not in tls_dict and 'GS_'+node.getID() not in tls_dict):
         return True
     else:
         return False
@@ -349,6 +349,7 @@ def node_to_intersection(node, tls_dict, edge_dict):
         "point": {"x": node_coord[0], "y": node_coord[1]},
         # warning.road width is undefined for any intersection.default 15
         "width": 0 if _is_node_virtual(node, tls_dict) else 15,
+        # "width": 0 if (_is_node_virtual(node, tls_dict) and node_type not in ['priority']) else 15,
         "roads": [edge.getID() for edge in node.getIncoming() + node.getOutgoing()],
 
         # "_roads":[{'id':}]
@@ -428,13 +429,15 @@ def node_to_intersection(node, tls_dict, edge_dict):
         if SUMO_PROGRAM:
             all_phase = []
             nodeid = node.getID()
+            tlnodeid = nodeid
             all_phase_dict[nodeid] = []
             G_to_lane_dict = {}
-            for connec in tls_dict[nodeid]._connections:
+            if nodeid not in tls_dict.keys():
+                tlnodeid = 'GS_' + tlnodeid
+            for connec in tls_dict[tlnodeid]._connections:
                 G_to_lane_dict[connec[-1]] = connec[0].getID()
 
-            for idx_phase in tls_dict[nodeid]._programs['0']._phases:
-                # for phase,duration in tls_dict[nodeid]._programs['0']._phases:
+            for idx_phase in tls_dict[tlnodeid]._programs['0']._phases:
                 phase, duration = idx_phase.state, idx_phase.duration
                 lane_list = []
                 for i, alpha in enumerate(phase):
@@ -912,7 +915,7 @@ def cityflow2sumo_cfg(args):
 if __name__ == '__main__':
     args = parse_args()
     # sumo2cityflow
-    sumo2cityflow_net(args)
+    # sumo2cityflow_net(args)
     sumo2cityflow_flow(args)
 
     # cityflow2sumo
