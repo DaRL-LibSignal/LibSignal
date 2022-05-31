@@ -35,7 +35,6 @@ class MaxPressureAgent(BaseAgent):
         
         # the minimum duration of time of one phase
         self.t_min = Registry.mapping['model_mapping']['model_setting'].param['t_min']
-        # self.t_min = self.inter_obj.phases_time
 
     def reset(self):
         # get generator for each MaxPressure
@@ -77,8 +76,6 @@ class MaxPressureAgent(BaseAgent):
     def get_action(self, ob, phase, test=True):
         # get lane pressure
         lvc = self.world.get_info("lane_count")
-
-        # if self.inter_obj.current_phase_time < self.t_min[self.inter_obj.current_phase]:
         if self.inter_obj.current_phase_time < self.t_min:
             return self.inter_obj.current_phase
 

@@ -44,23 +44,20 @@ class Intersection(object):
         self.if_sumo = True if "gt_virtual" in intersection else False
 
         # create yellow phases
-        # in cityflow, currently default to 0
-        # but in sumo, must find yellow phases idx
+        # in cityflow, yellow phases' id is 0
+        # in sumo, yellow phases' id is the first appeared in phases 
         phases = intersection["trafficLight"]["lightphases"]
         self.all_phases = [i for i in range(len(phases))]
         if self.if_sumo:
-            self.yellow_phase_id = [i for i in range(len(phases)) if len(phases[i]['availableRoadLinks'])==0]
-            self.phases = [i for i in range(len(phases)) if len(phases[i]['availableRoadLinks'])!=0]
-            # self.yellow_phase_id = [i for i in range(len(phases)) if phases[i]['time']==5 or phases[i]['time']==3]
-            # self.phases = [i for i in range(len(phases)) if phases[i]['time']!=5 and phases[i]['time']!=3]
-            # self.phases_time = [phases[i]['time'] for i in self.phases]
-            # self.yellow_phase_time = min([phases[i]['time'] for i in range(len(phases)) if phases[i]['time']==5 or phases[i]['time']==3])
-            self.yellow_phase_time = 3
+            self.yellow_phase_id = [i for i in range(len(phases)) if phases[i]['time']==5 or phases[i]['time']==3]
+            self.phases = [i for i in range(len(phases)) if phases[i]['time']!=5 and phases[i]['time']!=3]
+            self.yellow_phase_time = phases[self.yellow_phase_id[0]]['time'] # 3 or 5
+            # self.yellow_phase_time = 3 # 3 or 5
+            # self.phases = [i for i in range(len(phases)) if phases[i]['time']!=self.yellow_phase_time]
         else:
             self.yellow_phase_id = [0]
             self.yellow_phase_time = 5
             self.phases = [i for i in range(len(phases)) if not i in self.yellow_phase_id] # mapping from model output to cityflow phase id
-            # self.phases_time = [phases[i]['time'] for i in self.phases]
         # parsing links and phases
         for roadlink in intersection["roadLinks"]:
             self.roadlinks.append((roadlink["startRoad"], roadlink["endRoad"]))
@@ -106,9 +103,7 @@ class Intersection(object):
         self.in_roads = [self.roads[i] for i, x in enumerate(self.outs) if not x]
 
     def _change_phase(self, phase, interval):
-        """
-        phase: true phase id (including yellows)
-        """
+        """phase: true phase id (including yellows)"""
         self.eng.set_tl_phase(self.id, phase)
         self._current_phase = phase
         self.current_phase_time = interval
@@ -129,10 +124,10 @@ class Intersection(object):
                 self.current_phase_time += interval
             else:
                 if self.yellow_phase_time > 0:
-                    # TODO in sumo,the yellow_phase may other id
-                    # find self.all_phases[(self._current_phase+1)%len(self.all_phases)]
+                    # yellow(red) phase is arranged behind each green light
                     if self.if_sumo:
-                        self._change_phase(self.all_phases[(self._current_phase+1)%len(self.all_phases)], interval)
+                        assert (self._current_phase+1)%len(self.all_phases) in self.yellow_phase_id
+                        self._change_phase((self._current_phase+1)%len(self.all_phases), interval)
                     else:
                         self._change_phase(self.yellow_phase_id[0], interval)
                     self.action_before_yellow = action
@@ -305,7 +300,7 @@ class World(object):
         self._update_arrive_time(list_vehicle_new_arrive)
         self._update_left_time(list_vehicle_new_left)
     
-    # TODO check whether the result is correct if a vehicle appears multiple times
+
     def get_cur_throughput(self):
         throughput = 0
         for dic in self.dic_vehicle_arrive_leave_time:

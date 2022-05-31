@@ -73,9 +73,7 @@ class FixedTimeAgent(BaseAgent):
         return phase
     
     def get_action(self, ob, phase, test=True):
-        assert self.inter_obj.current_phase == phase[-1]
-        # warning: don't consider yellow phase
-        # if self.inter_obj.current_phase_time < self.t_fixed[self.inter_obj.current_phase]:
+        # phases: just index of self.inter_obj.phases, not green light index
         if self.inter_obj.current_phase_time < self.t_fixed:
             return self.inter_obj.current_phase
         else:

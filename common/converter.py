@@ -2,11 +2,13 @@
 convert SUMO file to CityFlow file.
 """
 
+from operator import attrgetter
 import os
 import sys
 from sys import platform
 import argparse
 from collections import defaultdict
+from turtle import width
 import sympy
 from mpmath import degrees, radians
 import copy
@@ -82,16 +84,38 @@ else:
 def parse_args():
     parser = argparse.ArgumentParser()
     # sumo2cityflow
-    parser.add_argument("--or_sumonet", type=str,
-                        default='cologne3/cologne3.net.xml')
-    parser.add_argument("--cityflownet", type=str,
-                        default='cologne3/cologne3_roadnet_red.json')
-    parser.add_argument("--or_sumoflow", type=str,
-                        default='cologne3/cologne3.rou.xml')
-    parser.add_argument("--cityflowflow", type=str,
-                        default='cologne3/cologne3_flow.json')
-    parser.add_argument("--sumocfg", type=str,
-                        default='cologne3/cologne3.sumocfg')
+    # parser.add_argument("--or_sumonet", type=str,
+    #                     default='grid4x4/grid4x4.net.xml')
+    # parser.add_argument("--cityflownet", type=str,
+    #                     default='grid4x4/grid4x4_roadnet_red.json')
+    # parser.add_argument("--or_sumoflow", type=str,
+    #                     default='grid4x4/grid4x4.rou.xml')
+    # parser.add_argument("--cityflowflow", type=str,
+    #                     default='grid4x4/grid4x4_flow.json')
+    # parser.add_argument("--sumocfg", type=str,
+    #                     default='grid4x4/grid4x4.sumocfg')
+
+    # parser.add_argument("--or_sumonet", type=str,
+    #                     default='cologne1/cologne1.net.xml')
+    # parser.add_argument("--cityflownet", type=str,
+    #                     default='cologne1/cologne1_roadnet_red.json')
+    # parser.add_argument("--or_sumoflow", type=str,
+    #                     default='cologne1/cologne1.rou.xml')
+    # parser.add_argument("--cityflowflow", type=str,
+    #                     default='cologne1/cologne1_flow.json')
+    # parser.add_argument("--sumocfg", type=str,
+    #                     default='cologne1/cologne1.sumocfg')
+
+    # parser.add_argument("--or_sumonet", type=str,
+    #                     default='cologne3/cologne3.net.xml')
+    # parser.add_argument("--cityflownet", type=str,
+    #                     default='cologne3/cologne3_roadnet_red.json')
+    # parser.add_argument("--or_sumoflow", type=str,
+    #                     default='cologne3/cologne3.rou.xml')
+    # parser.add_argument("--cityflowflow", type=str,
+    #                     default='cologne3/cologne3_flow.json')
+    # parser.add_argument("--sumocfg", type=str,
+    #                     default='cologne3/cologne3.sumocfg')
 
     # cityflow2sumo
     parser.add_argument("--or_cityflownet", type=str,
@@ -424,7 +448,6 @@ def node_to_intersection(node, tls_dict, edge_dict):
         intersection = process_intersection_simple_phase(intersection)
 
     if node_type in ['traffic_light', 'traffic_light_right_on_red']:
-        # if node_type in ['traffic_light']:
         print(node.getID())
         if SUMO_PROGRAM:
             all_phase = []
@@ -441,7 +464,7 @@ def node_to_intersection(node, tls_dict, edge_dict):
                 phase, duration = idx_phase.state, idx_phase.duration
                 lane_list = []
                 for i, alpha in enumerate(phase):
-                    if (alpha == 'G' or alpha == 'g') and i in G_to_lane_dict.keys():
+                    if (alpha == 'G' or alpha == 'g' or alpha == 's') and i in G_to_lane_dict.keys():
                         lane_list.append(G_to_lane_dict[i])
 
                 lane_list_ = []
@@ -583,19 +606,30 @@ def sumo2cityflow_flow(args):
     end_time = int(root_cfg.find('time').find('end').attrib['value'])
     assert end_time-start_time == 3600
     flows = []
+    length = 5.0
+    width = 1.8
+    maxPosAcc = 2.6
+    maxNegAcc = 4.5
+    minGap = 2.5
+    if root.find('vType') != None:
+        length = float(root.find('vType').attrib['length']) if 'length' in root.find('vType').attrib else 5.0
+        width = float(root.find('vType').attrib['width']) if 'width' in root.find('vType').attrib else 1.8
+        maxPosAcc = float(root.find('vType').attrib['accel']) if 'accel' in root.find('vType').attrib else 2.6
+        maxNegAcc = float(root.find('vType').attrib['decel']) if 'decel' in root.find('vType').attrib else 4.5
+        minGap = float(root.find('vType').attrib['minGap']) if 'minGap' in root.find('vType').attrib else 2.5
     for obj in root.iter('vehicle'):
         routes = (obj.find('route').attrib['edges']).split()
         if len(routes) < 2:
             continue
         flows.append({
             "vehicle": {
-                "length": 5.0,
-                "width": 2.0,
-                "maxPosAcc": 2.0,
-                "maxNegAcc": 4.5,
-                "usualPosAcc": 2.0,
-                "usualNegAcc": 4.5,
-                "minGap": 2.5,
+                "length": length,
+                "width": width,
+                "maxPosAcc": maxPosAcc,
+                "maxNegAcc": maxNegAcc,
+                "usualPosAcc": maxPosAcc,
+                "usualNegAcc": maxNegAcc,
+                "minGap": minGap,
                 "maxSpeed": 16.67,
                 "headwayTime": 1.5
             },
@@ -916,9 +950,9 @@ if __name__ == '__main__':
     args = parse_args()
     # sumo2cityflow
     # sumo2cityflow_net(args)
-    sumo2cityflow_flow(args)
+    # sumo2cityflow_flow(args)
 
     # cityflow2sumo
-    # cityflow2sumo_net(args)
-    # cityflow2sumo_flow(args)
-    # cityflow2sumo_cfg(args)
+    cityflow2sumo_net(args)
+    cityflow2sumo_flow(args)
+    cityflow2sumo_cfg(args)

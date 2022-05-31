@@ -68,7 +68,7 @@ class Intersection(object):
         self.next_phase = 0
         self.current_phase_time = 0
 
-        self.yellow_phase_time = 3  # TODO: try to use Registry later
+        self.yellow_phase_time = 5  # TODO: try to use Registry later
         self.map_name = world.map  # TODO: try to add it to Registry later
 
         self.lane_links = world.eng.trafficlight.getControlledLinks(self.id)

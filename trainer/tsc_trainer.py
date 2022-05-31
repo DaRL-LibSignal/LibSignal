@@ -228,7 +228,7 @@ class TSCTrainer(BaseTrainer):
                     actions.append(ag.get_action(obs[idx], phases[idx], test=True))
                 actions = np.stack(actions)
                 rewards_list = []
-                for _ in range(self.action_interval):
+                for j in range(self.action_interval):
                     obs, rewards, dones, _ = self.env.step(actions.flatten())
                     i += 1
                     rewards_list.append(np.stack(rewards))
