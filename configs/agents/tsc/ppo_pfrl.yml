@@ -25,7 +25,7 @@ trainer:
   steps: 3600
   test_steps: 3600
   action_interval: 10
-  episodes: 200
+  episodes: 2000
   update_model_rate: 1
   update_target_rate: 10
   # save_dir: data/output_data/task_name/dataset_dir/model_name
@@ -41,7 +41,7 @@ logger:
   get_attention: False
   ave_model: True
   save_model: True
-  save_rate: 20
+  save_rate: 1000
   train_model: True
   test_model: True
   load_model: False

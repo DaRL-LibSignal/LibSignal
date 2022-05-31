@@ -187,9 +187,8 @@ class Intersection(object):
             #print("cur phase set: ", self.current_phase)
             pass
 
-    def sudo_step(self, action):
+    def pseudo_step(self, action):
         # TODO: check if change state, yellow phase must less than minimum of action time
-
         # test yellow finished first
         self.virtual_phase = action
         if self.current_phase_time == self.yellow_phase_time:
@@ -222,6 +221,7 @@ class Intersection(object):
                 v_measures = dict()
                 v_measures['name'] = v
                 v_measures['wait'] = self.waiting_times[v] if v in self.waiting_times else 0
+                #TODO: CHEC ITS RIGHT CALCULATION?
                 lane_measures['queue_length'] = lane_measures['queue_length'] + 1
                 v_measures['speed'] = self.eng.vehicle.getSpeed(v)
                 v_measures['position'] = self.eng.vehicle.getLanePosition(v)
@@ -313,11 +313,12 @@ class World(object):
         self.all_lanes = []
         for itsec in self.intersections:
             for road in itsec.road_lane_mapping.keys():
-                if itsec.road_lane_mapping[road]:
+                if itsec.road_lane_mapping[road] and road not in self.all_roads:
                     # append road name into all_roads if road exists
                     self.all_roads.append(road)
                     for lane in itsec.road_lane_mapping[road]:
-                        self.all_lanes.append(lane)
+                        if lane not in self.all_lanes:
+                            self.all_lanes.append(lane)
 
         # restart eng
         self.run = 0
@@ -338,15 +339,20 @@ class World(object):
         print('Connection ID', self.connection_name)
 
         self.info_functions = {
+            "vehicles": self.get_vehicles,
             "lane_count": self.get_lane_vehicle_count,
             "lane_waiting_count": self.get_lane_waiting_vehicle_count,
+            "lane_vehicles": self.get_lane_vehicles,
+            "time": self.get_current_time,
+            "vehicle_distance": None,
             "pressure": self.get_pressure,
             "lane_waiting_time_count": self.get_lane_waiting_time_count,
-            "lane_vehicles": self.get_lane_vehicles,
-            "get_lane_delay": self.get_lane_delay,
+            "lane_delay": self.get_lane_delay,
+            "vehicle_trajectory": None,
+            "history_vehicles": None,
             "phase": self.get_cur_phase,
-            "vehicles": self.get_vehicles,
-            "time": self.cur_time
+            "throughput": self.get_cur_throughput,
+            "average_travel_time": None
         }
         self.fns = []
         self.info = {}
@@ -384,7 +390,7 @@ class World(object):
         # TODO: support interval != 1
         if action is not None:
             for i, intersection in enumerate(self.intersections):
-                intersection.sudo_step(action[i])
+                intersection.pseudo_step(action[i])
             self.step_sim()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
@@ -423,9 +429,9 @@ class World(object):
         # TODO: check if its the problem
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
-            self.inside_vehicles.update({v: self.cur_time()})
+            self.inside_vehicles.update({v: self.get_current_time()})
 
-    def cur_time(self):
+    def get_current_time(self):
         result = self.eng.simulation.getTime()
         return result
 
@@ -505,6 +511,7 @@ class World(object):
         return result
 
     def get_lane_queue_length(self):
+        #TODO: CHECK DEFINATION
         result = dict()
         for inter in self.intersections:
             for key in inter.full_observation.keys():
@@ -544,5 +551,12 @@ class World(object):
         vehicles_all.update({obj.attrib['id']: int(float(obj.attrib['depart'])) \
             for obj in root.iter('vehicle')})
         return vehicles_all
+
+    def get_cur_throughput(self):
+        throughput = len(self.vehicles)
+        # TODO: check if only trach left cars
+        return throughput
+
+        
 
 

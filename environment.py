@@ -5,7 +5,6 @@ import numpy as np
 class TSCEnv(gym.Env):
     """
     Environment for Traffic Signal Control task.
-
     Parameters
     ----------
     world: World object

@@ -8,6 +8,7 @@ from collections import deque
 import gym
 
 from generator import LaneVehicleGenerator, IntersectionPhaseGenerator, IntersectionVehicleGenerator
+
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -35,6 +36,7 @@ class DQNAgent(RLAgent):
         inter_obj = self.world.id2intersection[inter_id]
         self.inter = inter_obj
         self.ob_generator = LaneVehicleGenerator(self.world,  self.inter, ['lane_count'], in_only=True, average=None)
+
         self.phase_generator = IntersectionPhaseGenerator(world,  self.inter, ["phase"],
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world,  self.inter, ["lane_waiting_count"],
@@ -65,7 +67,6 @@ class DQNAgent(RLAgent):
         self.optimizer = optim.RMSprop(self.model.parameters(),
                                        lr=self.learning_rate,
                                        alpha=0.9, centered=False, eps=1e-7)
-
 
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]
@@ -113,7 +114,8 @@ class DQNAgent(RLAgent):
         else:
             feature = ob
         observation = torch.tensor(feature, dtype=torch.float32)
-        actions = self.model(observation, train=True)
+        # TODO: no need to calculate gradient when interacting with environment
+        actions = self.model(observation, train=False)
         actions = actions.clone().detach().numpy()
         return np.argmax(actions, axis=1)
 
@@ -204,4 +206,3 @@ class DQNNet(nn.Module):
         else:
             with torch.no_grad():
                 return self._forward(x)
-

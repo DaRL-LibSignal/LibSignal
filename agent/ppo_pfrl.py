@@ -9,6 +9,7 @@ from torch import optim
 
 from generator.lane_vehicle import LaneVehicleGenerator
 from generator.intersection_phase import IntersectionPhaseGenerator
+from generator.intersection_vehicle import IntersectionVehicleGenerator
 from agent import utils
 
 import gym
@@ -77,12 +78,17 @@ class IPPO_pfrl(RLAgent):
         inter_id = self.world.intersection_ids[self.rank]
         inter_obj = self.world.id2intersection[inter_id]
         self.inter = inter_obj
-        self.ob_generator = LaneVehicleGenerator(self.world, inter_obj, ['lane_count'], in_only=True, average=None)
+        self.ob_generator_lane = LaneVehicleGenerator(self.world, inter_obj, ['lane_count'],
+                                                      in_only=True, average=None)
+        self.ob_generator_wait = LaneVehicleGenerator(self.world, inter_obj, ['lane_waiting_count'],
+                                                      in_only=True, average=None)
+        self.ob_generator_wait_time = LaneVehicleGenerator(self.world, inter_obj, ['lane_waiting_time_count'],
+                                                           in_only=True, average=None)
         self.phase_generator = IntersectionPhaseGenerator(self.world, inter_obj, ["phase"],
                                                           targets=["cur_phase"], negative=False)
-        self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_count"],
+        self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_time_count"],
                                                      in_only=True, average='all', negative=True)
-
+        self.vehicles_generator = IntersectionVehicleGenerator(self.world, inter_obj, ["lane_vehicles"])
     def get_ob(self):
         x_obs = []
         x_obs.append(self.ob_generator.generate())
@@ -90,9 +96,11 @@ class IPPO_pfrl(RLAgent):
         return x_obs
 
     def get_reward(self):
+        # setting is borrowed from sumo_rl
         rewards = []
         rewards.append(self.reward_generator.generate())
-        rewards = np.squeeze(np.array(rewards)) * 12
+        norm_rewards = [np.clip(r/224, -4, 4) for r in rewards]
+        rewards = np.squeeze(np.array(norm_rewards))
         return rewards
 
     def get_phase(self):
@@ -122,7 +130,7 @@ class IPPO_pfrl(RLAgent):
         else:
             obs = ob
         obs = torch.tensor(obs, dtype=torch.float32)
-        self.agent.observe(obs, reward, done, True)
+        self.agent.observe(obs, reward, done, False)
 
     def train(self):
         result = self.agent.get_statistics()
@@ -170,18 +178,16 @@ class IPPO_pfrl(RLAgent):
                 lecun_init(nn.Linear(64, 1))
             )
         )
-        self.optimizer = optim.RMSprop(self.model.parameters(),
-                                       lr=self.learning_rate,
-                                       alpha=0.9, centered=False, eps=1e-7)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=2.5e-4, eps=1e-5)
         self.agent = PPO(self.model, self.optimizer,
                          phi=lambda x: np.asarray(x, dtype=np.float32),
                          clip_eps=0.1,
-                         clip_eps_vf=None,
-                         update_interval=256,
-                         minibatch_size=256,
-                         epochs=1,
+                         clip_eps_vf=0.2,
+                         update_interval=360,
+                         minibatch_size=360,
+                         epochs=4,
                          standardize_advantages=True,
-                         entropy_coef=0.00001,
+                         entropy_coef=0.001,
                          max_grad_norm=0.5)
 
     def load_model(self, e):

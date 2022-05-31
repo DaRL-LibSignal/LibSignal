@@ -170,20 +170,15 @@ class IntersectionVehicleGenerator():
                     continue
                 transform_tuple = vehicle_location_mapper(vehicle_position, area_length, area_width)  # transform the coordinates to location in grid
                 mapOfCars[transform_tuple[0], transform_tuple[1]] = 1
-
         return mapOfCars
-
 
     def cur_phase(self,fns):
         cur_phase = fns["phase"]
         return cur_phase
 
-
     def generate(self, action_interval=10):
         self.action_interval = action_interval
         self.time = self.world.eng.get_current_time()
-
-
 
         fns = {fn:self.world.get_info(fn) for fn in self.fns}
         ret = [self.result_functions[res](fns) for res in self.targets]
@@ -192,6 +187,7 @@ class IntersectionVehicleGenerator():
             ret = ret * (-1)
 
         return ret
+
 
 if __name__ == "__main__":
     from world.world_cityflow import World

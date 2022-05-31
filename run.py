@@ -40,9 +40,13 @@ class Runner:
         self.config_registry()
 
     def config_registry(self):
-        cityflow_setting = json.load(open(self.config['path'], 'r'))
+        # TODO: make it flexable in the future
+        if args.world != 'openengine':
+            cityflow_setting = json.load(open(self.config['path'], 'r'))
+            roadnet_path = os.path.join(cityflow_setting['dir'], cityflow_setting['roadnetFile'])
+        else:
+            roadnet_path = None
 
-        roadnet_path = os.path.join(cityflow_setting['dir'], cityflow_setting['roadnetFile'])
         if self.config['model'].get('graphic', False):
             interface.Graph_World_Interface(roadnet_path)  # register graphic parameters in Registry class
         interface.Logger_path_Interface(self.config['task'], self.config['agent'], self.config['prefix'])

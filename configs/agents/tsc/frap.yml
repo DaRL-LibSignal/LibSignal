@@ -18,7 +18,7 @@ model:
 
 trainer: 
   thread: 4 
-  ngpu: -1 
+  ngpu: -1
   learning_start: 1000
   buffer_size: 5000 
   steps: 3600 

@@ -12,6 +12,7 @@ def idx2onehot(arr, spices, dict_phase=None):
         result = (np.array(dict_phase[arr[0]+1])).reshape(-1, len(dict_phase))
     return result
 
+
 def remove_right_lane(ob):
     """
     remove right lane in ob, for some models(eg,frap) do not take right lane into account. 

@@ -7,6 +7,7 @@ import numpy as np
 from math import atan2, pi
 import sys
 
+
 # TODO: THIS IS Y/X  But we keep it right now
 def _get_direction(road, out=True):
     if out:
@@ -148,6 +149,7 @@ class Intersection(object):
         self.action_before_yellow = None
         self.action_executed = None
 
+
 @Registry.register_world('cityflow')
 class World(object):
     """
@@ -236,8 +238,8 @@ class World(object):
         }
         self.fns = []
         self.info = {}
-        self.vehicle_waiting_time = {} # key: vehicle_id, value: the waiting time of this vehicle since last halt.
-        self.vehicle_trajectory = {} # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
+        self.vehicle_waiting_time = {}  # key: vehicle_id, value: the waiting time of this vehicle since last halt.
+        self.vehicle_trajectory = {}  # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
         self.history_vehicles = set()
 
         # # get in_lines and out_lanes
@@ -246,14 +248,14 @@ class World(object):
         # record lanes' vehicles to calculate arrive_leave_time
         self.dic_lane_vehicle_previous_step = {key: None for key in self.all_lanes}
         self.dic_lane_vehicle_current_step = {key: None for key in self.all_lanes}
-        self.dic_vehicle_arrive_leave_time = dict() # cumulative
+        self.dic_vehicle_arrive_leave_time = dict()  # cumulative
 
         print("world built.")
 
     def reset_vehicle_info(self):
         """reset vehicle infos,including waiting_time, trajectory,etc."""
-        self.vehicle_waiting_time = {} # key: vehicle_id, value: the waiting time of this vehicle since last halt.
-        self.vehicle_trajectory = {} # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
+        self.vehicle_waiting_time = {}  # key: vehicle_id, value: the waiting time of this vehicle since last halt.
+        self.vehicle_trajectory = {}  # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
         self.history_vehicles = set()
         self.dic_lane_vehicle_previous_step = {key: None for key in self.all_lanes}
         self.dic_lane_vehicle_current_step = {key: None for key in self.all_lanes}
@@ -264,7 +266,8 @@ class World(object):
         # init vehicle enter leave time
         for vehicle in list_vehicle_arrive:
             if vehicle not in self.dic_vehicle_arrive_leave_time:
-                self.dic_vehicle_arrive_leave_time[vehicle] = {"enter_time": ts, "leave_time": np.nan, "cost_time": np.nan}
+                self.dic_vehicle_arrive_leave_time[vehicle] = {"enter_time": ts, "leave_time": np.nan,
+                                                               "cost_time": np.nan}
             else:
                 # print("vehicle: %s already exists in entering lane!"%vehicle)
                 pass
@@ -275,7 +278,9 @@ class World(object):
         for vehicle in list_vehicle_left:
             try:
                 self.dic_vehicle_arrive_leave_time[vehicle]["leave_time"] = ts
-                self.dic_vehicle_arrive_leave_time[vehicle]["cost_time"] = ts - self.dic_vehicle_arrive_leave_time[vehicle]["enter_time"]
+                self.dic_vehicle_arrive_leave_time[vehicle]["cost_time"] = ts - \
+                                                                           self.dic_vehicle_arrive_leave_time[vehicle][
+                                                                               "enter_time"]
             except KeyError:
                 print("vehicle not recorded when entering!")
 
@@ -289,14 +294,14 @@ class World(object):
 
         # contain outflow lanes
         self.dic_lane_vehicle_current_step = self.eng.get_lane_vehicles()
-        
+
         # get vehicle list
         self.list_lane_vehicle_current_step = _change_lane_vehicle_dic_to_list(self.dic_lane_vehicle_current_step)
         self.list_lane_vehicle_previous_step = _change_lane_vehicle_dic_to_list(self.dic_lane_vehicle_previous_step)
         list_vehicle_new_arrive = list(
-                set(self.list_lane_vehicle_current_step) - set(self.list_lane_vehicle_previous_step))
+            set(self.list_lane_vehicle_current_step) - set(self.list_lane_vehicle_previous_step))
         list_vehicle_new_left = list(
-                set(self.list_lane_vehicle_previous_step) - set(self.list_lane_vehicle_current_step))
+            set(self.list_lane_vehicle_previous_step) - set(self.list_lane_vehicle_current_step))
         self._update_arrive_time(list_vehicle_new_arrive)
         self._update_left_time(list_vehicle_new_left)
     
@@ -368,7 +373,7 @@ class World(object):
     #         if lane not in out_lines:
     #             out_lines.append(lane)
     #     return in_lines, out_lines
-    
+
     def get_vehicle_lane(self):
         # get the current lane of each vehicle. {vehicle_id: lane_id}
         vehicle_lane = {}
@@ -436,15 +441,56 @@ class World(object):
                 if vehicle_lane[vehicle] == self.vehicle_trajectory[vehicle][-1][0]:
                     self.vehicle_trajectory[vehicle][-1][2] += 1
                 else:
-                    self.vehicle_trajectory[vehicle].append([vehicle_lane[vehicle], int(self.eng.get_current_time()), 0])
+                    self.vehicle_trajectory[vehicle].append(
+                        [vehicle_lane[vehicle], int(self.eng.get_current_time()), 0])
         return self.vehicle_trajectory
 
     def get_history_vehicles(self):
         self.history_vehicles.update(self.eng.get_vehicles())
         return self.history_vehicles
 
-
     def _get_roadnet(self, cityflow_config):
+        """
+        read information from roadnet file in the config file
+        generate roadnet dictionary based on providec configuration file
+        functions borrowed form openengine CBEngine.py
+        Details:
+        collect roadnet informations.
+        {1-'intersections'-(len=N_intersections):
+            {11-'id': name of the intersection,
+             12-'point': 121: {'x', 'y'}(intersection at this position),
+             13-'width': itersection width,
+             14-'roads'(len=N_roads controled by this intersection): name of road
+             15-'roadLinks'(len=N_road links): 
+                {151-'type': diriction type(go_straight, turn_left, turn_right, turn_U),  # TODO: check turn_u
+                 152-'startRoad': start road name,
+                 153-'endRoad': end road name,
+                 154-'direction': int(same as type)
+                 155-'laneLinks(len-N_lane links of road): 
+                    {1551-'startLaneIndex': int(lane index in start road),
+                     1552-'endLaneIndex': int(lane index in end road),
+                     1553-'points(N_points alone this lane': {'x', 'y'}(point pos)
+                     }
+                 },
+             16-'trafficLight: 
+                {161-'roadLinkIndices'(len=N_road links): [],
+                 162-'lightphases'(len=N_phases): {1621-'time': int(time long),
+                                                    1622-'availableRoadLinks'(len=N_working_roads): []
+                                                    }
+                 },
+             17-'virtual': bool
+             },
+         2-'roads'-(len=N_roads ): 
+            {21-'id': name of the road,
+             22-'points': [221: {'x', 'y'}(start pos), 222: {'x', 'y'}(end pos)],
+             23-'lanes'-(N_lanes in this road): 
+                231: [{'width': lane width, 'maxSpeed': max speed of each car on this lane}]
+                 232-'startIntersection': lane start,
+                 233-'endIntersection': lane end
+                 }
+             }
+         }
+        """
         roadnet_file = osp.join(cityflow_config["dir"], cityflow_config["roadnetFile"])
         with open(roadnet_file) as f:
             roadnet = json.load(f)
@@ -463,7 +509,7 @@ class World(object):
     def step(self, actions=None):
         #  update previous measurement
         self.dic_lane_vehicle_previous_step = self.dic_lane_vehicle_current_step
-        
+
         if actions is not None:
             for i, action in enumerate(actions):
                 self.intersections[i].step(action, self.interval)
@@ -494,8 +540,6 @@ class World(object):
 
     def get_lane_queue_length(self):
         return self.eng.get_lane_waiting_vehicle_count()
-
-
 
 
 if __name__ == "__main__":

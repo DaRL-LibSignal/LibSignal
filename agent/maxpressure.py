@@ -4,6 +4,7 @@ from generator import LaneVehicleGenerator, IntersectionPhaseGenerator, Intersec
 import numpy as np
 import gym
 
+
 @Registry.register_model('maxpressure')
 class MaxPressureAgent(BaseAgent):
     """
@@ -100,3 +101,4 @@ class MaxPressureAgent(BaseAgent):
         delay.append(self.delay.generate())
         delay = np.sum(np.squeeze(np.array(delay)))
         return delay
+

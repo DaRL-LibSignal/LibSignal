@@ -425,6 +425,7 @@ class CategoricalPdType(PdType):
     def sample_dtype(self):
         return tf.int32
 
+# TODO: this one
 class SoftCategoricalPdType(PdType):
     def __init__(self, ncat):
         self.ncat = ncat

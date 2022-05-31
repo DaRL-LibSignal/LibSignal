@@ -56,12 +56,26 @@ class TSCTrainer(BaseTrainer):
 
     def create_agents(self):
         self.agents = []
+        # for i in self.world.intersections:
+        #     self.agents.append(Registry.mapping['model_mapping'][self.args['agent']](self.world, i.id))
         agent = Registry.mapping['model_mapping'][self.args['agent']](self.world, 0)
-        print(agent.model)
+        if Registry.mapping['model_mapping']['model_setting'].param['name'] != 'maddpg' and\
+                Registry.mapping['model_mapping']['model_setting'].param['name'] != "maddpg_v2":
+            print(agent.model)
+
         num_agent = int(len(self.world.intersections) / agent.sub_agents)
         self.agents.append(agent)  # initialized N agents for traffic light control
         for i in range(1, num_agent):
             self.agents.append(Registry.mapping['model_mapping'][self.args['agent']](self.world, i))
+
+        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg':
+            for ag in self.agents:
+                ag.link_agents(self.agents)
+            print(ag.q_model)
+            print(ag.p_model)
+        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg_v2':
+            print(self.agents[0].agents[0].actor)
+            print(self.agents[0].agents[0].critic)
 
     def create_env(self):
         # TODO: finalized list or non list
@@ -73,6 +87,7 @@ class TSCTrainer(BaseTrainer):
         for e in range(self.episodes):
             # TODO: check this reset agent
             last_obs = self.env.reset()  # agent * [sub_agent, feature]
+
             for a in self.agents:
                 a.reset()
             if e % self.save_rate == 0:
@@ -90,6 +105,7 @@ class TSCTrainer(BaseTrainer):
             episodes_decision_num = 0
             episode_loss = []
             i = 0
+
             while i < self.steps:
                 if i % self.action_interval == 0:
                     last_phase = np.stack([ag.get_phase() for ag in self.agents])  # [agent, intersections]
@@ -101,6 +117,15 @@ class TSCTrainer(BaseTrainer):
                         actions = np.stack(actions)  # [agent, intersections]
                     else:
                         actions = np.stack([ag.sample() for ag in self.agents])
+
+
+                    # TODO: temporary for test maddpg agent
+                    if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg' or\
+                            Registry.mapping['model_mapping']['model_setting'].param['name'] == "maddpg_v2":
+                        actions_prob = []
+                        for idx, ag in enumerate(self.agents):
+                            actions_prob.append(ag.get_action_prob(last_obs[idx], last_phase[idx]))
+
                     reward_list = []
                     for _ in range(self.action_interval):
                         obs, rewards, dones, _ = self.env.step(actions.flatten())
@@ -117,9 +142,14 @@ class TSCTrainer(BaseTrainer):
                         # TODO: test for PFRL
                         if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'ppo_pfrl':
                             ag.do_observe(obs[idx], cur_phase[idx], rewards[idx], dones[idx])
-
-                        ag.remember(last_obs[idx], last_phase[idx], actions[idx], rewards[idx],
-                                    obs[idx], cur_phase[idx], f'{e}_{i//self.action_interval}_{ag.rank}')
+                        # TODO: temporary for test maddpg agent
+                        elif Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg' or\
+                            Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg_v2':
+                            ag.remember(last_obs[idx], last_phase[idx], actions_prob[idx], rewards[idx],
+                                        obs[idx], cur_phase[idx], f'{e}_{i // self.action_interval}_{ag.id}')
+                        else:
+                            ag.remember(last_obs[idx], last_phase[idx], actions[idx], rewards[idx],
+                                        obs[idx], cur_phase[idx], f'{e}_{i//self.action_interval}_{ag.id}')
                     flush += 1
                     if flush == self.buffer_size - 1:
                         flush = 0
@@ -128,12 +158,8 @@ class TSCTrainer(BaseTrainer):
                     episodes_decision_num += 1
                     total_decision_num += 1
                     last_obs = obs
-                    
                 if total_decision_num > self.learning_start and\
                         total_decision_num % self.update_model_rate == self.update_model_rate - 1:
-                    """
-                    cur_loss_q = self.agents.replay()  # TODO: train here
-                    """
 
                     cur_loss_q = np.stack([ag.train() for ag in self.agents])  # TODO: train here
 
@@ -272,3 +298,4 @@ class TSCTrainer(BaseTrainer):
         log_handle = open(self.log_file, "a")
         log_handle.write(res + "\n")
         log_handle.close()
+

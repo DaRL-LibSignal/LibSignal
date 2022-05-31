@@ -1,3 +1,4 @@
+
 from ctypes import util
 from . import RLAgent
 import random
@@ -64,8 +65,6 @@ class FRAP_DQNAgent(RLAgent):
                 self.ob_length = self.ob_generator.ob_length - 4 + 1 # 8+1=9
         else:
             self.ob_length = self.ob_generator.ob_length - 4 # 12-4=8
-        
-        
 
         self.model = self._build_model()
         self.target_model = self._build_model()
@@ -97,7 +96,6 @@ class FRAP_DQNAgent(RLAgent):
         # self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
         #                                              ["lane_delay"], in_only=True, average="all",
         #                                              negative=False)
-
 
     def _build_model(self):
         model = FRAP(
@@ -330,12 +328,10 @@ class FRAP(nn.Module):
                 relation_conv = self.conv_relation(relation_embedding)
                 tmp_wei = (lambda x: x.repeat(1, 1, 5))(relation_conv)
                 combine_feature = lane_conv*tmp_wei
-
             hidden_layer = F.relu(self.hidden_layer1(combine_feature)) # (b,20,8,7)
             before_merge = self.hidden_layer2(hidden_layer) # (b,1,8,7)
             before_merge = torch.reshape(before_merge, shape=(-1, 8, 7)) # (b,8,7)
             q_values = (lambda x: torch.sum(x, dim=2))(before_merge) # (b,8)
-
         return q_values
 
     def forward(self, feature_list, train=True):
@@ -363,4 +359,3 @@ class FRAP(nn.Module):
         constant = torch.tensor(relations, dtype=torch.float32)
         constant = constant.repeat(batch_size, 1, 1)
         return constant
-

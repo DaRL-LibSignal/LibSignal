@@ -441,6 +441,7 @@ class MultiHeadAttModel(MessagePassing):
 
         h_source = F.relu(self.W_source(x_j))
         h_source = h_source.view(h_source.shape[:-1][0], self.nv, self.dv)
+
         neighbor_repr = h_source.permute(1, 0, 2)  # [nv, E, dv]
         index = edge_index[1]  # which is target
 
