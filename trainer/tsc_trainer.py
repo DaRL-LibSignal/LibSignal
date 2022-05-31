@@ -176,8 +176,8 @@ class TSCTrainer(BaseTrainer):
                 mean_loss = 0
             mean_queue = np.sum(episodes_queue) / (episodes_decision_num * len(self.world.intersections))
             mean_delay = np.sum(episodes_delay) / (episodes_decision_num * len(self.world.intersections))
-            # episodes_throughput = self.world.get_cur_throughput()
-            episodes_throughput = 0
+            episodes_throughput = self.env.world.get_cur_throughput()
+            # episodes_throughput = 0
             mean_reward = np.sum(episodes_rewards) / episodes_decision_num
             cur_travel_time = self.env.world.get_average_travel_time()
             # sumo env has 2 travel time: [real travel time, planned travel time(aligned with Cityflow)]
@@ -225,8 +225,8 @@ class TSCTrainer(BaseTrainer):
         mean_rwd = np.sum(ep_rwds) / eps_nums
         mean_queue = np.sum(ep_queue) / (eps_nums * len(self.world.intersections))
         mean_delay = np.sum(ep_delay) / (eps_nums * len(self.world.intersections))
-        # ep_throughput = self.world.get_cur_throughput()
-        ep_throughput = 0
+        ep_throughput = self.env.world.get_cur_throughput()
+        # ep_throughput = 0
         trv_time = self.env.world.get_average_travel_time()
         self.logger.info("Test step:{}/{}, real travel time :{}, planned travel time:{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(e, self.steps, trv_time[0], trv_time[1], mean_rwd,mean_queue, mean_delay, int(ep_throughput)))
         self.writeLog("TEST", e, trv_time[0], trv_time[1], 100, mean_rwd,mean_queue,mean_delay, ep_throughput)
@@ -277,8 +277,8 @@ class TSCTrainer(BaseTrainer):
         # self.logger.info("Final lane length is %.4f." % lane_queue_length)
         mean_queue = np.sum(ep_queue) / (eps_nums * len(self.world.intersections))
         mean_delay = np.sum(ep_delay) / (eps_nums * len(self.world.intersections))
-        # ep_throughput = self.world.get_cur_throughput()
-        ep_throughput = 0
+        ep_throughput = self.env.world.get_cur_throughput()
+        # ep_throughput = 0
         self.logger.info("Final Travel Time is %.4f, Planned Travel Time is %.4f, mean rewards: %.4f, queue: %.4f, delay: %.4f, throughput: %d" % (trv_time[0], trv_time[1], mean_rwd, mean_queue, mean_delay, ep_throughput))
         
         # TODO: add attention record
