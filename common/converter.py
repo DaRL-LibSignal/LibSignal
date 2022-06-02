@@ -2,13 +2,11 @@
 convert SUMO file to CityFlow file.
 """
 
-from operator import attrgetter
 import os
 import sys
 from sys import platform
 import argparse
 from collections import defaultdict
-from turtle import width
 import sympy
 from mpmath import degrees, radians
 import copy
@@ -84,16 +82,16 @@ else:
 def parse_args():
     parser = argparse.ArgumentParser()
     # sumo2cityflow
-    # parser.add_argument("--or_sumonet", type=str,
-    #                     default='grid4x4/grid4x4.net.xml')
-    # parser.add_argument("--cityflownet", type=str,
-    #                     default='grid4x4/grid4x4_roadnet_red.json')
-    # parser.add_argument("--or_sumoflow", type=str,
-    #                     default='grid4x4/grid4x4.rou.xml')
-    # parser.add_argument("--cityflowflow", type=str,
-    #                     default='grid4x4/grid4x4_flow.json')
-    # parser.add_argument("--sumocfg", type=str,
-    #                     default='grid4x4/grid4x4.sumocfg')
+    parser.add_argument("--or_sumonet", type=str,
+                        default='grid4x4/grid4x4.net.xml')
+    parser.add_argument("--cityflownet", type=str,
+                        default='grid4x4/mygrid4x4_roadnet_red.json')
+    parser.add_argument("--or_sumoflow", type=str,
+                        default='grid4x4/grid4x4.rou.xml')
+    parser.add_argument("--cityflowflow", type=str,
+                        default='grid4x4/mygrid4x4_flow.json')
+    parser.add_argument("--sumocfg", type=str,
+                        default='grid4x4/grid4x4.sumocfg')
 
     # parser.add_argument("--or_sumonet", type=str,
     #                     default='cologne1/cologne1.net.xml')
@@ -118,14 +116,14 @@ def parse_args():
     #                     default='cologne3/cologne3.sumocfg')
 
     # cityflow2sumo
-    parser.add_argument("--or_cityflownet", type=str,
-                        default='hangzhou_1x1_bc-tyc_18041610_1h/roadnet.json')
-    parser.add_argument("--sumonet", type=str,
-                        default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.net.xml')
-    parser.add_argument("--or_cityflowflow", type=str,
-                        default='hangzhou_1x1_bc-tyc_18041610_1h/flow.json')
-    parser.add_argument("--sumoflow", type=str,
-                        default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.rou.xml')
+    # parser.add_argument("--or_cityflownet", type=str,
+    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/roadnet.json')
+    # parser.add_argument("--sumonet", type=str,
+    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.net.xml')
+    # parser.add_argument("--or_cityflowflow", type=str,
+    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/flow.json')
+    # parser.add_argument("--sumoflow", type=str,
+    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.rou.xml')
 
     return parser.parse_args()
 
@@ -212,7 +210,8 @@ def _is_node_virtual(node,tls_dict):
     ids = list(set([e.getFromNode().getID()
                for e in edges] + [e.getToNode().getID() for e in edges]))
     # virtual node just has 2 roads, non-virtual has at least 3 roads.
-    if len(ids) <= 2 or (node.getID() not in tls_dict and 'GS_'+node.getID() not in tls_dict):
+    if len(ids) <= 2 or node.getID() not in tls_dict:
+    # if len(ids) <= 2 or (node.getID() not in tls_dict and 'GS_'+node.getID() not in tls_dict):
         return True
     else:
         return False
@@ -464,7 +463,7 @@ def node_to_intersection(node, tls_dict, edge_dict):
                 phase, duration = idx_phase.state, idx_phase.duration
                 lane_list = []
                 for i, alpha in enumerate(phase):
-                    if (alpha == 'G' or alpha == 'g' or alpha == 's') and i in G_to_lane_dict.keys():
+                    if (alpha == 'G' or alpha == 'g') and i in G_to_lane_dict.keys():
                         lane_list.append(G_to_lane_dict[i])
 
                 lane_list_ = []
@@ -949,10 +948,10 @@ def cityflow2sumo_cfg(args):
 if __name__ == '__main__':
     args = parse_args()
     # sumo2cityflow
-    # sumo2cityflow_net(args)
-    # sumo2cityflow_flow(args)
+    sumo2cityflow_net(args)
+    sumo2cityflow_flow(args)
 
     # cityflow2sumo
-    cityflow2sumo_net(args)
-    cityflow2sumo_flow(args)
-    cityflow2sumo_cfg(args)
+    # cityflow2sumo_net(args)
+    # cityflow2sumo_flow(args)
+    # cityflow2sumo_cfg(args)

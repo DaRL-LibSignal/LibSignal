@@ -1,6 +1,6 @@
 import numpy as np
 from . import BaseGenerator
-from world import world_cityflow, world_sumo, world_openengine
+from world import world_cityflow, world_sumo #, world_openengine
 
 
 class LaneVehicleGenerator(BaseGenerator):
@@ -47,13 +47,13 @@ class LaneVehicleGenerator(BaseGenerator):
             for road in roads:
                 from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
                 self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
-        elif isinstance(world, world_openengine.World):
-            for r in roads:
-                if self.world.RIGHT:
-                    tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(str(ob)[-1]), reverse=True)
-                else:
-                    tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(str(ob)[-1]))
-                self.lanes.append(tmp)
+        # elif isinstance(world, world_openengine.World):
+        #     for r in roads:
+        #         if self.world.RIGHT:
+        #             tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(str(ob)[-1]), reverse=True)
+        #         else:
+        #             tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(str(ob)[-1]))
+        #         self.lanes.append(tmp)
         else:
             raise Exception('NOT IMPLEMENTED YET')
 

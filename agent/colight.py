@@ -164,6 +164,30 @@ class CoLightAgent(RLAgent):
         sorted(phasing_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
         self.phase_generator = phasing_generators
 
+        # queue metric
+        queues = []
+        for inter in self.world.intersections:
+            node_id = inter.id
+            node_idx = self.graph['node_id2idx'][node_id]
+            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"], 
+                                                 in_only=True, negative=False)
+            queues.append((node_idx, tmp_generator))
+        # now generator's order is according to its index in graph
+        sorted(queues, key=lambda x: x[0])
+        self.queue = queues
+
+        # delay metric
+        delays = []
+        for inter in self.world.intersections:
+            node_id = inter.id
+            node_idx = self.graph['node_id2idx'][node_id]
+            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_delay"], 
+                                                 in_only=True, average="all", negative=False)
+            delays.append((node_idx, tmp_generator))
+        # now generator's order is according to its index in graph
+        sorted(delays, key=lambda x: x[0])
+        self.delay = delays
+
     def get_ob(self):
         x_obs = []  # sub_agents * lane_nums,
         for i in range(len(self.ob_generator)):

@@ -24,16 +24,15 @@ class FixedTimeAgent(BaseAgent):
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj, ["lane_count"],
                                                      in_only=True, average='all', negative=True)
         
-        # self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
-        #                                              ["lane_waiting_count"], in_only=True,
-        #                                              negative=False)
+        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
 
-        # self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
-        #                                              ["lane_delay"], in_only=True,
-        #                                              negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_delay"], in_only=True,
+                                                     negative=False)
         self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
-        # dirrerent datasets have different t_fixed
-        # self.t_fixed = self.inter_obj.phases_time
+        # dirrerent datasets have the same t_fixed
         self.t_fixed = Registry.mapping['model_mapping']['model_setting'].param['t_fixed']
         
     def reset(self):
@@ -45,13 +44,13 @@ class FixedTimeAgent(BaseAgent):
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj, ["lane_count"],
                                                      in_only=True, average='all', negative=True)
         
-        # self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
-        #                                              ["lane_waiting_count"], in_only=True,
-        #                                              negative=False)
+        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
 
-        # self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
-        #                                              ["lane_delay"], in_only=True,
-        #                                              negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_delay"], in_only=True,
+                                                     negative=False)
 
     def get_ob(self):
         x_obs = []
@@ -74,6 +73,7 @@ class FixedTimeAgent(BaseAgent):
     
     def get_action(self, ob, phase, test=True):
         # phases: just index of self.inter_obj.phases, not green light index
+        assert self.inter_obj.current_phase == phase[-1]
         if self.inter_obj.current_phase_time < self.t_fixed:
             return self.inter_obj.current_phase
         else:

@@ -68,7 +68,7 @@ class Intersection(object):
         self.next_phase = 0
         self.current_phase_time = 0
 
-        self.yellow_phase_time = 5  # TODO: try to use Registry later
+        self.yellow_phase_time = min([i.duration for i in self.eng.trafficlight.getAllProgramLogics(self.id)[0].phases])
         self.map_name = world.map  # TODO: try to add it to Registry later
 
         self.lane_links = world.eng.trafficlight.getControlledLinks(self.id)
@@ -174,18 +174,10 @@ class Intersection(object):
                 y_id = self.yellow_dict[y_key]
                 self.eng.trafficlight.setPhase(self.id, y_id)  # phase turns into yellow here
                 self.current_phase = self.get_current_phase()
-        if self.id == "A0":
-            #print("phase after prep: ", self.get_current_phase())
-            #print("cur phase prep: ", self.current_phase)
-            pass
 
     def _change_phase(self, phase):
         self.eng.trafficlight.setPhase(self.id, phase)
         self.current_phase = self.get_current_phase()
-        if self.id == "A0":
-            #print("phase after set: ", self.get_current_phase())
-            #print("cur phase set: ", self.current_phase)
-            pass
 
     def pseudo_step(self, action):
         # TODO: check if change state, yellow phase must less than minimum of action time
@@ -397,11 +389,11 @@ class World(object):
         # TODO: register vehicles here
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
-            self.inside_vehicles.update({v: self.cur_time()})
+            self.inside_vehicles.update({v: self.get_current_time()})
         exiting_v = self.eng.simulation.getArrivedIDList()
         for v in exiting_v:
-            self.vehicles.update({v: self.cur_time() - self.inside_vehicles[v]})
-            self.vehicles_planned.update({v: self.cur_time() - self.inside_vehicles_planned[v]})
+            self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
+            self.vehicles_planned.update({v: self.get_current_time() - self.inside_vehicles_planned[v]})
         self._update_infos()
         self.run += 1
 
@@ -557,6 +549,6 @@ class World(object):
         # TODO: check if only trach left cars
         return throughput
 
-        
+
 
 

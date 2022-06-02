@@ -103,11 +103,14 @@ class Intersection(object):
         self.out_roads = [self.roads[i] for i, x in enumerate(self.outs) if x]
         self.in_roads = [self.roads[i] for i, x in enumerate(self.outs) if not x]
 
-    def _change_phase(self, phase, interval):
+    def _change_phase(self, phase, interval, typ='init'):
         """phase: true phase id (including yellows)"""
         self.eng.set_tl_phase(self.id, phase)
         self._current_phase = phase
-        self.current_phase_time = interval
+        if typ == 'add':
+            self.current_phase_time += interval
+        else:
+            self.current_phase_time = interval
 
     def step(self, action, interval):
         # if current phase is yellow, then continue to finish the yellow phase
@@ -115,7 +118,7 @@ class Intersection(object):
         # self.current_phase means phase id in self.phases (excluding yellow)
         if self._current_phase in self.yellow_phase_id:
             if self.current_phase_time >= self.yellow_phase_time:
-                self._change_phase(self.phases[self.action_before_yellow], interval)
+                self._change_phase(self.phases[self.action_before_yellow], interval,'add')
                 self.current_phase = self.action_before_yellow
                 self.action_executed = self.action_before_yellow
             else:
