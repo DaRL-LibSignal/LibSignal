@@ -40,7 +40,7 @@ class TSCTrainer(BaseTrainer):
             os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
                          Registry.mapping['logger_mapping']['logger_setting'].param['data_dir'])
         )
-        self.dataset.initiate(ep=self.episodes, step=self.steps, interval=self.action_interval)
+        # self.dataset.initiate(ep=self.episodes, step=self.steps, interval=self.action_interval)
         self.test_when_train = self.args['test_when_train']
         self.yellow_time = self.world.intersections[0].yellow_phase_time
         self.log_file = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
