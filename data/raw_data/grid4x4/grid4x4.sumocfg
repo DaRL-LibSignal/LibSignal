@@ -1,7 +1,7 @@
 <configuration>
   <input>
     <net-file value="grid4x4.net.xml"/>
-    <route-files value="grid4x4.rou.xml"/>
+    <route-files value="grid4x4_one.rou.xml"/>
   </input>
   <time>
     <begin value="0"/>

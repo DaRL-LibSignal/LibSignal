@@ -6,7 +6,7 @@ model:
   name: sotl
   min_green_vehicle: 5
   max_red_vehicle: 5
-  t_min: 3
+  t_min: 10
 
 
 trainer:

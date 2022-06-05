@@ -17,8 +17,8 @@ class SOTLAgent(BaseAgent):
         # some threshold to deal with phase requests
         self.min_green_vehicle = Registry.mapping['model_mapping']['model_setting'].param['min_green_vehicle']
         self.max_red_vehicle = Registry.mapping['model_mapping']['model_setting'].param['max_red_vehicle']
-        # self.t_min = Registry.mapping['model_mapping']['model_setting'].param['t_min']
-        self.t_min = 5
+        self.t_min = Registry.mapping['model_mapping']['model_setting'].param['t_min']
+        # self.t_min = 5
         # get generator for each SOTL
         inter_id = self.world.intersection_ids[self.rank]
         inter_obj = self.world.id2intersection[inter_id]

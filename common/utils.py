@@ -279,8 +279,18 @@ def build_config(args):
             f"Conflicting (duplicate) parameters in simultaneously "
             f"included configs: {duplicates_error}"
         )
+    # # modify t-min time, models involved: fixed time, maxpressure, sotl.
+    # if 't_min' in config['model'].keys():
+    #     if args.convert_type == 's2s' or args.convert_type == 's2c':
+    #         config.update({'t_min': 10})
+    #     else:
+    #         config.update({'t_min': 30})
+    # if 't_fixed' in config['model'].keys():
+    #     if args.convert_type == 's2s' or args.convert_type == 's2c':
+    #         config.update({'t_fixed': 10})
+    #     else:
+    #         config.update({'t_fixed': 30})
     args_dict = vars(args)
     for key in args_dict:
         config.update({key: args_dict[key]})  # short access for important param
     return config
-

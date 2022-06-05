@@ -40,7 +40,7 @@ def create_yellows(phases, yellow_length):
                 for sig_idx in range(len(phases[i].state)):
                     if (phases[i].state[sig_idx] == 'G' or phases[i].state[sig_idx] == 'g') and (phases[j].state[sig_idx] == 'r' or phases[j].state[sig_idx] == 's'):
                         need_yellow = True
-                        yellow_str += 'y'
+                        yellow_str += 'r'
                     else:
                         yellow_str += phases[i].state[sig_idx]
                 if need_yellow:  # If a yellow is required
@@ -368,7 +368,8 @@ class World(object):
             green_phases = []
             for phase in valid_phases[ts]:    # Convert to SUMO phase type
                 if 'y' not in phase:
-                    if phase.count('r') + phase.count('s') != len(phase):
+                    # condition2: avoid regarding yellow phase as green phase, which will happened in cityflow_convert file.
+                    if (phase.count('r') + phase.count('s') != len(phase)) and (3*phase.count('G') != len(phase)):
                         green_phases.append(self.eng.trafficlight.Phase(self.step_length, phase))
             valid_phases[ts] = green_phases
         return valid_phases
@@ -390,6 +391,7 @@ class World(object):
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
             self.inside_vehicles.update({v: self.get_current_time()})
+            traci.vehicle.setLaneChangeMode(v,256)
         exiting_v = self.eng.simulation.getArrivedIDList()
         for v in exiting_v:
             self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
