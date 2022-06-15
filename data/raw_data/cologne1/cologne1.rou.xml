@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-05-31 16:37:50 by Eclipse SUMO duarouter Version 1.13.0
+<!-- generated on 2022-06-08 11:57:16 by Eclipse SUMO duarouter Version 1.13.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
 
     <input>
-        <net-file value="/home/leo/LibSignalSpare/data/raw_data/cologne1/cologne1.net.xml"/>
-        <route-files value="/home/leo/LibSignalSpare/data/raw_data/cologne1/cologne1.trip.xml"/>
+        <net-file value="/home/lxl/TSCtest/LibSignalSpare_new/LibSignal_wei/data/raw_data/cologne1/cologne1.net.xml"/>
+        <route-files value="/home/lxl/TSCtest/LibSignalSpare_new/LibSignal_wei/data/raw_data/cologne1/cologne1.trip.xml"/>
     </input>
 
     <output>
-        <output-file value="/home/leo/LibSignalSpare/data/raw_data/cologne1/cologne1.rou.xml"/>
-        <alternatives-output value="/home/leo/LibSignalSpare/data/raw_data/cologne1/cologne1.rou.alt.xml"/>
+        <output-file value="/home/lxl/TSCtest/LibSignalSpare_new/LibSignal_wei/data/raw_data/cologne1/cologne1.rou.xml"/>
+        <alternatives-output value="/home/lxl/TSCtest/LibSignalSpare_new/LibSignal_wei/data/raw_data/cologne1/cologne1.rou.alt.xml"/>
     </output>
 
 </configuration>

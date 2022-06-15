@@ -69,12 +69,12 @@ class PressLightAgent(RLAgent):
         self.phase_generator = IntersectionPhaseGenerator(self.world, inter_obj, ["phase"],
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["pressure"], average="all", negative=True)
-        # self.queue = LaneVehicleGenerator(self.world, inter_obj,
-        #                                              ["lane_waiting_count"], in_only=True,
-        #                                              negative=False)
-        # self.delay = LaneVehicleGenerator(self.world, inter_obj,
-        #                                              ["lane_delay"], in_only=True, average="all",
-        #                                              negative=False)
+        self.queue = LaneVehicleGenerator(self.world, inter_obj,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
+        self.delay = LaneVehicleGenerator(self.world, inter_obj,
+                                                     ["lane_delay"], in_only=True, average="all",
+                                                     negative=False)
 
     def get_ob(self):
         x_obs = []
@@ -106,7 +106,7 @@ class PressLightAgent(RLAgent):
         else:
             feature = ob
         observation = torch.tensor(feature, dtype=torch.float32)
-        actions = self.model(observation, train=True)
+        actions = self.model(observation, train=False)
         actions = actions.clone().detach().numpy()
         return np.argmax(actions, axis=1)
 

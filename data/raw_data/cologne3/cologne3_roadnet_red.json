@@ -688,7 +688,7 @@
       ],
       "roadLinks": [
         {
-          "type": "turn_right",
+          "type": "go_straight",
           "startRoad": "319261593#15",
           "endRoad": "8197886#0",
           "direction": 0,
@@ -710,7 +710,7 @@
           ]
         },
         {
-          "type": "go_straight",
+          "type": "turn_left",
           "startRoad": "319261593#15",
           "endRoad": "319261593#16",
           "direction": 0,

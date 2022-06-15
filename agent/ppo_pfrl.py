@@ -9,7 +9,6 @@ from torch import optim
 
 from generator.lane_vehicle import LaneVehicleGenerator
 from generator.intersection_phase import IntersectionPhaseGenerator
-from generator.intersection_vehicle import IntersectionVehicleGenerator
 from agent import utils
 
 import gym
@@ -33,6 +32,17 @@ def lecun_init(layer, gain=1.0):
         nn.init.zeros_(layer.bias_hh_l0)
     return layer
 
+def orthogonal_init(layer, gain=1.0):
+    """Initializes the tensor with LeCunNormal."""
+    if isinstance(layer, (nn.Conv2d, nn.Linear)):
+        torch.nn.init.orthogonal_(layer.weight, gain)
+        nn.init.zeros_(layer.bias)
+    else:
+        torch.nn.init.orthogonal_(layer.weight_ih_l0, gain)
+        torch.nn.init.orthogonal_(layer.weight_hh_l0, gain)
+        nn.init.zeros_(layer.bias_ih_l0)
+        nn.init.zeros_(layer.bias_hh_l0)
+    return layer
 
 @Registry.register_model('ppo_pfrl')
 class IPPO_pfrl(RLAgent):
@@ -43,7 +53,7 @@ class IPPO_pfrl(RLAgent):
         self.rank = rank
         self.device = torch.device('cpu')
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
-        self.replay_buffer = self.replay_buffer = deque(maxlen=self.buffer_size)
+        self.replay_buffer = deque(maxlen=self.buffer_size)
 
         self.phase = Registry.mapping['world_mapping']['traffic_setting'].param['phase']
         self.one_hot = Registry.mapping['world_mapping']['traffic_setting'].param['one_hot']
@@ -56,11 +66,13 @@ class IPPO_pfrl(RLAgent):
         self.ob_generator = LaneVehicleGenerator(self.world, self.inter, ['lane_count'], in_only=True, average=None)
         self.phase_generator = IntersectionPhaseGenerator(world, self.inter, ["phase"],
                                                           targets=["cur_phase"], negative=False)
-        self.reward_generator = LaneVehicleGenerator(self.world, self.inter, ["lane_waiting_count"],
+        self.reward_generator = LaneVehicleGenerator(self.world, self.inter, ["lane_waiting_time_count"],
                                                      in_only=True, average='all', negative=True)
+        self.last_reward = 0
         self.action_space = gym.spaces.Discrete(len(self.world.id2intersection[inter_id].phases))
 
         self.learning_rate = Registry.mapping['model_mapping']['model_setting'].param['learning_rate']
+        self.clipping = True
 
         if self.phase:
             if self.one_hot:
@@ -78,17 +90,13 @@ class IPPO_pfrl(RLAgent):
         inter_id = self.world.intersection_ids[self.rank]
         inter_obj = self.world.id2intersection[inter_id]
         self.inter = inter_obj
-        self.ob_generator_lane = LaneVehicleGenerator(self.world, inter_obj, ['lane_count'],
-                                                      in_only=True, average=None)
-        self.ob_generator_wait = LaneVehicleGenerator(self.world, inter_obj, ['lane_waiting_count'],
-                                                      in_only=True, average=None)
-        self.ob_generator_wait_time = LaneVehicleGenerator(self.world, inter_obj, ['lane_waiting_time_count'],
-                                                           in_only=True, average=None)
+        self.ob_generator = LaneVehicleGenerator(self.world, inter_obj, ['lane_count'], in_only=True, average=None)
         self.phase_generator = IntersectionPhaseGenerator(self.world, inter_obj, ["phase"],
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_time_count"],
                                                      in_only=True, average='all', negative=True)
-        self.vehicles_generator = IntersectionVehicleGenerator(self.world, inter_obj, ["lane_vehicles"])
+        self.last_reward = 0
+
     def get_ob(self):
         x_obs = []
         x_obs.append(self.ob_generator.generate())
@@ -96,12 +104,16 @@ class IPPO_pfrl(RLAgent):
         return x_obs
 
     def get_reward(self):
-        # setting is borrowed from sumo_rl
         rewards = []
         rewards.append(self.reward_generator.generate())
-        norm_rewards = [np.clip(r/224, -4, 4) for r in rewards]
-        rewards = np.squeeze(np.array(norm_rewards))
-        return rewards
+        rewards = np.squeeze(np.array(rewards)) * 12
+        delta_rewards = rewards - self.last_reward
+        self.last_reward = rewards
+        # print("rewards: ", delta_rewards)
+        if self.clipping:
+            delta_rewards = np.clip(delta_rewards/224, -4, 4).astype(np.float32)
+        # print("rewards: ", delta_rewards)
+        return delta_rewards
 
     def get_phase(self):
         phase = []
@@ -134,8 +146,10 @@ class IPPO_pfrl(RLAgent):
 
     def train(self):
         result = self.agent.get_statistics()
-        result = result[3][1]
-        return result
+        # if int((result[4][1]%100)/10)==1:
+        #     print(result)
+        # result = result[2][1]
+        return result[3][1]
 
     def update_target_network(self):
         pass
@@ -166,26 +180,27 @@ class IPPO_pfrl(RLAgent):
             # nn.Flatten(),
             # lecun_init(nn.Linear(h*w*64, 64)),
             nn.Flatten(start_dim=1, end_dim=-1),
-            lecun_init(nn.Linear(self.ob_length, 64)),
+            orthogonal_init(nn.Linear(self.ob_length, 64)),
             nn.ReLU(),
-            lecun_init(nn.Linear(64, 64)),
+            orthogonal_init(nn.Linear(64, 64)),
             nn.ReLU(),
             Branched(
                 nn.Sequential(
-                    lecun_init(nn.Linear(64, self.action_space.n)),
+                    orthogonal_init(nn.Linear(64, self.action_space.n)),
                     SoftmaxCategoricalHead()
                 ),
-                lecun_init(nn.Linear(64, 1))
+                orthogonal_init(nn.Linear(64, 1))
             )
         )
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=2.5e-4, eps=1e-5)
-        self.agent = PPO(self.model, self.optimizer,
+        self.agent = PPO(self.model, self.optimizer, gpu=self.device.index,
                          phi=lambda x: np.asarray(x, dtype=np.float32),
                          clip_eps=0.1,
                          clip_eps_vf=0.2,
+                         # value_func_coef=0.0001,
                          update_interval=360,
                          minibatch_size=360,
-                         epochs=4,
+                         epochs=2,
                          standardize_advantages=True,
                          entropy_coef=0.001,
                          max_grad_norm=0.5)
@@ -202,5 +217,3 @@ class IPPO_pfrl(RLAgent):
             os.makedirs(path)
         model_name = os.path.join(path, f'{e}_{self.rank}.pt')
         torch.save(self.model.state_dict(), model_name)
-
-

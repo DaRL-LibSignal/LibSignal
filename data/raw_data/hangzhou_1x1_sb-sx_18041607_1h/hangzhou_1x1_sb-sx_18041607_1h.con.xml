@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<connections version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/connections_file.xsd">
+	<connection from="road_0_1_0" fromLane="0" to="road_1_1_0" toLane="1"/>
+	<connection from="road_0_1_0" fromLane="0" to="road_1_1_0" toLane="0"/>
+	<connection from="road_0_1_0" fromLane="1" to="road_1_1_1" toLane="1"/>
+	<connection from="road_0_1_0" fromLane="1" to="road_1_1_1" toLane="0"/>
+	<connection from="road_1_0_1" fromLane="0" to="road_1_1_1" toLane="1"/>
+	<connection from="road_1_0_1" fromLane="0" to="road_1_1_1" toLane="0"/>
+	<connection from="road_1_0_1" fromLane="1" to="road_1_1_2" toLane="1"/>
+	<connection from="road_1_0_1" fromLane="1" to="road_1_1_2" toLane="0"/>
+	<connection from="road_2_1_2" fromLane="0" to="road_1_1_2" toLane="1"/>
+	<connection from="road_2_1_2" fromLane="0" to="road_1_1_2" toLane="0"/>
+	<connection from="road_2_1_2" fromLane="1" to="road_1_1_3" toLane="1"/>
+	<connection from="road_2_1_2" fromLane="1" to="road_1_1_3" toLane="0"/>
+	<connection from="road_1_2_3" fromLane="1" to="road_1_1_0" toLane="1"/>
+	<connection from="road_1_2_3" fromLane="1" to="road_1_1_0" toLane="0"/>
+	<connection from="road_1_2_3" fromLane="0" to="road_1_1_3" toLane="1"/>
+	<connection from="road_1_2_3" fromLane="0" to="road_1_1_3" toLane="0"/>
+</connections>

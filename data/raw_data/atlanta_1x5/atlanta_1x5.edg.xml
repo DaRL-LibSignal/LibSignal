@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+	<edges xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/edges_file.xsd">
+		<edge from="69227178" id="-198659569#3" numLanes="1" priority="-1" speed="11.111" to="69227168"/>
+		<edge from="69538856" id="-234013266#1" numLanes="2" priority="-1" speed="11.111" to="69515842"/>
+		<edge from="5198748651" id="-290405874#2" numLanes="2" priority="-1" speed="11.111" to="69421277"/>
+		<edge from="69515841" id="-354587521#1" numLanes="2" priority="-1" speed="11.111" to="69515842"/>
+		<edge from="69249210" id="-354587522#2" numLanes="2" priority="-1" speed="11.111" to="69421277"/>
+		<edge from="69387071" id="-354587522#6" numLanes="2" priority="-1" speed="11.111" to="69249210"/>
+		<edge from="69227168" id="-354587522#9" numLanes="2" priority="-1" speed="11.111" to="69387071"/>
+		<edge from="69588600" id="-505912698#0" numLanes="2" priority="-1" speed="11.111" to="69515842"/>
+		<edge from="69614527" id="-533146591" numLanes="2" priority="-1" speed="11.111" to="69538856"/>
+		<edge from="69387078" id="-611582485#3" numLanes="1" priority="-1" speed="11.111" to="69387071"/>
+		<edge from="69421277" id="-629278174#1" numLanes="2" priority="-1" speed="11.111" to="2390850312"/>
+		<edge from="69515842" id="-631653294#2" numLanes="2" priority="-1" speed="11.111" to="69227168"/>
+		<edge from="69515842" id="-631653295#2" numLanes="2" priority="-1" speed="11.111" to="69588600"/>
+		<edge from="69227168" id="-9246225#5" numLanes="1" priority="-1" speed="11.111" to="69227161"/>
+		<edge from="69249214" id="-9247806#2" numLanes="1" priority="-1" speed="11.111" to="69249210"/>
+		<edge from="69387071" id="-9258925#3" numLanes="1" priority="-1" speed="11.111" to="69387063"/>
+		<edge from="69227168" id="198659569#0" numLanes="1" priority="-1" speed="11.111" to="69227178"/>
+		<edge from="69515842" id="234013266#0" numLanes="2" priority="-1" speed="11.111" to="69538856"/>
+		<edge from="69421271" id="290405872#0" numLanes="2" priority="-1" speed="11.111" to="69421277"/>
+		<edge from="69421277" id="290405873#0" numLanes="2" priority="-1" speed="11.111" to="69421271"/>
+		<edge from="69421277" id="290405874#0" numLanes="3" priority="-1" speed="11.111" to="5198748651"/>
+		<edge from="69515842" id="354587521#0" numLanes="2" priority="-1" speed="11.111" to="69515841"/>
+		<edge from="69421277" id="354587522#0" numLanes="2" priority="-1" speed="11.111" to="69249210"/>
+		<edge from="69249210" id="354587522#3" numLanes="2" priority="-1" speed="11.111" to="69387071"/>
+		<edge from="69387071" id="354587522#7" numLanes="2" priority="-1" speed="11.111" to="69227168"/>
+		<edge from="2390850312" id="354587523" numLanes="2" priority="-1" speed="11.111" to="69421277"/>
+		<edge from="69538856" id="533146591" numLanes="2" priority="-1" speed="11.111" to="69614527"/>
+		<edge from="69387071" id="611582485#0" numLanes="1" priority="-1" speed="11.111" to="69387078"/>
+		<edge from="69227168" id="631653294#0" numLanes="2" priority="-1" speed="11.111" to="69515842"/>
+		<edge from="69227161" id="9246225#4" numLanes="1" priority="-1" speed="11.111" to="69227168"/>
+		<edge from="69249210" id="9247806#0" numLanes="1" priority="-1" speed="11.111" to="69249214"/>
+		<edge from="69387063" id="9258925#0" numLanes="1" priority="-1" speed="11.111" to="69387071"/>
+	</edges>

@@ -26,7 +26,7 @@ trainer:
   buffer_size: 10000
   steps: 3600
   test_steps: 3600
-  action_interval: 20
+  action_interval: 10
   episodes: 2000
   update_model_rate: 30
   update_target_rate: 30

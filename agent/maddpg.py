@@ -100,8 +100,8 @@ class MADDPGAgent(RLAgent):
         self.sync_network()
 
         self.criterion = nn.MSELoss(reduction='mean')
-        self.q_optimizer = optim.Adam(self.q_model.parameters(), lr=self.learning_rate)
-        self.p_optimizer = optim.Adam(self.p_model.parameters(), lr=self.learning_rate)
+        self.q_optimizer = optim.Adam(self.q_model.parameters(), lr=self.learning_rate, eps=1e-07)
+        self.p_optimizer = optim.Adam(self.p_model.parameters(), lr=self.learning_rate * 0.1, eps=1e-07)
         """
         self.p_optimizer = optim.RMSprop(self.p_model.parameters(),
                                          lr=self.learning_rate,

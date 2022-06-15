@@ -68,7 +68,7 @@ class Intersection(object):
         self.next_phase = 0
         self.current_phase_time = 0
 
-        self.yellow_phase_time = 5  # TODO: try to use Registry later
+        self.yellow_phase_time = min([i.duration for i in self.eng.trafficlight.getAllProgramLogics(self.id)[0].phases])
         self.map_name = world.map  # TODO: try to add it to Registry later
 
         self.lane_links = world.eng.trafficlight.getControlledLinks(self.id)
@@ -174,18 +174,10 @@ class Intersection(object):
                 y_id = self.yellow_dict[y_key]
                 self.eng.trafficlight.setPhase(self.id, y_id)  # phase turns into yellow here
                 self.current_phase = self.get_current_phase()
-        if self.id == "A0":
-            #print("phase after prep: ", self.get_current_phase())
-            #print("cur phase prep: ", self.current_phase)
-            pass
 
     def _change_phase(self, phase):
         self.eng.trafficlight.setPhase(self.id, phase)
         self.current_phase = self.get_current_phase()
-        if self.id == "A0":
-            #print("phase after set: ", self.get_current_phase())
-            #print("cur phase set: ", self.current_phase)
-            pass
 
     def pseudo_step(self, action):
         # TODO: check if change state, yellow phase must less than minimum of action time
@@ -323,9 +315,9 @@ class World(object):
         # restart eng
         self.run = 0
         self.inside_vehicles = dict()
-        self.inside_vehicles_planned = self.get_plan_depart_time() # all vehicles appeared in rou.xml
+        # self.inside_vehicles_planned = self.get_plan_depart_time() # all vehicles appeared in rou.xml
         self.vehicles = dict()
-        self.vehicles_planned = dict()
+        # self.vehicles_planned = dict()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
 
@@ -376,6 +368,8 @@ class World(object):
             green_phases = []
             for phase in valid_phases[ts]:    # Convert to SUMO phase type
                 if 'y' not in phase:
+                    # condition2: avoid regarding yellow phase as green phase, which will happened in cityflow_convert file.
+                    # if (phase.count('r') + phase.count('s') != len(phase)) and (3*phase.count('G') != len(phase)):
                     if phase.count('r') + phase.count('s') != len(phase):
                         green_phases.append(self.eng.trafficlight.Phase(self.step_length, phase))
             valid_phases[ts] = green_phases
@@ -397,11 +391,12 @@ class World(object):
         # TODO: register vehicles here
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
-            self.inside_vehicles.update({v: self.cur_time()})
+            self.inside_vehicles.update({v: self.get_current_time()})
+            # traci.vehicle.setLaneChangeMode(v,256)
         exiting_v = self.eng.simulation.getArrivedIDList()
         for v in exiting_v:
-            self.vehicles.update({v: self.cur_time() - self.inside_vehicles[v]})
-            self.vehicles_planned.update({v: self.cur_time() - self.inside_vehicles_planned[v]})
+            self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
+            # self.vehicles_planned.update({v: self.get_current_time() - self.inside_vehicles_planned[v]})
         self._update_infos()
         self.run += 1
 
@@ -411,7 +406,7 @@ class World(object):
             traci.close()
         self.run = 0
         self.vehicles = dict()
-        self.vehicles_planned = dict()
+        # self.vehicles_planned = dict()
         self.inside_vehicles = dict()
         # TODO: check when to close traci
         traci.start(self.sumo_cmd, label=self.connection_name)
@@ -436,14 +431,15 @@ class World(object):
         return result
 
     def get_vehicles(self):
-        assert len(self.vehicles) == len(self.vehicles_planned)
+        # assert len(self.vehicles) == len(self.vehicles_planned)
         result = 0
         result_planned = 0
         count = 0
         for v in self.vehicles.keys():
             count += 1
             result += self.vehicles[v]
-            result_planned += self.vehicles_planned[v]
+            result_planned += self.vehicles[v]
+            # result_planned += self.vehicles_planned[v]
         if count == 0:
             return [0, 0]
         else:
@@ -475,7 +471,18 @@ class World(object):
         return result
 
     def get_pressure(self):
-        pass
+        pressures = dict()
+        lane_vehicles = self.get_lane_vehicle_count()
+        for i in self.intersections:
+            pressure = 0
+            for road in i.in_roads:
+                for k in i.road_lane_mapping[road]:
+                    pressure += lane_vehicles[k]
+            for road in i.out_roads:
+                for k in i.road_lane_mapping[road]:
+                    pressure -= lane_vehicles[k]
+            pressures[i.id] = pressure
+        return pressures
 
     def get_lane_waiting_time_count(self):
         result = dict()
@@ -538,25 +545,25 @@ class World(object):
             lane_delay[key] = 1 - lane_avg_speed / speed_limit
         return lane_delay
 
-    def get_plan_depart_time(self):
-        """
-        Get planned depart time for all vehicles appeared in sumo.rou.xml file.
-        In SUMO and Cityflow, travel time = arriving time-planned depart time.
-        Note: Not real depart time, but planned depart time.
-        return: planned depart time of all vehicles.
-        """
-        vehicles_all = dict()
-        tree = ET.parse(self.route)
-        root = tree.getroot()
-        vehicles_all.update({obj.attrib['id']: int(float(obj.attrib['depart'])) \
-            for obj in root.iter('vehicle')})
-        return vehicles_all
+    # def get_plan_depart_time(self):
+    #     """
+    #     Get planned depart time for all vehicles appeared in sumo.rou.xml file.
+    #     In SUMO and Cityflow, travel time = arriving time-planned depart time.
+    #     Note: Not real depart time, but planned depart time.
+    #     return: planned depart time of all vehicles.
+    #     """
+    #     vehicles_all = dict()
+    #     tree = ET.parse(self.route)
+    #     root = tree.getroot()
+    #     vehicles_all.update({obj.attrib['id']: int(float(obj.attrib['depart'])) \
+    #         for obj in root.iter('vehicle')})
+    #     return vehicles_all
 
     def get_cur_throughput(self):
         throughput = len(self.vehicles)
         # TODO: check if only trach left cars
         return throughput
 
-        
+
 
 

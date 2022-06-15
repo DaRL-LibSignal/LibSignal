@@ -1,3 +1,4 @@
+from lib2to3.pytree import convert
 import task
 import trainer
 import agent
@@ -16,12 +17,12 @@ parser.add_argument('--thread_num', type=int, default=4, help='number of threads
 parser.add_argument('--ngpu', type=str, default="-1", help='gpu to be used')  # choose gpu card
 
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
-parser.add_argument('-a', '--agent', type=str, default="maxpressure", help="agent type of agents in RL environment")
+parser.add_argument('-a', '--agent', type=str, default="fixedtime", help="agent type of agents in RL environment")
 # parser.add_argument('-w', '--world', type=str, default="cityflow", help="simulator type")
 parser.add_argument('-w', '--world', type=str, default="sumo", help="simulator type")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
-# parser.add_argument('--path', type=str, default='configs/cityflow_cologne1.cfg', help='path to cityflow path')
-parser.add_argument('--path', type=str, default='configs/sumohz1x1.cfg', help='path to cityflow path')
+# parser.add_argument('--path', type=str, default='configs/cityflow_1x5.cfg', help='path to cityflow path')
+parser.add_argument('--path', type=str, default='configs/sumo1x21.cfg', help='path to cityflow path')
 parser.add_argument('--prefix', type=str, default='0', help="the number of predix in this running process")
 parser.add_argument('--seed', type=int, default=None, help="seed for pytorch backend")
 
@@ -44,11 +45,16 @@ class Runner:
         if args.world != 'openengine':
             cityflow_setting = json.load(open(self.config['path'], 'r'))
             roadnet_path = os.path.join(cityflow_setting['dir'], cityflow_setting['roadnetFile'])
+            # can not directly obtain graph from sumo file, need sumo2cityflow roadnetfile
+            convertroadnet_path = os.path.join(cityflow_setting['dir'], cityflow_setting['convertroadnetFile']) if 'convertroadnetFile' in cityflow_setting else None
         else:
             roadnet_path = None
 
         if self.config['model'].get('graphic', False):
-            interface.Graph_World_Interface(roadnet_path)  # register graphic parameters in Registry class
+            if convertroadnet_path != None:
+                interface.Graph_World_Interface(convertroadnet_path)
+            else:
+                interface.Graph_World_Interface(roadnet_path)  # register graphic parameters in Registry class
         interface.Logger_path_Interface(self.config['task'], self.config['agent'], self.config['prefix'])
         if not os.path.exists(Registry.mapping['logger_mapping']['output_path'].path):
             os.makedirs(Registry.mapping['logger_mapping']['output_path'].path)

@@ -42,6 +42,7 @@ class Intersection(object):
         self.phase_available_lanelinks = []
         self.phase_available_startlanes = []
 
+        # judge whether is from sumo_convert_file
         self.if_sumo = True if "gt_virtual" in intersection else False
 
         # create yellow phases
@@ -50,9 +51,11 @@ class Intersection(object):
         phases = intersection["trafficLight"]["lightphases"]
         self.all_phases = [i for i in range(len(phases))]
         if self.if_sumo:
-            self.yellow_phase_id = [i for i in range(len(phases)) if phases[i]['time']==5 or phases[i]['time']==3]
+            self.yellow_phase_time = min([i['time'] for i in phases])
+            self.yellow_phase_id = [i for i in range(len(phases)) if phases[i]['time']==self.yellow_phase_time]
+            # self.yellow_phase_id = [i for i in range(len(phases)) if phases[i]['time']==5 or phases[i]['time']==3]
             self.phases = [i for i in range(len(phases)) if phases[i]['time']!=5 and phases[i]['time']!=3]
-            self.yellow_phase_time = phases[self.yellow_phase_id[0]]['time'] # 3 or 5
+            # self.yellow_phase_time = phases[self.yellow_phase_id[0]]['time'] # 3 or 5
             # self.yellow_phase_time = 3 # 3 or 5
             # self.phases = [i for i in range(len(phases)) if phases[i]['time']!=self.yellow_phase_time]
         else:
@@ -103,19 +106,26 @@ class Intersection(object):
         self.out_roads = [self.roads[i] for i, x in enumerate(self.outs) if x]
         self.in_roads = [self.roads[i] for i, x in enumerate(self.outs) if not x]
 
-    def _change_phase(self, phase, interval):
+    def _change_phase(self, phase, interval, typ='init'):
         """phase: true phase id (including yellows)"""
         self.eng.set_tl_phase(self.id, phase)
         self._current_phase = phase
-        self.current_phase_time = interval
+        if typ == 'add':
+            self.current_phase_time += interval
+        else:
+            self.current_phase_time = interval
 
     def step(self, action, interval):
         # if current phase is yellow, then continue to finish the yellow phase
         # recall self._current_phase means true phase id (including yellows)
         # self.current_phase means phase id in self.phases (excluding yellow)
         if self._current_phase in self.yellow_phase_id:
-            if self.current_phase_time >= self.yellow_phase_time:
-                self._change_phase(self.phases[self.action_before_yellow], interval)
+            if self.current_phase_time == self.yellow_phase_time:
+                # self._change_phase(self.phases[self.action_before_yellow], interval,'add')
+                if self.if_sumo:
+                    self._change_phase(self.phases[self.action_before_yellow], interval,'add')
+                else:
+                    self._change_phase(self.phases[self.action_before_yellow], interval)
                 self.current_phase = self.action_before_yellow
                 self.action_executed = self.action_before_yellow
             else:
