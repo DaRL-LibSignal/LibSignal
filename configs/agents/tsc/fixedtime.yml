@@ -1,0 +1,50 @@
+includes:
+  - configs/agents/tsc/base.yml
+
+
+model:
+  name: fixedtime
+  t_fixed: 10
+
+trainer:
+  thread: 4
+  ngpu: -1
+  episodes: 1
+  buffer_size: 0
+  steps: 3600
+  test_steps: 3600
+  action_interval: 10
+  learning_rate: 0
+  learning_start: 0
+  update_model_rate: 0
+  update_target_rate: 0
+
+
+logger:
+  log_dir: "logger"
+  replay_dir: "replay"
+  data_dir: "dataset"
+  get_attention: False
+  save_rate: 1
+  train_model: False
+  test_model: True
+  load_model: False
+
+
+traffic:
+  one_hot: False
+  phase: False
+  thread_num: 4
+  ACTION_PATTERN: "set"
+  MIN_ACTION_TIME: 10
+  YELLOW_TIME: 5
+  ALL_RED_TIME: 0
+  NUM_PHASES: 8
+  NUM_LANES: 1
+  ACTION_DIM: 2
+  MEASURE_TIME: 10
+  IF_GUI: True
+  DEBUG: False
+  INTERVAL: 1
+  SAVEREPLAY: True
+  RLTRAFFICLIGHT: True
