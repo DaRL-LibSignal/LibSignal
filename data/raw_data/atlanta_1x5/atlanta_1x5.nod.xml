@@ -3,17 +3,17 @@
 	<node id="2390850312" type="priority" x="388.43" y="1709.67"/>
 	<node id="5198748651" type="priority" x="516.08" y="1588.64"/>
 	<node id="69227161" type="priority" x="294.73" y="1222.49"/>
-	<node id="69227168" type="traffic_light" x="369.49" y="1219.91"/>
+	<node id="69227168" type="traffic_light_right_on_red" x="369.49" y="1219.91"/>
 	<node id="69227178" type="priority" x="508.49" y="1202.73"/>
-	<node id="69249210" type="traffic_light" x="440.36" y="1470.24"/>
+	<node id="69249210" type="traffic_light_right_on_red" x="440.36" y="1470.24"/>
 	<node id="69249214" type="priority" x="518.1" y="1469.79"/>
 	<node id="69387063" type="priority" x="319.5" y="1357.24"/>
-	<node id="69387071" type="traffic_light" x="436.92" y="1345.54"/>
+	<node id="69387071" type="traffic_light_right_on_red" x="436.92" y="1345.54"/>
 	<node id="69387078" type="priority" x="515.19" y="1343.86"/>
 	<node id="69421271" type="priority" x="315.16" y="1600.38"/>
-	<node id="69421277" type="traffic_light" x="424.26" y="1594.85"/>
+	<node id="69421277" type="traffic_light_right_on_red" x="424.26" y="1594.85"/>
 	<node id="69515841" type="priority" x="345.99" y="809.91"/>
-	<node id="69515842" type="traffic_light" x="358.74" y="1053.31"/>
+	<node id="69515842" type="traffic_light_right_on_red" x="358.74" y="1053.31"/>
 	<node id="69538856" type="priority" x="275.73" y="1036.32"/>
 	<node id="69588600" type="priority" x="498.39" y="1060.4"/>
 	<node id="69614527" type="priority" x="179.37" y="1021.97"/>

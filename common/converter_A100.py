@@ -148,14 +148,14 @@ def parse_args():
     #                     default='hangzhou_1x1_qc-yn_18041608_1h/hangzhou_1x1_qc-yn_18041608_1h.rou.xml')
 
     # Cityflow1x1(Config 3)
-    # parser.add_argument("--or_cityflownet", type=str,
-    #                     default='hangzhou_1x1_kn-hz_18041608_1h/roadnet.json')
-    # parser.add_argument("--sumonet", type=str,
-    #                     default='hangzhou_1x1_kn-hz_18041608_1h/hangzhou_1x1_kn-hz_18041608_1h.net.xml')
-    # parser.add_argument("--or_cityflowflow", type=str,
-    #                     default='hangzhou_1x1_kn-hz_18041608_1h/flow.json')
-    # parser.add_argument("--sumoflow", type=str,
-    #                     default='hangzhou_1x1_kn-hz_18041608_1h/hangzhou_1x1_kn-hz_18041608_1h.rou.xml')
+    parser.add_argument("--or_cityflownet", type=str,
+                        default='hangzhou_1x1_kn-hz_18041608_1h/roadnet.json')
+    parser.add_argument("--sumonet", type=str,
+                        default='hangzhou_1x1_kn-hz_18041608_1h/hangzhou_1x1_kn-hz_18041608_1h.net.xml')
+    parser.add_argument("--or_cityflowflow", type=str,
+                        default='hangzhou_1x1_kn-hz_18041608_1h/flow.json')
+    parser.add_argument("--sumoflow", type=str,
+                        default='hangzhou_1x1_kn-hz_18041608_1h/hangzhou_1x1_kn-hz_18041608_1h.rou.xml')
 
     # Cityflow1x1(Config 4)
     # parser.add_argument("--or_cityflownet", type=str,
@@ -168,14 +168,14 @@ def parse_args():
     #                     default='hangzhou_1x1_sb-sx_18041607_1h/hangzhou_1x1_sb-sx_18041607_1h.rou.xml')
 
 
-    parser.add_argument("--or_cityflownet", type=str,
-                        default='manhattan_28x7/roadnet_28_7.json')
-    parser.add_argument("--sumonet", type=str,
-                        default='manhattan_28x7/manhattan_28x7.net.xml')
-    parser.add_argument("--or_cityflowflow", type=str,
-                        default='manhattan_28x7/anon_28_7_newyork_real_triple.json')
-    parser.add_argument("--sumoflow", type=str,
-                        default='manhattan_28x7/manhattan_28x7.rou.xml')
+    # parser.add_argument("--or_cityflownet", type=str,
+    #                     default='manhattan_28x7/roadnet_28_7.json')
+    # parser.add_argument("--sumonet", type=str,
+    #                     default='manhattan_28x7/manhattan_28x7.net.xml')
+    # parser.add_argument("--or_cityflowflow", type=str,
+    #                     default='manhattan_28x7/anon_28_7_newyork_real_triple.json')
+    # parser.add_argument("--sumoflow", type=str,
+    #                     default='manhattan_28x7/manhattan_28x7.rou.xml')
 
 
     return parser.parse_args()
@@ -881,12 +881,12 @@ def cityflow2sumo_net(args):
                     phase_y.setAttribute('state', ''.join(yellow_state))
                     tll.appendChild(phase_y)
                     root_tll.appendChild(tll)
-                if light['time'] == 5:
+                if light['time'] <= 5:
                     # first should set yellow phase, then can add this yellow phase when adding a green phase
                     assert idx == 0
                     for act_roadlink in light['availableRoadLinks']:
                             act_p = dic_phase[inter['trafficLight']['roadLinkIndices'][act_roadlink]]
-                            state[act_p*lane_num:act_p*lane_num+lane_num] = ['G']*lane_num
+                            yellow_state[act_p*lane_num:act_p*lane_num+lane_num] = ['G']*lane_num
                             # if num_phase == 12:
                             #     yellow_state[act_p*3:act_p*3+3] = ['G']*3
                             # elif num_phase == 8:
@@ -1033,6 +1033,6 @@ if __name__ == '__main__':
     # sumo2cityflow_flow(args)
 
     # cityflow2sumo
-    # cityflow2sumo_net(args)
-    cityflow2sumo_flow(args)
+    cityflow2sumo_net(args)
+    # cityflow2sumo_flow(args)
     # cityflow2sumo_cfg(args)

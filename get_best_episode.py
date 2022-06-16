@@ -20,5 +20,5 @@ def extract_log(lst):
     print("best episode:",res[0])
 
 
-lst = [os.path.join(os.getcwd(),x) for x in ['data/output_data/tsc/maddpg/0/logger/maddpg_20220615-145457.log'] ]
+lst = [os.path.join(os.getcwd(),x) for x in ['data/output_data/tsc/ppo_pfrl/0/logger/ppo_pfrl_20220614-184322.log'] ]
 extract_log(lst)
