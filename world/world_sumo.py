@@ -40,7 +40,7 @@ def create_yellows(phases, yellow_length):
                 for sig_idx in range(len(phases[i].state)):
                     if (phases[i].state[sig_idx] == 'G' or phases[i].state[sig_idx] == 'g') and (phases[j].state[sig_idx] == 'r' or phases[j].state[sig_idx] == 's'):
                         need_yellow = True
-                        yellow_str += 'y'
+                        yellow_str += 'r'
                     else:
                         yellow_str += phases[i].state[sig_idx]
                 if need_yellow:  # If a yellow is required

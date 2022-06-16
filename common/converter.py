@@ -9,7 +9,6 @@ import sys
 from sys import platform
 import argparse
 from collections import defaultdict
-from matplotlib.pyplot import get
 import sympy
 from mpmath import degrees, radians
 import copy
@@ -91,11 +90,11 @@ def parse_args():
     # parser.add_argument("--or_sumonet", type=str,
     #                     default='grid4x4/grid4x4.net.xml')
     # parser.add_argument("--cityflownet", type=str,
-    #                     default='grid4x4/grid4x4_roadnet_red.json')
+    #                     default='grid4x4/mygrid4x4_roadnet_red.json')
     # parser.add_argument("--or_sumoflow", type=str,
     #                     default='grid4x4/grid4x4.rou.xml')
     # parser.add_argument("--cityflowflow", type=str,
-    #                     default='grid4x4/grid4x4_flow.json')
+    #                     default='grid4x4/mygrid4x4_flow.json')
     # parser.add_argument("--sumocfg", type=str,
     #                     default='grid4x4/grid4x4.sumocfg')
 
@@ -499,7 +498,7 @@ def node_to_intersection(node, tls_dict, edge_dict):
                 phase, duration = idx_phase.state, idx_phase.duration
                 lane_list = []
                 for i, alpha in enumerate(phase):
-                    if (alpha == 'G' or alpha == 'g' or alpha == 's') and i in G_to_lane_dict.keys():
+                    if (alpha == 'G' or alpha == 'g') and i in G_to_lane_dict.keys():
                         lane_list.append(G_to_lane_dict[i])
 
                 lane_list_ = []
@@ -1076,7 +1075,7 @@ def cityflow2sumo_net(args):
         edge.setAttribute('from', road['startIntersection'])
         edge.setAttribute('to', road['endIntersection'])
         edge.setAttribute('numLanes', str(len(road['lanes'])))
-        edge.setAttribute('speed', '11.111')
+        edge.setAttribute('speed', '11.11')
         edge.setAttribute('priority', '-1')
         root_edge.appendChild(edge)
     fp_edge = open(sumo_edge, 'w')

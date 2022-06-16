@@ -8,19 +8,16 @@
             "usualPosAcc": 2.6,
             "usualNegAcc": 4.5,
             "minGap": 2.5,
-            "maxSpeed": 16.67,
+            "maxSpeed": 13.39,
             "headwayTime": 1.5
         },
         "route": [
-            "top3D3",
-            "D3D2",
-            "D2C2",
-            "C2C3",
-            "C3D3",
-            "D3top3"
+            "left0A0",
+            "A0B0",
+            "B0bottom1"
         ],
         "interval": 5.0,
-        "startTime": 5,
-        "endTime": 5
+        "startTime": 8,
+        "endTime": 8
     }
 ]

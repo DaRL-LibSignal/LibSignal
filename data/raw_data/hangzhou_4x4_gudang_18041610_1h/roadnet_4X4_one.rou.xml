@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+	<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+		<vType accel="2.0" decel="4.5" id="pkw" length="5.0" maxSpeed="11.111" minGap="2.5" width="2.0"/>
+		<vehicle depart="0" departLane="best" departSpeed="max" id="1">
+			<route edges="road_0_1_0 road_1_1_0 road_2_1_0 road_3_1_3"/>
+		</vehicle>
+	</routes>
