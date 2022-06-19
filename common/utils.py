@@ -11,6 +11,10 @@ from datetime import datetime
 from common.registry import Registry
 
 
+def set_config():
+    
+
+
 class SeverityLevelBetween(logging.Filter):
     def __init__(self, min_level, max_level):
         super().__init__()
