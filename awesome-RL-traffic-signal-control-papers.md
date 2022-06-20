@@ -487,7 +487,7 @@ There are contributors to this paper collection, we will continue to update it.
 
 # Cite
 
-Our paper is accepted by ACM SIGSPATIAL 2021. If you find LibCity useful for your research or development, please cite our [paper](xxxxxxx).
+Our paper is accepted by ACM SIGSPATIAL 2021. If you find LibSignal useful for your research or development, please cite our [paper](xxxxxxx).
 
 ```
 xxxx
