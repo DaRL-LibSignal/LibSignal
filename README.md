@@ -6,6 +6,9 @@ Environments include single intersetion (single-agent) and multi intersections (
 
 Baselines include traditional Taffic Signal Control algorithms and reinforcement learning based methods.
 
+## Introduction
+
+LibSignal is a cross-simulator environment that provides multiple traditional and Reinforcement Learning models in traffic control tasks. Currently, we support SUMO, CityFlow, and CBEine simulation environments. Conversion between SUMO and CityFlow is carefully calibrated.
 
 ## Installation
 
