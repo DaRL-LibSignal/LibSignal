@@ -206,6 +206,8 @@ In the paper collection, we collected RL-based traffic signal control papers pub
 
 1. **SecureTLC: Secure and Two-level Traffic Signal Control for Intelligent Transportation System**. *CC Yen*. UC Davis Electronic Theses and Dissertations. 2022. [link](https://escholarship.org/uc/item/698881b7)
 
+1. **Attacking Deep Reinforcement Learning-Based Traffic Signal Control Systems with Colluding Vehicles**, *Qu, Ao, Yihong Tang, and Wei Ma*. arXiv preprint arXiv:2111.02845. 2021. [link](https://arxiv.org/pdf/2111.02845.pdf)
+
 1. **Traffic Signal Optimization for Multiple Intersections Based on Reinforcement Learning**. *J Gu, M Lee, C Jun, Y Han, Y Kim, J Kim*. Applied Sciences. 2021. [link](https://www.mdpi.com/2076-3417/11/22/10688)
 
 1. **A Decentralized Reinforcement Learning Framework for Efficient Passage of Emergency Vehicles**. *H Su, YD Zhong, D Biswadip, A Chakraborty*. arXiv preprint. 2021. [link](https://arxiv.org/abs/2111.00278)
