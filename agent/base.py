@@ -16,3 +16,6 @@ class BaseAgent(object):
 
     def get_action(self, ob, phase):
         raise NotImplementedError()
+
+    def get_action_prob(self, ob, phase):
+        return None

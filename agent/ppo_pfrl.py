@@ -74,6 +74,9 @@ class IPPO_pfrl(RLAgent):
         self.optimizer = None
         self._build_model()
 
+    def __repr__():
+        return self.model
+
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]
         inter_obj = self.world.id2intersection[inter_id]
@@ -143,8 +146,10 @@ class IPPO_pfrl(RLAgent):
     def sample(self):
         return np.random.randint(0, self.action_space.n, self.sub_agents)
 
-    def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
-        self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
+    def remember(self, last_obs, last_phase, actions, actions_prob, rewards, obs, cur_phase, done, key):
+        # reformat it later
+        self.replay_buffer.append((key, (obs, cur_phase, rewards, dones)))
+        self.do_observe(ob, phase, reward, done)
 
     def _build_model(self):
         """

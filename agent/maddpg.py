@@ -102,15 +102,10 @@ class MADDPGAgent(RLAgent):
         self.criterion = nn.MSELoss(reduction='mean')
         self.q_optimizer = optim.Adam(self.q_model.parameters(), lr=self.learning_rate)
         self.p_optimizer = optim.Adam(self.p_model.parameters(), lr=self.learning_rate)
-        """
-        self.p_optimizer = optim.RMSprop(self.p_model.parameters(),
-                                         lr=self.learning_rate,
-                                         alpha=0.9, centered=False, eps=1e-7)
-        self.q_optimizer = optim.RMSprop(self.q_model.parameters(),
-                                         lr=self.learning_rate,
-                                         alpha=0.9, centered=False, eps=1e-7)
 
-        """
+    def __repr__():
+        return self.p_model + '\n' + self.q_model
+
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]
         inter_obj = self.world.id2intersection[inter_id]
@@ -286,14 +281,14 @@ class MADDPGAgent(RLAgent):
 
         #self.pr(loss_of_q, loss_of_p, rewards_list[self.rank], q, target_q)
         # TODO: q loss or p loss ?
-        print('test')
         return loss_of_q.clone().detach().numpy()
 
     def pr(self, loss_of_q, loss_of_p, reward, q, target_q):
         print(loss_of_q.data, loss_of_p.data, torch.mean(reward).data, torch.mean(q).data, torch.mean(target_q).data)
 
-    def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
-        self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
+    
+    def remember(self, last_obs, last_phase, actions, actions_prob, rewards, obs, cur_phase, done, key):
+        self.replay_buffer.append((key, (last_obs, last_phase, actions_prob, rewards, obs, cur_phase)))
 
     def _build_model(self, input_dim, output_dim):
         model = DQNNet(input_dim, output_dim)

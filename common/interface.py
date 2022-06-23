@@ -1,71 +1,84 @@
-from common.utils import build_index_intersection_map
+from comman.utils import build_index_intersection_map
 from common.registry import Registry
-from common.utils import load_config_dict
-from common.utils import get_output_file_path
+from utils.logger import load_config_dict, modify_config_file, get_output_file_path
+import os
 
 
 class Interface(object):
     def __init__(self):
         pass
 
+@Registry.register_command('setting')
+class Command_Setting_Interface(Interface):
+    """
+    register command line into Registry
+    """
+    def __init__(self, config):
+        super(Command_Setting_Interface, self).__init__()
+        Command_Setting_Interface.param = config['command']
 
-@Registry.register_world('graph_setting')
+
+@Registry.register_world('setting')
 class Graph_World_Interface(Interface):
+    """
+    convert world roadnnet into graph structure
+    """
     def __init__(self, path):
         super(Graph_World_Interface, self).__init__()
+        # TODO: support other roadnet file formation other than cityflow
         Graph_World_Interface.graph = build_index_intersection_map(path)
 
 
-@Registry.register_world('traffic_setting')
-class Traffic_param_Interface(Interface):
-    def __init__(self, path):
-        super(Traffic_param_Interface, self).__init__()
-        if isinstance(path, dict):
-            Traffic_param_Interface.param = path
-        elif isinstance(path, str):
-            Traffic_param_Interface.param = load_config_dict(path)
-        else:
-            raise NotImplementedError('traffic setting: input should be path or dictionary')
+@Registry.register_world('setting')
+class World_param_Interface(Interface):
+    """
+    use this interface to load and modify simulator configuration of logfiles
+    """
+    def __init__(self, config):
+        super(World_param_Interface, self).__init__()
+        path = os.path.join(os.getcwd(), 'configs/sim', config['command']['network'] + '.cfg')
+        modify_config_file(path, config)
+        World_param_Interface.param = load_config_dict(path)
+        
 
-
-@Registry.register_model('model_setting')
+@Registry.register_model('setting')
 class ModelAgent_param_Interface(Interface):
-    def __init__(self, path):
+    """
+    set model parameters
+    """
+    def __init__(self, config):
         super(ModelAgent_param_Interface, self).__init__()
-        if isinstance(path, dict):
-            ModelAgent_param_Interface.param = path
-        elif isinstance(path, str):
-            ModelAgent_param_Interface.param = load_config_dict(path)
-        else:
-            raise NotImplementedError('model setting: input should be path or dictionary')
+        param = config['model']
+        ModelAgent_param_Interface.param = param
 
 
-@Registry.register_logger('output_path')
+@Registry.register_logger('path')
 class Logger_path_Interface(Interface):
-    def __init__(self, task, model, prefix):
+    """"
+    set output path
+    """
+    def __init__(self, config):
         super(Logger_path_Interface, self).__init__()
-        Logger_path_Interface.path = get_output_file_path(task, model, prefix)
+        Logger_path_Interface.path = get_output_file_path()
 
 
-@Registry.register_logger('logger_setting')
+@Registry.register_logger('setting')
 class Logger_param_Interface(Interface):
-    def __init__(self, path):
+    """
+    setup logger path for logging, replay, model, dataset
+    """
+    def __init__(self, config):
         super(Logger_param_Interface, self).__init__()
-        if isinstance(path, dict):
-            Logger_param_Interface.param = path
-        elif isinstance(path, str):
-            Logger_param_Interface.param = load_config_dict(path)
-        else:
-            raise NotImplementedError('logger setting: input should be path or dictionary')
+        param = config['logger']
+        Logger_param_Interface.param = param
 
 
-@Registry.register_trainer('trainer_setting')
+@Registry.register_trainer('setting')
 class Trainer_param_Interface(Interface):
-    def __init__(self, path):
+    """
+    set trainer parameters
+    """
+    def __init__(self, config):
         super(Trainer_param_Interface, self).__init__()
-        if isinstance(path, dict):
-            Trainer_param_Interface.param = path
-        elif isinstance(path, str):
-            Trainer_param_Interface.param = load_config_dict(path)
-        else:
-            raise NotImplementedError('task setting: input should be path or dictionary')
+        param = config['trainer']
+        Trainer_param_Interface.param = param

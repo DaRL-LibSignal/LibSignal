@@ -1,0 +1,6 @@
+includes:
+  - configs/tsc/base.yml
+
+model:
+  name: dqn
+  train_model: True

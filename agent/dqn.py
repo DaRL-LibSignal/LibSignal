@@ -68,6 +68,9 @@ class DQNAgent(RLAgent):
                                        lr=self.learning_rate,
                                        alpha=0.9, centered=False, eps=1e-7)
 
+    def __repr__():
+        return self.model
+
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]
         inter_obj = self.world.id2intersection[inter_id]
@@ -126,7 +129,7 @@ class DQNAgent(RLAgent):
         model = DQNNet(self.ob_length, self.action_space.n)
         return model
 
-    def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
+    def remember(self, last_obs, last_phase, actions, actions_prob, rewards, obs, cur_phase, done, key):
         self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
 
     def _batchwise(self, samples):
