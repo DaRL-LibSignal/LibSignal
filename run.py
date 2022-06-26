@@ -15,14 +15,14 @@ import argparse
 parser = argparse.ArgumentParser(description='Run Experiment')
 parser.add_argument('--thread_num', type=int, default=4, help='number of threads')  # used in cityflow
 parser.add_argument('--ngpu', type=str, default="-1", help='gpu to be used')  # choose gpu card
-parser.add_argument('--prefix', type=str, default='0', help="the number of predix in this running process")
+parser.add_argument('--prefix', type=str, default='0', help="the number of prefix in this running process")
 parser.add_argument('--seed', type=int, default=None, help="seed for pytorch backend")
-parser.add_argument('--debug', type=bool, default=False)
+parser.add_argument('--debug', type=bool, default=True)
 
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
 parser.add_argument('-a', '--agent', type=str, default="dqn", help="agent type of agents in RL environment")
 parser.add_argument('-w', '--world', type=str, default="cityflow", help="simulator type")
-parser.add_argument('-n', '--network', type=str, default="cityflow1x1", help="newtork name")
+parser.add_argument('-n', '--network', type=str, default="cityflow1x1", help="network name")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
 
 
@@ -49,10 +49,10 @@ class Runner:
 
         interface.Command_Setting_Interface(self.config)
         interface.Logger_param_Interface(self.config)  # register logger path
-        interface.World_param_Interface(path)
+        interface.World_param_Interface(self.config)
         if self.config['model'].get('graphic', False):
             param = Registry.mapping['world_mapping']['setting'].param
-            if self.config['command']['world'] in ['cityflwo', 'sumo']:
+            if self.config['command']['world'] in ['cityflow', 'sumo']:
                 roadnet_path = param['dir'] + param['roadnetFile']
             else:
                 roadnet_path = parm['road_file_addr']

@@ -5,7 +5,7 @@ from common.registry import Registry
 
 import numpy as np
 from math import atan2, pi
-import sys
+import sys, os
 
 
 # TODO: THIS IS Y/X  But we keep it right now
@@ -156,7 +156,7 @@ class Intersection(object):
 @Registry.register_world('cityflow')
 class World(object):
     """
-    Create a CityFlow engine and maintain informations about CityFlow world
+    Create a CityFlow engine and maintain information about CityFlow world
     """
 
     def __init__(self, cityflow_config, thread_num):
@@ -455,17 +455,17 @@ class World(object):
     def _get_roadnet(self, cityflow_config):
         """
         read information from roadnet file in the config file
-        generate roadnet dictionary based on providec configuration file
+        generate roadnet dictionary based on provide configuration file
         functions borrowed form openengine CBEngine.py
         Details:
-        collect roadnet informations.
+        collect roadnet information.
         {1-'intersections'-(len=N_intersections):
             {11-'id': name of the intersection,
              12-'point': 121: {'x', 'y'}(intersection at this position),
-             13-'width': itersection width,
-             14-'roads'(len=N_roads controled by this intersection): name of road
+             13-'width': intersection width,
+             14-'roads'(len=N_roads controlled by this intersection): name of road
              15-'roadLinks'(len=N_road links): 
-                {151-'type': diriction type(go_straight, turn_left, turn_right, turn_U),  # TODO: check turn_u
+                {151-'type': direction type(go_straight, turn_left, turn_right, turn_U),  # TODO: check turn_u
                  152-'startRoad': start road name,
                  153-'endRoad': end road name,
                  154-'direction': int(same as type)
@@ -477,7 +477,7 @@ class World(object):
                  },
              16-'trafficLight: 
                 {161-'roadLinkIndices'(len=N_road links): [],
-                 162-'lightphases'(len=N_phases): {1621-'time': int(time long),
+                 162-'light phases'(len=N_phases): {1621-'time': int(time long),
                                                     1622-'availableRoadLinks'(len=N_working_roads): []
                                                     }
                  },
@@ -494,7 +494,8 @@ class World(object):
              }
          }
         """
-        roadnet_file = osp.join(cityflow_config["dir"], cityflow_config["roadnetFile"])
+        #roadnet_file = osp.join(cityflow_config["dir"], cityflow_config["roadnetFile"])
+        roadnet_file = os.path.join(cityflow_config["dir"], cityflow_config["roadnetFile"])
         with open(roadnet_file) as f:
             roadnet = json.load(f)
         return roadnet

@@ -1,0 +1,17 @@
+includes:
+  - configs/tsc/base.yml
+
+
+model:
+  name: magd
+  train_model: True
+  local_q_learn: False
+  tau: 0.01
+  learning_rate: 0.001
+  batch_size: 256
+  grad_clip: 0.5
+
+trainer:
+  episodes: 2000
+  update_model_rate: 30
+  update_target_rate: 30

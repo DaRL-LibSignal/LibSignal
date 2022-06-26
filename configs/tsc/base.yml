@@ -6,7 +6,7 @@ world:
 # necessary and distinctive parameters for simulators
   interval: 1.0
   seed: 0
-  dir: data
+  dir: data/
 
   saveReplay: False
   report_log_mode: normal # cbengine
@@ -20,7 +20,7 @@ world:
 trainer:
   thread: 4
   ngpu: -1
-  learning_start: 1000
+  learning_start: 5000
   buffer_size: 5000
   steps: 3600
   test_steps: 3600
@@ -50,11 +50,11 @@ model:
   phase: False
 
 logger:
-  root_dir: "data/output_data"
-  log_dir: "logger"
-  replay_dir: "replay"
-  model_dir: "model"
-  data_dir: "dataset"
+  root_dir: "data/output_data/"
+  log_dir: "logger/"
+  replay_dir: "replay/"
+  model_dir: "model/"
+  data_dir: "dataset/"
   save_model: True
   save_rate: 200
   attention: False

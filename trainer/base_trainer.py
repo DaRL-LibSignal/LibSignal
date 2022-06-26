@@ -1,4 +1,5 @@
 import random
+import os
 from abc import ABC, abstractmethod
 import numpy as np
 import torch
@@ -26,7 +27,6 @@ class BaseTrainer(ABC):
         self.env = None
         self.world = None
         self.agents = None
-        self.metric = None
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{gpu}")

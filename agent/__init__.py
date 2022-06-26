@@ -6,7 +6,7 @@ from .dqn import DQNAgent
 from .sotl import SOTLAgent
 from .frap import FRAP_DQNAgent
 # from .ppo_pfrl import IPPO_pfrl
-# from .maddpg import MADDPGAgent
+from .magd import MAGDAgent
 # from .maddpg_v2 import MADDPGAgent
 from .presslight import PressLightAgent
 from .fixedtime import FixedTimeAgent

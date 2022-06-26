@@ -30,11 +30,13 @@ class TSCTrainer(BaseTrainer):
         self.learning_start = Registry.mapping['trainer_mapping']['setting'].param['learning_start']
         self.update_model_rate = Registry.mapping['trainer_mapping']['setting'].param['update_model_rate']
         self.update_target_rate = Registry.mapping['trainer_mapping']['setting'].param['update_target_rate']
+        self.test_when_train = Registry.mapping['trainer_mapping']['setting'].param['test_when_train']
         # replay file is only valid in cityflow now. 
         # TODO: support SUMO and Openengine later
         self.replay_file_dir = None
         if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
-            self.replay_file_dir = os.path.dirname(Registry.mapping['world_mapping']['setting'].param['roadnetLogFile'])
+            self.replay_file_dir = os.path.join(Registry.mapping['world_mapping']['setting'].param['dir'],
+                os.path.dirname(Registry.mapping['world_mapping']['setting'].param['roadnetLogFile']))
         
         # TODO: support other dataset in the future
         self.dataset = Registry.mapping['dataset_mapping'][Registry.mapping['command_mapping']['setting'].param['dataset']](
@@ -43,10 +45,10 @@ class TSCTrainer(BaseTrainer):
         )
         self.dataset.initiate(ep=self.episodes, step=self.steps, interval=self.action_interval)
         self.yellow_time = Registry.mapping['trainer_mapping']['setting'].param['yellow_length']
-        # consistes of path of output dir + log_dir + file handlers name
+        # consists of path of output dir + log_dir + file handlers name
         self.log_file = os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                      Registry.mapping['logger_mapping']['setting'].param['log_dir'],
-                                     os.path.basename(self.logger.handlers[-1].baseFilename)
+                                     os.path.basename(self.logger.handlers[-1].baseFilename).rstrip('_BRF.log') + '_DTL.log'
                                      )
 
     def create_world(self):
@@ -56,19 +58,19 @@ class TSCTrainer(BaseTrainer):
     def create_metric(self):
         lane_metrics = ['rewards', 'queue', 'delay']
         world_metrics = ['real avg travel time', 'throughput', 'plan avg travel time']
-        self.metric = Metric(lane_metrics, world_metrics, world, agents)
+        self.metric = Metric(lane_metrics, world_metrics, self.world, self.agents)
 
     def create_agents(self):
         self.agents = []
-        agent = Registry.mapping['model_mapping'][Registry.mapping['command_mapping']['setting'].parm['agent']](self.world, 0)
+        agent = Registry.mapping['model_mapping'][Registry.mapping['command_mapping']['setting'].param['agent']](self.world, 0)
         print(agent)
         num_agent = int(len(self.world.intersections) / agent.sub_agents)
         self.agents.append(agent)  # initialized N agents for traffic light control
         for i in range(1, num_agent):
-            self.agents.append(Registry.mapping['model_mapping'][Registry.mapping['command_mapping']['setting'].parm['agent']](self.world, i))
+            self.agents.append(Registry.mapping['model_mapping'][Registry.mapping['command_mapping']['setting'].param['agent']](self.world, i))
 
-        # for maddpg agents should share information 
-        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg':
+        # for magd agents should share information 
+        if Registry.mapping['model_mapping']['setting'].param['name'] == 'magd':
             for ag in self.agents:
                 ag.link_agents(self.agents)
 
@@ -112,18 +114,18 @@ class TSCTrainer(BaseTrainer):
                     for idx, ag in enumerate(self.agents):
                         actions_prob.append(ag.get_action_prob(last_obs[idx], last_phase[idx]))
 
-                    reward_list = []
+                    rewards_list = []
                     for _ in range(self.action_interval):
                         obs, rewards, dones, _ = self.env.step(actions.flatten())
                         i += 1
-                        reward_list.append(np.stack(rewards))
-                    rewards = np.mean(reward_list, axis=0)  # [agent, intersection]
+                        rewards_list.append(np.stack(rewards))
+                    rewards = np.mean(rewards_list, axis=0)  # [agent, intersection]
                     self.metric.update(rewards)
 
                     cur_phase = np.stack([ag.get_phase() for ag in self.agents])
                     for idx, ag in enumerate(self.agents):
                         ag.remember(last_obs[idx], last_phase[idx], actions[idx], actions_prob[idx], rewards[idx],
-                            obs[idx], cur_phase[idx], done[idx], f'{e}_{i//self.action_interval}_{ag.id}')
+                            obs[idx], cur_phase[idx], dones[idx], f'{e}_{i//self.action_interval}_{ag.id}')
                     flush += 1
                     if flush == self.buffer_size - 1:
                         flush = 0
@@ -148,17 +150,17 @@ class TSCTrainer(BaseTrainer):
                 mean_loss = 0
             
             # sumo env has 2 travel time: [real travel time, planned travel time(aligned with Cityflow)]
-            self.writeLog("TRAIN", e, self.metric.real_average_travle_time(), self.metric.plan_average_travle_time(),\
+            self.writeLog("TRAIN", e, self.metric.real_average_travel_time(), self.metric.plan_average_travel_time(),\
                 mean_loss, self.metric.rewards(), self.metric.queue(), self.metric.delay(), self.metric.throughput())
-            self.logger.info("step:{}/{}, q_loss:{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(i, self.episodes,\
+            self.logger.info("step:{}/{}, q_loss:{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(i, self.steps,\
                 mean_loss, self.metric.rewards(), self.metric.queue(), self.metric.delay(), int(self.metric.throughput())))
             if e % self.save_rate == 0:
                 [ag.save_model(e=e) for ag in self.agents]
-            self.logger.info("episode:{}/{}, real avg travel time:{}, planned avg travel time:{}".format(e, self.episodes, self.metric.real_average_travle_time(),\
-                 self.metric.real_average_travle_time()))
+            self.logger.info("episode:{}/{}, real avg travel time:{}, planned avg travel time:{}".format(e, self.episodes, self.metric.real_average_travel_time(),\
+                 self.metric.real_average_travel_time()))
             for j in range(len(self.world.intersections)):
                 self.logger.debug("intersection:{}, mean_episode_reward:{}, mean_queue:{}".format(j, self.metric.lane_rewards()[j],\
-                     self.metric.lane_queue[j], self.metric.lane_delay[j]))
+                     self.metric.lane_queue()[j], self.metric.lane_delay()[j]))
             if self.test_when_train:
                 self.train_test(e)
         # self.dataset.flush([ag.replay_buffer for ag in self.agents])
@@ -181,16 +183,16 @@ class TSCTrainer(BaseTrainer):
                     obs, rewards, dones, _ = self.env.step(actions.flatten())  # make sure action is [intersection]
                     i += 1
                     rewards_list.append(np.stack(rewards))
-                rewards = np.mean(reward_list, axis=0)  # [agent, intersection]
+                rewards = np.mean(rewards_list, axis=0)  # [agent, intersection]
                 self.metric.update(rewards)
             if all(dones):
                 break
         self.logger.info("Test step:{}/{}, real travel time :{}, planned travel time:{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(\
-            e, self.steps, self.metric.real_average_travle_time(), self.metric.plan_average_travle_time(), self.metric.rewards(),\
+            e, self.episodes, self.metric.real_average_travel_time(), self.metric.plan_average_travel_time(), self.metric.rewards(),\
             self.metric.queue(), self.metric.delay(), int(self.metric.throughput())))
-        self.writeLog("TEST", e, self.metric.real_average_travle_time(), self.metric.plan_average_travle_time(),\
+        self.writeLog("TEST", e, self.metric.real_average_travel_time(), self.metric.plan_average_travel_time(),\
             100, self.metric.rewards(),self.metric.queue(),self.metric.delay(), self.metric.throughput())
-        return self.metric.real_average_travle_time()
+        return self.metric.real_average_travel_time()
 
     def test(self, drop_load=True):
         self.metric.clear()
@@ -213,13 +215,13 @@ class TSCTrainer(BaseTrainer):
                     obs, rewards, dones, _ = self.env.step(actions.flatten())
                     i += 1
                     rewards_list.append(np.stack(rewards))
-                rewards = np.mean(reward_list, axis=0)  # [agent, intersection]
+                rewards = np.mean(rewards_list, axis=0)  # [agent, intersection]
                 self.metric.update(rewards)
             if all(dones):
                 break
         self.logger.info("Final Travel Time is %.4f, Planned Travel Time is %.4f, mean rewards: %.4f,\
-            queue: %.4f, delay: %.4f, throughput: %d" % (self.metric.real_average_travle_time(), \
-            self.metric.plan_average_travle_time(), self.metric.rewards(), self.metric.queue(),\
+            queue: %.4f, delay: %.4f, throughput: %d" % (self.metric.real_average_travel_time(), \
+            self.metric.plan_average_travel_time(), self.metric.rewards(), self.metric.queue(),\
             self.metric.delay(), self.metric.throughput()))
         
         # TODO: add attention record

@@ -18,11 +18,11 @@ import torch.optim as optim
 from torch.nn.utils import clip_grad_norm_
 
 
-@Registry.register_model('maddpg')
-class MADDPGAgent(RLAgent):
+@Registry.register_model('magd')
+class MAGDAgent(RLAgent):
     def __init__(self, world, rank):
         super().__init__(world, world.intersection_ids[rank])
-        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
+        self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
         self.world = world
@@ -31,9 +31,8 @@ class MADDPGAgent(RLAgent):
         self.n_intersections = len(world.id2intersection)
         self.agents = None
 
-        self.phase = Registry.mapping['world_mapping']['traffic_setting'].param['phase']
-        self.one_hot = Registry.mapping['world_mapping']['traffic_setting'].param['one_hot']
-        self.model_dict = Registry.mapping['model_mapping']['model_setting'].param
+        self.phase = Registry.mapping['model_mapping']['setting'].param['phase']
+        self.one_hot = Registry.mapping['model_mapping']['setting'].param['one_hot']
 
         # get generator for each DQNAgent
         inter_id = self.world.intersection_ids[self.rank]
@@ -54,19 +53,19 @@ class MADDPGAgent(RLAgent):
         else:
             self.ob_length = self.ob_generator.ob_length
 
-        self.gamma = Registry.mapping['model_mapping']['model_setting'].param['gamma']
-        self.grad_clip = Registry.mapping['model_mapping']['model_setting'].param['grad_clip']
-        self.epsilon_decay = Registry.mapping['model_mapping']['model_setting'].param['epsilon_decay']
-        self.epsilon_min = Registry.mapping['model_mapping']['model_setting'].param['epsilon_min']
-        self.epsilon = Registry.mapping['model_mapping']['model_setting'].param['epsilon']
-        self.learning_rate = Registry.mapping['model_mapping']['model_setting'].param['learning_rate']
-        self.vehicle_max = Registry.mapping['model_mapping']['model_setting'].param['vehicle_max']
-        self.batch_size = Registry.mapping['model_mapping']['model_setting'].param['batch_size']
-        self.tau = Registry.mapping['model_mapping']['model_setting'].param['tau']
+        self.gamma = Registry.mapping['model_mapping']['setting'].param['gamma']
+        self.grad_clip = Registry.mapping['model_mapping']['setting'].param['grad_clip']
+        self.epsilon_decay = Registry.mapping['model_mapping']['setting'].param['epsilon_decay']
+        self.epsilon_min = Registry.mapping['model_mapping']['setting'].param['epsilon_min']
+        self.epsilon = Registry.mapping['model_mapping']['setting'].param['epsilon']
+        self.learning_rate = Registry.mapping['model_mapping']['setting'].param['learning_rate']
+        self.vehicle_max = Registry.mapping['model_mapping']['setting'].param['vehicle_max']
+        self.batch_size = Registry.mapping['model_mapping']['setting'].param['batch_size']
+        self.tau = Registry.mapping['model_mapping']['setting'].param['tau']
 
         self.best_epoch = 0
         # param
-        self.local_q_learn = Registry.mapping['model_mapping']['model_setting'].param['local_q_learn']
+        self.local_q_learn = Registry.mapping['model_mapping']['setting'].param['local_q_learn']
         self.action = 0
         self.last_action = 0
         self.q_length = 0
@@ -103,8 +102,8 @@ class MADDPGAgent(RLAgent):
         self.q_optimizer = optim.Adam(self.q_model.parameters(), lr=self.learning_rate)
         self.p_optimizer = optim.Adam(self.p_model.parameters(), lr=self.learning_rate)
 
-    def __repr__():
-        return self.p_model + '\n' + self.q_model
+    def __repr__(self):
+        return self.p_model.__repr__() + '\n' + self.q_model.__repr__()
 
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]
@@ -312,9 +311,9 @@ class MADDPGAgent(RLAgent):
         self.target_q_model.load_state_dict(q_weights)
 
     def load_model(self, e):
-        model_p_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+        model_p_name = os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                     'model_p', f'{e}_{self.rank}.pt')
-        model_q_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+        model_q_name = os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                     'model_q', f'{e}_{self.rank}.pt')
         self.model_q = self._build_model(self.q_length, 1)
         self.model_p = self._build_model(self.ob_length, self.action_space.n)
@@ -323,8 +322,8 @@ class MADDPGAgent(RLAgent):
         self.sync_network()
 
     def save_model(self, e):
-        path_p = os.path.join(Registry.mapping['logger_mapping']['output_path'].path, 'model_p')
-        path_q = os.path.join(Registry.mapping['logger_mapping']['output_path'].path, 'model_q')
+        path_p = os.path.join(Registry.mapping['logger_mapping']['path'].path, 'model_p')
+        path_q = os.path.join(Registry.mapping['logger_mapping']['path'].path, 'model_q')
         if not os.path.exists(path_p):
             os.makedirs(path_p)
         if not os.path.exists(path_q):
@@ -335,9 +334,9 @@ class MADDPGAgent(RLAgent):
         torch.save(self.q_model.state_dict(), model_q_name)
 
     def load_best_model(self,):
-        model_p_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+        model_p_name = os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                     'model_p', f'{self.best_epoch}_{self.rank}.pt')
-        model_q_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+        model_q_name = os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                     'model_q', f'{self.best_epoch}_{self.rank}.pt')
         self.q_model.load_state_dict(torch.load(model_q_name))
         self.p_model.load_state_dict(torch.load(model_p_name))

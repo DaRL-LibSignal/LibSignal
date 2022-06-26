@@ -1,4 +1,4 @@
-from comman.utils import build_index_intersection_map
+from common.utils import build_index_intersection_map
 from common.registry import Registry
 from utils.logger import load_config_dict, modify_config_file, get_output_file_path
 import os
@@ -21,7 +21,7 @@ class Command_Setting_Interface(Interface):
 @Registry.register_world('setting')
 class Graph_World_Interface(Interface):
     """
-    convert world roadnnet into graph structure
+    convert world roadnet into graph structure
     """
     def __init__(self, path):
         super(Graph_World_Interface, self).__init__()
@@ -59,7 +59,7 @@ class Logger_path_Interface(Interface):
     """
     def __init__(self, config):
         super(Logger_path_Interface, self).__init__()
-        Logger_path_Interface.path = get_output_file_path()
+        Logger_path_Interface.path = get_output_file_path(config)
 
 
 @Registry.register_logger('setting')

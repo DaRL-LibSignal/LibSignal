@@ -14,7 +14,7 @@ def modify_config_file(path, config):
     """
     load .cfg file at path and modify it according to the config parameters
     """
-    assert(os.path.exists(path)), AssertionError('Simulator configuration not exists')
+    assert(os.path.exists(path)), AssertionError(f"Simulator configuration at {path} not exists")
     param = config['world']
     logger_param = config['logger']
 
@@ -26,10 +26,9 @@ def modify_config_file(path, config):
             if param.get(k) is not None:
                 path_config[k] = param.get(k)
         # modify config step2
-        file_name = get_output_file_path(config) + '/' +  logger_param['replay_dir']
+        file_name = os.path.join(get_output_file_path(config),  logger_param['replay_dir'])
         if config['world']['dir'] in file_name:
             file_name = file_name.strip(f"{config['world']['dir']} + '\n'")
-        print(file_name)
         path_config['roadnetLogFile'] = file_name + f"/{datetime.now().strftime('%Y_%m_%d-%H_%M_%S')}.json"
         path_config['replayLogFile'] = file_name + f"/{datetime.now().strftime('%Y_%m_%d-%H_%M_%S')}.txt"
         with open(path, 'w') as f:
@@ -79,7 +78,7 @@ def modify_config_file(path, config):
         with open(path, 'w') as f:
             f.writelines(contents)
     else:
-        raise NotImplementedError('Simulator enviroment not implemented')
+        raise NotImplementedError('Simulator environment not implemented')
 
 def build_config(args):
     """
@@ -94,7 +93,7 @@ def build_config(args):
 
 def load_config(path, previous_includes=[]):
     """
-    process indiviual .ymal file and eliminate dupicate parameters
+    process individual .yaml file and eliminate duplicate parameters
     position args:
     -path: path of .yml file
     -previous_includes: list of .yml already processed
@@ -116,7 +115,7 @@ def load_config(path, previous_includes=[]):
         )
     config = {}
     duplicates_warning = {}
-    # process config recurrsively
+    # process config recursively
     for include in includes:
         include_config, inc_dup_warning = load_config(
             include, previous_includes
@@ -186,8 +185,8 @@ def get_output_file_path(config):
     set output path
     """
     param = config['command']
-    path = os.path.join( config['world']['dir'] , 'output_data', param['task'], 
-        f"{param['world']}_{param['agent']}_{param['prefix']}")
+    path = os.path.join(config['world']['dir'] , 'output_data', param['task'], 
+        f"{param['world']}_{param['agent']}", param['network'], param['prefix'])
     return path
 
 
