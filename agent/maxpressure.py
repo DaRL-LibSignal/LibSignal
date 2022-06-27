@@ -56,7 +56,7 @@ class MaxPressureAgent(BaseAgent):
                                                      negative=False)
 
     def __repr__(self):
-        return 'Maxpressure has no Network model'
+        return 'Maxpressure Agent has no Network model'
 
     def get_ob(self):
         x_obs = []

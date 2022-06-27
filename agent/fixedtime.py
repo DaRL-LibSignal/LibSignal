@@ -33,7 +33,10 @@ class FixedTimeAgent(BaseAgent):
                                                      negative=False)
         self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
         # dirrerent datasets have the same t_fixed
-        self.t_fixed = Registry.mapping['model_mapping']['model_setting'].param['t_fixed']
+        self.t_fixed = Registry.mapping['model_mapping']['setting'].param['t_fixed']
+
+        def __repr__(self):
+            return 'FixedTime Agent has no Network model'
         
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]
