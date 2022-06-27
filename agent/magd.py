@@ -273,19 +273,12 @@ class MAGDAgent(RLAgent):
         clip_grad_norm_(self.p_model.parameters(), self.grad_clip)
 
         self.p_optimizer.step()
-        """
+  
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-        """
 
-        #self.pr(loss_of_q, loss_of_p, rewards_list[self.rank], q, target_q)
-        # TODO: q loss or p loss ?
         return loss_of_q.clone().detach().numpy()
 
-    def pr(self, loss_of_q, loss_of_p, reward, q, target_q):
-        print(loss_of_q.data, loss_of_p.data, torch.mean(reward).data, torch.mean(q).data, torch.mean(target_q).data)
-
-    
     def remember(self, last_obs, last_phase, actions, actions_prob, rewards, obs, cur_phase, done, key):
         self.replay_buffer.append((key, (last_obs, last_phase, actions_prob, rewards, obs, cur_phase)))
 

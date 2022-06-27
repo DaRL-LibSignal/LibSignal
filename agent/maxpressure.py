@@ -35,7 +35,7 @@ class MaxPressureAgent(BaseAgent):
         self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
         
         # the minimum duration of time of one phase
-        self.t_min = Registry.mapping['model_mapping']['model_setting'].param['t_min']
+        self.t_min = Registry.mapping['model_mapping']['setting'].param['t_min']
 
     def reset(self):
         # get generator for each MaxPressure
@@ -54,6 +54,9 @@ class MaxPressureAgent(BaseAgent):
         self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_delay"], in_only=True,
                                                      negative=False)
+
+    def __repr__(self):
+        return 'Maxpressure has no Network model'
 
     def get_ob(self):
         x_obs = []

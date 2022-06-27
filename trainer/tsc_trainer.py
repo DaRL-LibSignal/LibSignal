@@ -223,13 +223,7 @@ class TSCTrainer(BaseTrainer):
             queue: %.4f, delay: %.4f, throughput: %d" % (self.metric.real_average_travel_time(), \
             self.metric.plan_average_travel_time(), self.metric.rewards(), self.metric.queue(),\
             self.metric.delay(), self.metric.throughput()))
-        
-        # TODO: add attention record
-        if Registry.mapping['logger_mapping']['setting'].param['get_attention']:
-            pass
-        # self.env.eng.set_save_replay(True)
-        # self.env.eng.set_replay_file(self.replay_file_dir + "replay.txt")
-        return trv_time
+        return self.metric
 
     def writeLog(self, mode, step, travel_time, planned_tt, loss, cur_rwd, cur_queue, cur_delay, cur_throughput):
         """
