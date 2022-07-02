@@ -18,7 +18,7 @@ import xml.etree.cElementTree as ET
 import xml.dom.minidom
 from itertools import groupby
 from operator import itemgetter
-from functools import cmp_to_key
+from math import atan2, pi
 
 if platform == "linux" or platform == "linux2":
     # this is linux
@@ -150,14 +150,23 @@ def parse_args():
     # parser.add_argument("--sumoflow", type=str,
     #                     default='hangzhou_4x4_gudang_18041610_1h/hangzhou_4x4_gudang_18041610_1h.rou.xml')
 
+    # parser.add_argument("--or_cityflownet", type=str,
+    #                     default='atlanta_1x5/roadnet_atlanta.json')
+    # parser.add_argument("--sumonet", type=str,
+    #                     default='atlanta_1x5/atlanta_1x5.net.xml')
+    # parser.add_argument("--or_cityflowflow", type=str,
+    #                     default='atlanta_1x5/atlanta.json')
+    # parser.add_argument("--sumoflow", type=str,
+    #                     default='atlanta_1x5/atlanta_1x5.rou.xml')
+
     parser.add_argument("--or_cityflownet", type=str,
-                        default='atlanta_1x5/roadnet_atlanta.json')
+                        default='manhattan_28x7/roadnet_28_7.json')
     parser.add_argument("--sumonet", type=str,
-                        default='atlanta_1x5/atlanta_1x5.net.xml')
+                        default='manhattan_28x7/manhattan_28x7.net.xml')
     parser.add_argument("--or_cityflowflow", type=str,
-                        default='atlanta_1x5/atlanta.json')
+                        default='manhattan_28x7/anon_28_7_newyork_real_triple.json')
     parser.add_argument("--sumoflow", type=str,
-                        default='atlanta_1x5/atlanta_1x5.rou.xml')
+                        default='manhattan_28x7/manhattan_28x7.rou.xml')
 
     return parser.parse_args()
 
@@ -759,6 +768,7 @@ def cityflow2sumo_flow(args):
     print("SUMO flow file generated successfully!")
 
 def get_start_idx(lists):
+    ''''''
     new_lists = {}
     for key, value in lists.items():
         k,v = list(value.keys())[0],list(value.values())[0]
@@ -814,6 +824,35 @@ def judg_turn_u(x, data):
         return True # turn_u
     return False
 
+def sort_roads(roadnet):
+    '''sort roads according to NSWE'''
+    intersections = {}
+    directions = {}
+    for road in roadnet["roads"]:
+        iid = road["endIntersection"]
+        if iid not in intersections.keys():
+            intersections.update({iid:[]})
+        if iid not in directions.keys():
+            directions.update({iid:[]})
+        intersections[iid].append(road)
+        directions[iid].append(_get_direction(road))
+
+    ordered = {}
+    # sort each intersection's in roads according to NESW(default order in SUMO).
+    for i,d in zip(intersections.items(),directions.items()):
+        assert len(i[1]) == len(d[1])
+        order = sorted(range(len(i[1])),key=lambda x: (d[1][x], i[1][x]))
+        ordered[i[0]] = [i[1][x]['id'] for x in order]
+    return ordered
+
+def _get_direction(road):
+    # x = road["points"][1]["x"] - road["points"][0]["x"]
+    # y = road["points"][1]["y"] - road["points"][0]["y"]
+    x = road["points"][-2]["x"] - road["points"][-1]["x"]
+    y = road["points"][-2]["y"] - road["points"][-1]["y"]
+    tmp = atan2(x, y)
+    return tmp if tmp >= 0 else (tmp + 2 * pi)
+
 def cityflow2sumo_net(args):
     """generate net.xml according to nod.xml, edg.xml,con.xml,tll.xml"""
     # parent dir of current dir
@@ -827,6 +866,8 @@ def cityflow2sumo_net(args):
     sumo_tll = get_filename(sumofile, 'tll')
 
     data = json.load(open(cityflowfile, 'r', encoding="utf-8"))
+
+    ordered_roads = sort_roads(data)
 
     # generate nod.xml, con.xml and tll.xml
     doc_node = xml.dom.minidom.Document()
@@ -875,10 +916,17 @@ def cityflow2sumo_net(args):
                 if x['type'] == 'turn_left':
                     if judg_turn_u(x, data['roads']):
                         x.update({'type':'turn_u'})
+            # sort roads according to order: turn right, turn straight, turn left, turn u
             sorted_items = sorted(l_items,key=lambda x: sortorder[x['type']])
-            road_group.insert(0,sorted_items) # items' order is the same order as settings of SUMO: NESW
-        # sort roads according to order: turn right, turn straight, turn left, turn u
-        road_group = [y for x in road_group for y in x]
+            road_group += sorted_items
+        sorted_road_group = [[] for _ in range(len(road_group))]
+        for x in road_group:
+            idx = ordered_roads[inter['id']].index(x['startRoad'])
+            sorted_road_group[idx].append(x)
+        road_group = []
+        for x in sorted_road_group:
+            if x:
+                road_group += x
         phase_dic = {}
         for idx, x in enumerate(inter['roadLinks']):
             dst_idx = road_group.index(x)
@@ -910,12 +958,8 @@ def cityflow2sumo_net(args):
             tll.setAttribute('programID', '0')
             tll.setAttribute('offset', '0')
             yellow_state = ['r'] * phase_num_all
-            # yellow_state = ['r'] * num_phase * lane_num
-            # yellow_state = ['r'] * num_phase * 3
             for idx,light in enumerate(inter['trafficLight']['lightphases']):
                 state = ['r'] * phase_num_all
-                # state = ['r'] * num_phase * lane_num
-                # state = ['r'] * num_phase * 3
                 if idx != 0 and light['availableRoadLinks'] is not None: # idx=0 means yellow phase
                     for act_roadlink in light['availableRoadLinks']:
                         state[phase_dic[act_roadlink][0]:sum(phase_dic[act_roadlink])] = ['G']*phase_dic[act_roadlink][1]
@@ -935,6 +979,7 @@ def cityflow2sumo_net(args):
                     root_tll.appendChild(tll)
                     # add yellow phase behind green phase
                     phase_y = doc_node.createElement('phase')
+                    # TODO set different yellow time
                     phase_y.setAttribute('duration', '5')
                     phase_y.setAttribute('state', ''.join(yellow_state))
                     tll.appendChild(phase_y)

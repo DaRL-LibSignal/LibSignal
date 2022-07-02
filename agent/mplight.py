@@ -1,4 +1,4 @@
-from . import RLAgent
+from . import RLAgent, SharedDQN
 import random
 import numpy as np
 from collections import deque
@@ -10,14 +10,11 @@ from common.registry import Registry
 import gym
 from generator import LaneVehicleGenerator, IntersectionPhaseGenerator, IntersectionVehicleGenerator
 from torch.nn.utils import clip_grad_norm_
-from agent import utils
 from pfrl.q_functions import DiscreteActionValueHead
-from pfrl import explorers
-from pfrl.utils.contexts import evaluating
-from pfrl import explorers, replay_buffers
-from pfrl.agents import DQN
-import pfrl
-from pfrl.explorer import Explorer
+from agent.utils import SharedEpsGreedy
+from pfrl import replay_buffers
+
+'''MPLight is default set Shared Agent'''
 
 @Registry.register_model('mplight')
 class MPLightAgent(RLAgent):
@@ -28,112 +25,42 @@ class MPLightAgent(RLAgent):
         
         self.gamma = self.dic_agent_conf.param["gamma"]
         self.grad_clip = self.dic_agent_conf.param["grad_clip"]
-        self.epsilon = self.dic_agent_conf.param["epsilon"]
-        self.epsilon_min = self.dic_agent_conf.param["epsilon_min"]
-        self.epsilon_decay = self.dic_agent_conf.param["epsilon_decay"]
+        # self.epsilon = self.dic_agent_conf.param["epsilon"]
+        # self.epsilon_min = self.dic_agent_conf.param["epsilon_min"]
+        # self.epsilon_decay = self.dic_agent_conf.param["epsilon_decay"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
         self.num_phases = len(self.dic_traffic_env_conf.param["phases"])
         self.num_actions = len(self.dic_traffic_env_conf.param["phases"])
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
-        self.replay_buffer = deque(maxlen=self.buffer_size)
+        # self.replay_buffer = deque(maxlen=self.buffer_size)
+        self.replay_buffer = replay_buffers.ReplayBuffer(self.buffer_size)
         self.dic_trainer_conf = Registry.mapping['trainer_mapping']['trainer_setting']
 
         self.world = world
         self.sub_agents = len(self.world.intersections)
-        self.rank = rank
-
-        self.phase = self.dic_traffic_env_conf.param['phase']
-        self.one_hot = self.dic_traffic_env_conf.param['one_hot']
-        self.action_space = gym.spaces.Discrete(len(self.world.intersections[0].phases))
-        
-        #  get generator for MPLightAgent
-        observation_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ['lane_count'], in_only=True, average=None)
-            observation_generators.append((node_idx, tmp_generator))
-        sorted(observation_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.ob_generator = observation_generators
-
-        #  get reward generator for MPLightAgent
-        rewarding_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_waiting_count"],
-                                                 in_only=True, average='all', negative=True)
-            rewarding_generators.append((node_idx, tmp_generator))
-        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.reward_generator = rewarding_generators
-
-        #  get phase generator for MPLightAgent
-        phasing_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = IntersectionPhaseGenerator(self.world, node_obj, ['phase'],
-                                                       targets=['cur_phase'], negative=False)
-            phasing_generators.append((node_idx, tmp_generator))
-        sorted(phasing_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.phase_generator = phasing_generators
-
-        #  get queue generator for MPLightAgent
-        queues = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_waiting_count"], 
-                                                 in_only=True, negative=False)
-            queues.append((node_idx, tmp_generator))
-        sorted(queues, key=lambda x: x[0])
-        self.queue = queues
-
-        #  get delay generator for CoLightAgent
-        delays = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_delay"], 
-                                                 in_only=True, average="all", negative=False)
-            delays.append((node_idx, tmp_generator))
-        sorted(delays, key=lambda x: x[0])
-        self.delay = delays
-
-        # phase:12-4=8, 4:turn right of each direction
-        if self.phase:
-            if self.one_hot:
-                if self.num_phases == 2:
-                    self.ob_length = self.ob_generator[0][1].ob_length - 4 + 4 # 8+4=12
-                    self.dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion_4_lane"]
-                else:
-                    self.ob_length = self.ob_generator[0][1].ob_length - 4 + 8 # 8+8=16
-                    self.dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion"]
-            else:
-                self.ob_length = self.ob_generator[0][1].ob_length - 4 + 1 # 8+1=9
-        else:
-            self.ob_length = self.ob_generator[0][1].ob_length - 4 # 12-4=8
-            
         # create competition matrix
         # map_name = self.world.intersections[0].map_name
+        # TODO how to get map_name dynamically
         map_name = 'cologne3'
         self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
         self.comp_mask = self.relation()
         self.valid_acts = self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
         self.reverse_valid = None
-        # self.model = None
-        self.model = self._build_model()
-        # self.target_agent = self._build_model()
-        # self.update_target_network()
-        # self.optimizer = None
-        # self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, eps=1e-7)
-        # self.criterion = nn.MSELoss(reduction='mean')
+        self.model = None
+        self.optimizer = None
+        episodes = Registry.mapping['trainer_mapping']['trainer_setting'].param['episodes']
+        steps = Registry.mapping['trainer_mapping']['trainer_setting'].param['steps']
+        action_interval = Registry.mapping['trainer_mapping']['trainer_setting'].param['action_interval']
+        total_steps = episodes * steps / action_interval
+        self.explorer = SharedEpsGreedy(
+            # TODO check what does those params mean
+                self.dic_agent_conf.param["eps_start"],
+                self.dic_agent_conf.param["eps_end"],
+                self.sub_agents*total_steps,
+                lambda: np.random.randint(len(self.phase_pairs)),
+            )
+        self.agent = self._build_model()
     
     def relation(self):
         comp_mask = []
@@ -152,81 +79,24 @@ class MPLightAgent(RLAgent):
 
 
     def reset(self):
-        #  get generator for MPLightAgent
-        observation_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ['lane_count'], in_only=True, average=None)
-            observation_generators.append((node_idx, tmp_generator))
-        sorted(observation_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.ob_generator = observation_generators
-
-        #  get reward generator for MPLightAgent
-        rewarding_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_waiting_count"],
-                                                 in_only=True, average='all', negative=True)
-            rewarding_generators.append((node_idx, tmp_generator))
-        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.reward_generator = rewarding_generators
-
-        #  get phase generator for MPLightAgent
-        phasing_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = IntersectionPhaseGenerator(self.world, node_obj, ['phase'],
-                                                       targets=['cur_phase'], negative=False)
-            phasing_generators.append((node_idx, tmp_generator))
-        sorted(phasing_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.phase_generator = phasing_generators
-
-        #  get queue generator for MPLightAgent
-        queues = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_waiting_count"], 
-                                                 in_only=True, negative=False)
-            queues.append((node_idx, tmp_generator))
-        sorted(queues, key=lambda x: x[0])
-        self.queue = queues
-
-        #  get delay generator for CoLightAgent
-        delays = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.intersection_ids.index(node_id)
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_delay"], 
-                                                 in_only=True, average="all", negative=False)
-            delays.append((node_idx, tmp_generator))
-        sorted(delays, key=lambda x: x[0])
-        self.delay = delays
+        for ag in self.agents:
+            ag.reset()
 
     def get_ob(self):
         """
         output: [sub_agents,lane_nums]
         """
         x_obs = []  # sub_agents * lane_nums,
-        for i in range(len(self.ob_generator)):
-            x_obs.append((self.ob_generator[i][1].generate()))
-        x_obs = np.array(x_obs, dtype=np.float32)
+        for ag in self.agents:
+            x_obs.append(ag.ob_generator.generate())
+        # x_obs = np.array(x_obs, dtype=np.float32)
         return x_obs
 
     def get_reward(self):
-        # TODO: test output
         rewards = []  # sub_agents
-        for i in range(len(self.reward_generator)):
-            rewards.append(self.reward_generator[i][1].generate())
-        rewards = np.squeeze(np.array(rewards)) * 12
+        for ag in self.agents:
+            rewards.append(ag.reward_generator.generate())
+        # rewards = np.squeeze(np.array(rewards)) * 12
         return rewards
 
     def get_phase(self):
@@ -234,29 +104,28 @@ class MPLightAgent(RLAgent):
         output: [sub_agents,]
         """
         phase = []  # sub_agents
-        for i in range(len(self.phase_generator)):
-            phase.append((self.phase_generator[i][1].generate()))
-        phase = (np.concatenate(phase)).astype(np.int8)
-        # phase = np.concatenate(phase, dtype=np.int8)
+        for ag in self.agents:
+            phase.append(ag.phase_generator.generate())
+        # phase = (np.concatenate(phase)).astype(np.int8)
         return phase
 
     def get_queue(self):
+        queue = []
+        for ag in self.agents:
+            queue.append(ag.queue_generator.generate())
+        # tmp_queue = np.squeeze(np.array(queue))
+        # queue = np.sum(tmp_queue, axis=1 if len(tmp_queue.shape)==2 else 0)
+        return queue
+
+    def get_delay(self):
         """
         get delay of intersection
         return: value(one intersection) or [intersections,](multiple intersections)
         """
-        queue = []
-        for i in range(len(self.queue)):
-            queue.append((self.queue[i][1].generate()))
-        tmp_queue = np.squeeze(np.array(queue))
-        queue = np.sum(tmp_queue, axis=1 if len(tmp_queue.shape)==2 else 0)
-        return queue
-
-    def get_delay(self):
         delay = []
-        for i in range(len(self.delay)):
-            delay.append((self.delay[i][1].generate()))
-        delay = np.squeeze(np.array(delay))
+        for ag in self.agents:
+            delay.append(ag.delay_generator.generate())
+        # delay = np.squeeze(np.array(delay))
         return delay # [intersections,]
 
     def get_action(self, ob, phase, test=False):
@@ -268,10 +137,7 @@ class MPLightAgent(RLAgent):
         :param test: boolean, exploit while training and determined while testing
         :return: [batch, agents] -> action taken by environment
         """
-        # if isinstance(self.agent, SharedDQN):
-        #     return self.agent.act(ob, test, valid_acts=self.valid_acts, reverse_valid=reverse_valid)
-        # else:
-        #     return self.agent.act(ob,test)
+        # In RESCO, observation: 13=1(phase)+12(lanes)
         if self.reverse_valid is None and self.valid_acts is not None:
             self.reverse_valid = dict()
             for signal_id in self.valid_acts:
@@ -286,7 +152,6 @@ class MPLightAgent(RLAgent):
                            ob.keys()]
             batch_reverse = [self.reverse_valid.get(agent_id) for agent_id in
                           ob.keys()]
-
         batch_acts = self.agent.act(batch_obs,
                                 valid_acts=batch_valid,
                                 reverse_valid=batch_reverse)
@@ -300,10 +165,14 @@ class MPLightAgent(RLAgent):
         return np.random.randint(0, self.action_space.n, self.sub_agents)
 
     def _build_model(self):
-        # model = DQNAgent(config, num_actions, num_agents=config['num_lights'])
-        base_model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
-        agent = DQNAgent(self.world, self.rank, self.dic_agent_conf, self.num_actions, base_model, num_agents=self.sub_agents)
-        return agent
+        self.model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, eps=1e-7)
+        self.agent = SharedDQN(self.model, self.optimizer, self.replay_buffer, self.gamma, self.explorer,
+                        minibatch_size=self.batch_size, replay_start_size=self.batch_size, 
+                        phi=lambda x: np.asarray(x, dtype=np.float32),
+                        # TODO check what is TARGET_UPDATE, target_update_interval, update_interval
+                        target_update_interval=self.dic_agent_conf.param["target_update"]*self.sub_agents, update_interval=self.sub_agents
+                        )
 
     def update_target_network(self):
         weights = self.model.state_dict()
@@ -330,6 +199,46 @@ class MPLightAgent(RLAgent):
         model_name = os.path.join(path, f'{e}_{self.rank}.pt')
         torch.save(self.target_model.state_dict(), model_name)
 
+class MPLight_SUBAgent(object):
+    def __init__(self, world, inter_id):
+        self.phase = Registry.mapping['world_mapping']['traffic_setting'].param['phase']
+        self.one_hot = Registry.mapping['world_mapping']['traffic_setting'].param['one_hot']
+        self.world = world
+        # get generator for each Agent
+        self.inter_id = inter_id
+        self.inter_obj = self.world.id2intersection[self.inter_id]
+        self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
+        self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                 ["lane_count"], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, self.inter_obj,
+                                                          ['phase'], targets=['cur_phase'], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_waiting_count"], in_only=True, average="all",
+                                                     negative=True)
+        # TODO check ob_length, compared with presslight and original mplight and RESCO-mplight
+        # this is extracted from presslight so far
+        if self.phase:
+            if self.one_hot:
+                self.ob_length = self.ob_generator.ob_length + len(self.inter_obj.phases) # 32
+            else:
+                self.ob_length = self.ob_generator.ob_length + 1 # 25
+        else:
+            self.ob_length = self.ob_generator.ob_length # 24
+
+    def reset(self):
+        self.inter_obj = self.world.id2intersection[self.inter_id]
+        self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj, ["lane_count"], average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, self.inter_obj, ["phase"],
+                                                          targets=["cur_phase"], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj, ["pressure"], average="all", negative=True)
+        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_delay"], in_only=True, average="all",
+                                                     negative=False)
+
+        
 class FRAP(nn.Module):
     def __init__(self, dic_agent_conf, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
@@ -359,6 +268,10 @@ class FRAP(nn.Module):
         self.head = DiscreteActionValueHead()
 
     def forward(self, states):
+        '''
+        :params states: [agents, ob_length]
+        In RESCO, ob_length=13=1(phase)+12(vehicle_lane_level)
+        '''
         num_movements = int((states.size()[1]-1)/self.demand_shape)
         batch_size = states.size()[0]
         acts = states[:, 0].to(torch.int64)
@@ -416,121 +329,3 @@ class FRAP(nn.Module):
         combine_features = torch.reshape(combine_features, (batch_size, self.oshape, self.oshape - 1))
         q_values = torch.sum(combine_features, dim=-1)
         return self.head(q_values)
-
-class DQNAgent(RLAgent):
-    def __init__(self, world, rank, dic_agent_conf, act_space, model, num_agents=0):
-        super().__init__(world, world.intersection_ids[rank])
-        self.model = model
-        self.optimizer = torch.optim.Adam(self.model.parameters())
-        buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
-        replay_buffer = replay_buffers.ReplayBuffer(buffer_size)
-        if num_agents > 0:
-            explorer = SharedEpsGreedy(
-                dic_agent_conf.param['eps_start'],
-                dic_agent_conf.param['eps_end'],
-                num_agents*Registry.mapping['trainer_mapping']['trainer_setting'].param['steps'],
-                lambda: np.random.randint(act_space),
-            )
-        else:
-            explorer = explorers.LinearDecayEpsilonGreedy(
-                dic_agent_conf.param['eps_start'],
-                dic_agent_conf.param['eps_end'],
-                Registry.mapping['trainer_mapping']['trainer_setting'].param['steps'],
-                lambda: np.random.randint(act_space),
-            )
-
-        if num_agents > 0:
-            print('USING SHAREDDQN')
-            self.agent = SharedDQN(self.model, self.optimizer, replay_buffer,
-                                   dic_agent_conf.param['gamma'], explorer,
-                                   minibatch_size=dic_agent_conf.param['batch_size'], replay_start_size=dic_agent_conf.param['batch_size'],
-                                   phi=lambda x: np.asarray(x, dtype=np.float32),
-                                   target_update_interval=dic_agent_conf.param['target_update']*num_agents, update_interval=num_agents)
-        else:
-            self.agent = DQN(self.model, self.optimizer, replay_buffer, dic_agent_conf.param['gamma'], explorer,
-                             minibatch_size=dic_agent_conf.param['batch_size'], replay_start_size=dic_agent_conf.param['batch_size'],
-                             phi=lambda x: np.asarray(x, dtype=np.float32),
-                             target_update_interval=dic_agent_conf.param['target_update'])
-
-class SharedDQN(DQN):
-    def __init__(self, q_function: torch.nn.Module, optimizer: torch.optim.Optimizer,
-                 replay_buffer: pfrl.replay_buffer.AbstractReplayBuffer, gamma: float, explorer: Explorer,
-                minibatch_size, replay_start_size, phi, target_update_interval, update_interval):
-
-        super().__init__(q_function, optimizer, replay_buffer, gamma, explorer,
-                        minibatch_size=minibatch_size, replay_start_size=replay_start_size, phi=phi,
-                         target_update_interval=target_update_interval, update_interval=update_interval)
-
-    def act(self, obs, valid_acts=None, reverse_valid=None):
-        return self.batch_act(obs, valid_acts=valid_acts, reverse_valid=reverse_valid)
- 
-    def observe(self, obs, reward, done, reset):
-        # This is training process?
-        self.batch_observe(obs, reward, done, reset)
-
-    def batch_act(self, batch_obs, valid_acts=None, reverse_valid=None):
-        if valid_acts is None: 
-            return super(SharedDQN, self).batch_act(batch_obs)
-        with torch.no_grad(), evaluating(self.base_model):
-            batch_av = self._evaluate_model_and_update_recurrent_states(batch_obs)
-
-            batch_qvals = batch_av.params[0].detach().cpu().numpy()
-            batch_argmax = []
-            for i in range(len(batch_obs)):
-                batch_item = batch_qvals[i]
-                max_val, max_idx = None, None
-                for idx in valid_acts[i]:
-                    batch_item_qval = batch_item[idx]
-                    if max_val is None:
-                        max_val = batch_item_qval
-                        max_idx = idx
-                    elif batch_item_qval > max_val:
-                        max_val = batch_item_qval
-                        max_idx = idx
-                batch_argmax.append(max_idx)
-            batch_argmax = np.asarray(batch_argmax)
-
-        if self.training:
-            batch_action = []
-            for i in range(len(batch_obs)):
-                av = batch_av[i : i + 1]
-                greed = batch_argmax[i]
-                act, greedy = self.explorer.select_action(self.t, lambda: greed, action_value=av, num_acts=len(valid_acts[i]))
-                if not greedy:
-                    act = reverse_valid[i][act]
-                batch_action.append(act)
-
-            self.batch_last_obs = list(batch_obs)
-            self.batch_last_action = list(batch_action)
-        else:
-            batch_action = batch_argmax
-
-        valid_batch_action = []
-        for i in range(len(batch_action)):
-            valid_batch_action.append(valid_acts[i][batch_action[i]])
-        return valid_batch_action
-
-class SharedEpsGreedy(explorers.LinearDecayEpsilonGreedy):
-
-    def select_action(self, t, greedy_action_func, action_value=None, num_acts=None):
-        self.epsilon = self.compute_epsilon(t)
-        if num_acts is None:
-            fn = self.random_action_func
-        else:
-            fn = lambda: np.random.randint(num_acts)
-        a, greedy = self.select_action_epsilon_greedily(
-            self.epsilon, fn, greedy_action_func
-        )
-        # greedy_str = "greedy" if greedy else "non-greedy"
-        # self.logger.debug("t:%s a:%s %s", t, a, greedy_str)
-        if num_acts is None:
-            return a
-        else:
-            return a, greedy
-
-    def select_action_epsilon_greedily(self, random_action_func, greedy_action_func):
-        if np.random.rand() < self.epsilon:
-            return random_action_func(), False
-        else:
-            return greedy_action_func(), True
-    

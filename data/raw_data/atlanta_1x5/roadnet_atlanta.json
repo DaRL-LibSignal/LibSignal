@@ -55,7 +55,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "5198748651",
@@ -112,7 +113,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "69227161",
@@ -155,7 +157,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "69227168",
@@ -757,7 +760,8 @@
           }
         ]
       },
-      "virtual": false
+      "virtual": false,
+      "cf_gt_virtual": false
     },
     {
       "id": "69227178",
@@ -800,7 +804,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "69249210",
@@ -1193,7 +1198,8 @@
           }
         ]
       },
-      "virtual": false
+      "virtual": false,
+      "cf_gt_virtual": false
     },
     {
       "id": "69249214",
@@ -1236,7 +1242,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "69387063",
@@ -1279,7 +1286,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "69387071",
@@ -1881,7 +1889,8 @@
           }
         ]
       },
-      "virtual": false
+      "virtual": false,
+      "cf_gt_virtual": false
     },
     {
       "id": "69387078",
@@ -1924,7 +1933,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "69421271",
@@ -1981,7 +1991,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "69421277",
@@ -2713,7 +2724,8 @@
           }
         ]
       },
-      "virtual": false
+      "virtual": false,
+      "cf_gt_virtual": false
     },
     {
       "id": "69515841",
@@ -2770,7 +2782,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "69515842",
@@ -3446,7 +3459,8 @@
           }
         ]
       },
-      "virtual": false
+      "virtual": false,
+      "cf_gt_virtual": false
     },
     {
       "id": "69538856",
@@ -3682,7 +3696,8 @@
           }
         ]
       },
-      "virtual": true
+      "virtual": false,
+      "cf_gt_virtual": true
     },
     {
       "id": "69588600",
@@ -3739,7 +3754,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     },
     {
       "id": "69614527",
@@ -3796,7 +3812,8 @@
         ],
         "lightphases": []
       },
-      "virtual": true
+      "virtual": true,
+      "cf_gt_virtual": true
     }
   ],
   "roads": [

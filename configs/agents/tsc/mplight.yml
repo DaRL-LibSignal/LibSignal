@@ -11,14 +11,14 @@ model:
   learning_rate: 0.001
   batch_size: 64
   gamma: 0.99
-  epsilon: 0.1
-  epsilon_decay: 0.995
-  epsilon_min: 0.01
+  # epsilon: 0.1
+  # epsilon_decay: 0.995
+  # epsilon_min: 0.01
   grad_clip: 5.0
   eps_start: 1.0
   eps_end: 0.0
   eps_decay: 220
-  target_update: 550
+  target_update: 500
   demand_shape: 1
 
 trainer: 
@@ -28,7 +28,7 @@ trainer:
   buffer_size: 5000 
   steps: 3600 
   test_steps: 3600 
-  action_interval: 20
+  action_interval: 10
   episodes: 200
   update_model_rate: 1
   update_target_rate: 10
@@ -47,7 +47,7 @@ logger:
   load_model: False
 
 traffic:
-  one_hot: True
+  one_hot: False
   phase: True
   n_leg: 4
   thread_num: 4
@@ -102,26 +102,22 @@ traffic:
   signal_config: {
     grid4x4: {
       phase_pairs: [[1, 7], [2, 8], [1, 2], [7, 8], [4, 10], [5, 11], [10, 11], [4, 5]],
-      valid_acts: None,
-      rule: sumo
+      valid_acts: None
     },
     hz1x1: {
       phase_pairs: [[0, 4], [2, 7], [1, 5], [3, 6], [0, 1], [4, 5], [2, 3], [6, 7]],
-      valid_acts: None,
-      rule: cityflow
+      valid_acts: None
     },
     cologne1: {
       phase_pairs: [[1, 7], [2, 8], [4, 10], [5, 11]],
-      valid_acts: None,
-      rule: sumo
+      valid_acts: None
     },
     cologne3: {
       phase_pairs: [[1, 7], [2, 8], [1, 2], [7, 8], [4, 10], [5, 11], [10, 11], [4, 5], [9, 11]],
       valid_acts: {
-      GS_cluster_2415878664_254486231_359566_359576: {4: 0, 5: 1, 0: 2, 1: 3},
-      360086: {4: 0, 5: 1, 0: 2, 1: 3},
-      360082: {4: 0, 5: 1, 1: 2}
-    },
-    rule: sumo
+        GS_cluster_2415878664_254486231_359566_359576: {4: 0, 5: 1, 0: 2, 1: 3},
+        360086: {4: 0, 5: 1, 0: 2, 1: 3},
+        360082: {4: 0, 5: 1, 1: 2}
+      }
     }
   }

@@ -181,10 +181,14 @@ class World(object):
         # if so, then must use "gt_virtual" to create non-virtual intersections,
         # if not, just use "virtual" to create.
         if_sumo = True if "gt_virtual" in self.roadnet["intersections"][0] else False
+        if_cf_virtual = True if "cf_gt_virtual" in self.roadnet["intersections"][0] else False
         if if_sumo:
             self.intersections = [i for i in self.roadnet["intersections"] if not i["gt_virtual"]]
         else:
-            self.intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
+            if if_cf_virtual:
+                self.intersections = [i for i in self.roadnet["intersections"] if not i["cf_gt_virtual"]]
+            else:
+                self.intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
         self.intersection_ids = [i["id"] for i in self.intersections]
 
         # create non-virtual Intersections
@@ -192,7 +196,10 @@ class World(object):
         if if_sumo:
             non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["gt_virtual"]]
         else:
-            non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
+            if if_cf_virtual:
+                non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["cf_gt_virtual"]]
+            else:
+                non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
         self.intersections = [Intersection(i, self) for i in non_virtual_intersections]
         # if len(self.intersections) == 6:
         #     self.intersections = self.intersections[0:5]

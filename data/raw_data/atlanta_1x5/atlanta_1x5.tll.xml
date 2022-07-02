@@ -1,30 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <tlLogics version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/tllogic_file.xsd">
 	<tlLogic id="69227168" offset="0" programID="0" type="static">
-		<phase duration="25" state="GGGGGGGrrrrrrrGrrrrrrrGGGGGG"/>
-		<phase duration="5" state="GGrrrrGrrrrrrrGrrrrrrrGGrrrr"/>
-		<phase duration="15" state="GGrrrrGGGGGGGGGGGGGGGGGGrrrr"/>
-		<phase duration="5" state="GGrrrrGrrrrrrrGrrrrrrrGGrrrr"/>
+		<phase duration="25" state="GrrrrrrrGGGGGGGrrrrrrrGGGGGG"/>
+		<phase duration="5" state="GrrrrrrrGGrrrrGrrrrrrrGGrrrr"/>
+		<phase duration="15" state="GGGGGGGGGGrrrrGGGGGGGGGGrrrr"/>
+		<phase duration="5" state="GrrrrrrrGGrrrrGrrrrrrrGGrrrr"/>
 	</tlLogic>
 	<tlLogic id="69249210" offset="0" programID="0" type="static">
 		<phase duration="60" state="GGGGGGGGGGGGGGGGGGG"/>
-		<phase duration="5" state="rrrrrrrGGrrrGrrrrrr"/>
+		<phase duration="5" state="GGrrrGrrrrrrrrrrrrr"/>
 	</tlLogic>
 	<tlLogic id="69387071" offset="0" programID="0" type="static">
-		<phase duration="10" state="GGGGGGGrrrrrrrGGGGGGGrrrrrrr"/>
-		<phase duration="5" state="GGrrrrGrrrrrrrGGrrrrGrrrrrrr"/>
-		<phase duration="10" state="GGrrrrGGGGGGGGGGrrrrGGGGGGGG"/>
-		<phase duration="5" state="GGrrrrGrrrrrrrGGrrrrGrrrrrrr"/>
+		<phase duration="10" state="GrrrrrrrGGGGGGGrrrrrrrGGGGGG"/>
+		<phase duration="5" state="GrrrrrrrGGrrrrGrrrrrrrGGrrrr"/>
+		<phase duration="10" state="GGGGGGGGGGrrrrGGGGGGGGGGrrrr"/>
+		<phase duration="5" state="GrrrrrrrGGrrrrGrrrrrrrGGrrrr"/>
 	</tlLogic>
 	<tlLogic id="69421277" offset="0" programID="0" type="static">
-		<phase duration="10" state="GGrrrrrrrGGrrrGGGGGGGrrrrrrGGrrGGGGG"/>
-		<phase duration="5" state="GGrrrrrrrGGrrrrrrrGGGrrrrrrGGrrrrrrr"/>
-		<phase duration="10" state="GGrrrrrrrGGGGGrrrrGGGrrrrrrGGGGrrrrr"/>
-		<phase duration="5" state="GGrrrrrrrGGrrrrrrrGGGrrrrrrGGrrrrrrr"/>
-		<phase duration="25" state="GGrrGGGGGGGrrrrrrrGGGrrGGGGGGrrrrrrr"/>
-		<phase duration="5" state="GGrrrrrrrGGrrrrrrrGGGrrrrrrGGrrrrrrr"/>
-		<phase duration="15" state="GGGGrrrrrGGrrrrrrrGGGGGrrrrGGrrrrrrr"/>
-		<phase duration="5" state="GGrrrrrrrGGrrrrrrrGGGrrrrrrGGrrrrrrr"/>
+		<phase duration="10" state="GGrrGGGGGGGGrrrrrrGGrrrGGGGGGrrrrrrr"/>
+		<phase duration="5" state="GGrrrrrrrGGGrrrrrrGGrrrrrrrGGrrrrrrr"/>
+		<phase duration="10" state="GGGGrrrrrGGGrrrrrrGGGGGrrrrGGrrrrrrr"/>
+		<phase duration="5" state="GGrrrrrrrGGGrrrrrrGGrrrrrrrGGrrrrrrr"/>
+		<phase duration="25" state="GGrrrrrrrGGGrrGGGGGGrrrrrrrGGrrGGGGG"/>
+		<phase duration="5" state="GGrrrrrrrGGGrrrrrrGGrrrrrrrGGrrrrrrr"/>
+		<phase duration="15" state="GGrrrrrrrGGGGGrrrrGGrrrrrrrGGGGrrrrr"/>
+		<phase duration="5" state="GGrrrrrrrGGGrrrrrrGGrrrrrrrGGrrrrrrr"/>
 	</tlLogic>
 	<tlLogic id="69515842" offset="0" programID="0" type="static">
 		<phase duration="10" state="GGrrrrrrGGrrGGGGGGrrrrrrGGrrGGGG"/>
