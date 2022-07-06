@@ -44,6 +44,7 @@ def modify_config_file(path, config):
         # config step 2
         #path_config['roadnetLogFile'] = file_name + f"/{datetime.now().strftime('%Y_%m_%d-%H_%M_%S')}.json"
         #path_config['replayLogFile'] = file_name + f"/{datetime.now().strftime('%Y_%m_%d-%H_%M_%S')}.txt"
+        path_config['interval'] = param['interval']
         with open(path, 'w') as f:
             json.dump(path_config, f, indent=2)
 

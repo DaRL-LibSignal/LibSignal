@@ -258,17 +258,17 @@ class World(object):
     def __init__(self, sumo_config, placeholder=0):
         with open(sumo_config) as f:
             sumo_dict = json.load(f)
-        if sumo_dict['gui'] == "True":
+        if sumo_dict['gui']:
             sumo_cmd = [sumolib.checkBinary('sumo-gui')]
         else:
             sumo_cmd = [sumolib.checkBinary('sumo')]
         if not sumo_dict.get('combined_file'):
             sumo_cmd += ['-n', os.path.join(sumo_dict['dir'], sumo_dict['roadnetFile']),
                          '-r', os.path.join(sumo_dict['dir'], sumo_dict['flowFile']),
-                         '--no-warnings', sumo_dict['no_warning']]
+                         '--no-warnings', str(sumo_dict['no_warning'])]
         else:
             sumo_cmd += ['-c', os.path.join(sumo_dict['dir'], sumo_dict['combined_file']),
-                         '--no-warnings', sumo_dict['no_warning']]
+                         '--no-warnings', str(sumo_dict['no_warning'])]
         self.net = os.path.join(sumo_dict['dir'], sumo_dict['roadnetFile'])
         self.route = os.path.join(sumo_dict['dir'], sumo_dict['flowFile'])
         self.sumo_cmd = sumo_cmd
@@ -284,6 +284,7 @@ class World(object):
             self.eng = traci.getConnection(sumo_dict['name'])
         # TODO: roadnet not implemented but not necessary
         self.RIGHT = True  # TODO: currently set to be true
+
         self.interval = sumo_dict['interval']
         self.step_ratio = 1  # TODO: register in Registry later
         self.step_length = 1  # should be 1 in our setting
@@ -324,9 +325,9 @@ class World(object):
         if not self.connection_name: traci.switch(self.connection_name)  # TODO: make sure what's this step doing
         traci.close()
         # self.connection_name = self.map + '-' + self.connection_name
-        if not os.path.exists(os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+        if not os.path.exists(os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                            self.connection_name)):
-            os.mkdir(os.path.join(Registry.mapping['logger_mapping']['output_path'].path, self.connection_name))
+            os.mkdir(os.path.join(Registry.mapping['logger_mapping']['path'].path, self.connection_name))
 
         print('Connection ID', self.connection_name)
 
