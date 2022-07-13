@@ -121,11 +121,11 @@ class Intersection(object):
         # self.current_phase means phase id in self.phases (excluding yellow)
         if self._current_phase in self.yellow_phase_id:
             if self.current_phase_time == self.yellow_phase_time:
-                # self._change_phase(self.phases[self.action_before_yellow], interval,'add')
-                if self.if_sumo:
-                    self._change_phase(self.phases[self.action_before_yellow], interval,'add')
-                else:
-                    self._change_phase(self.phases[self.action_before_yellow], interval)
+                self._change_phase(self.phases[self.action_before_yellow], interval,'add')
+                # if self.if_sumo:
+                #     self._change_phase(self.phases[self.action_before_yellow], interval,'add')
+                # else:
+                #     self._change_phase(self.phases[self.action_before_yellow], interval)
                 self.current_phase = self.action_before_yellow
                 self.action_executed = self.action_before_yellow
             else:

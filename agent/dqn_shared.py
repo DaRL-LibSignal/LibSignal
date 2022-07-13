@@ -13,6 +13,8 @@ class SharedDQN(DQN):
                          minibatch_size=minibatch_size, replay_start_size=replay_start_size, phi=phi,
                          target_update_interval=target_update_interval, update_interval=update_interval)
 
+    
+    
     def act(self, obs, valid_acts=None, reverse_valid=None):
         return self.batch_act(obs, valid_acts=valid_acts, reverse_valid=reverse_valid)
 

@@ -13,7 +13,7 @@ class SharedEpsGreedy(explorers.LinearDecayEpsilonGreedy):
             fn = lambda: np.random.randint(num_acts)
         a, greedy = self.select_action_epsilon_greedily(fn, greedy_action_func)
         greedy_str = "greedy" if greedy else "non-greedy"
-        print("t:%s a:%s %s", t, a, greedy_str)
+        # print("t:%s a:%s %s", t, a, greedy_str)
         if num_acts is None:
             return a
         else:

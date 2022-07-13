@@ -145,7 +145,10 @@ class TSCTrainer(BaseTrainer):
                     # TODO: construct database here
                     for idx, ag in enumerate(self.agents):
                         # TODO: test for PFRL
-                        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'ppo_pfrl':
+                        if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'ppo_pfrl' or\
+                            Registry.mapping['model_mapping']['model_setting'].param['name'] == 'mplight' or\
+                            Registry.mapping['model_mapping']['model_setting'].param['name'] == 'mplight_t' or\
+                                Registry.mapping['model_mapping']['model_setting'].param['name'] == 'frap':
                             ag.do_observe(obs[idx], cur_phase[idx], rewards[idx], dones[idx])
                         # TODO: temporary for test maddpg agent
                         elif Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg' or\
@@ -234,7 +237,8 @@ class TSCTrainer(BaseTrainer):
         self.logger.info("Test step:{}/{}, real travel time :{}, planned travel time:{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(e, self.steps, trv_time[0], trv_time[1], mean_rwd,mean_queue, mean_delay, int(ep_throughput)))
         self.writeLog("TEST", e, trv_time[0], trv_time[1], 100, mean_rwd,mean_queue,mean_delay, ep_throughput)
         return trv_time
-
+        
+    # TODO change drop_load to False to test func of load_model
     def test(self, drop_load=True):
         if not drop_load:
             [ag.load_model(self.episodes) for ag in self.agents]

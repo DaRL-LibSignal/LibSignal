@@ -22,11 +22,19 @@ DIRECTION_RANK = {'N': 0, 'W': 1, 'S': 2, 'E': 3}
 
 
 # TODO: revert x and y
-def _get_direction(road):
-    x = road[1][0] - road[0][0]
-    y = road[1][1] - road[0][1]
+def _get_direction(road, out=True):
+    if out:
+        x = road[1][0] - road[0][0]
+        y = road[1][1] - road[0][1]
+    else:
+        x = road[-2][0] - road[-1][0]
+        y = road[-2][1] - road[-1][1]
     tmp = atan2(x, y)
     return tmp if tmp >= 0 else (tmp + 2 * pi)
+    # x = road[1][0] - road[0][0]
+    # y = road[1][1] - road[0][1]
+    # tmp = atan2(x, y)
+    # return tmp if tmp >= 0 else (tmp + 2 * pi)
 
 
 def create_yellows(phases, yellow_length):
@@ -80,7 +88,7 @@ class Intersection(object):
                 self.roads.append(link[0][:-2])
                 self.outs.append(False)
                 road = self.eng.lane.getShape(link[0])
-                self.directions.append(_get_direction(road))
+                self.directions.append(_get_direction(road, False))
             elif link[0][:-2] in self.road_lane_mapping.keys() and link[0] not in self.road_lane_mapping[link[0][:-2]]:
                 self.road_lane_mapping[link[0][:-2]].append(link[0])
             if link[1][:-2] not in self.road_lane_mapping.keys():
@@ -89,7 +97,7 @@ class Intersection(object):
                 self.roads.append(link[1][:-2])
                 self.outs.append(True)
                 road = self.eng.lane.getShape(link[1])
-                self.directions.append(_get_direction(road))
+                self.directions.append(_get_direction(road, True))
             elif link[1][:-2] in self.road_lane_mapping.keys() and link[1] not in self.road_lane_mapping[link[1][:-2]]:
                 self.road_lane_mapping[link[1][:-2]].append(link[1])
 
@@ -299,6 +307,7 @@ class World(object):
         for ts in self.eng.trafficlight.getIDList():
             self.id2intersection[ts] = Intersection(ts, self, self.green_phases[ts])  # this IntSec has different phases
             self.intersections.append(self.id2intersection[ts])
+        self.id2idx = {i: idx for idx,i in enumerate(self.id2intersection)}
         # TODO: to see if its necessary to test .intersections or .observe here
         # TODO: to see if pass observation and its shape by generator
         self.all_roads = []

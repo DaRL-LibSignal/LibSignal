@@ -20,8 +20,8 @@ from agent import utils
 
 '''MPLight is default set Shared Agent'''
 
-@Registry.register_model('mplight')
-class MPLightAgent(RLAgent):
+@Registry.register_model('mplight_t')
+class MPLightAgentT(RLAgent):
     def __init__(self, world, rank):
         super().__init__(world,world.intersection_ids[rank])
 
@@ -62,7 +62,7 @@ class MPLightAgent(RLAgent):
         episodes = Registry.mapping['trainer_mapping']['trainer_setting'].param['episodes'] * 0.8
         steps = Registry.mapping['trainer_mapping']['trainer_setting'].param['steps']
         action_interval = Registry.mapping['trainer_mapping']['trainer_setting'].param['action_interval']
-        total_steps = episodes * steps / action_interval
+        total_steps = (int)(episodes * steps / action_interval)
         self.explorer = SharedEpsGreedy(
             # TODO check what does those params mean
                 self.dic_agent_conf.param["eps_start"],
@@ -380,8 +380,8 @@ class MPLight_InerAgent(DQN):
         super().__init__(q_function, optimizer, replay_buffer, gamma, explorer,
                          minibatch_size=minibatch_size, replay_start_size=replay_start_size, phi=phi,
                          target_update_interval=target_update_interval, update_interval=update_interval)
-        self.batch_last_state = None
-        self.batch_last_action = None
+        # self.batch_last_state = None
+        # self.batch_last_action = None
 
     def act(self, obs, valid_acts=None, reverse_valid=None, test=False):
         return self.batch_act(obs, valid_acts=valid_acts, reverse_valid=reverse_valid, test=test)

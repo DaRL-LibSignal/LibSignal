@@ -2,33 +2,28 @@ includes:
   - configs/agents/tsc/base.yml
 
 model:
-  name: mplight
+  name: frap
   n_layers: 2
   rotation: true
   conflict_matrix: true
   merge: multiply
   d_dense: 20
   learning_rate: 0.001
-  batch_size: 32
-  gamma: 0.99
-  # epsilon: 0.1
-  # epsilon_decay: 0.995
-  # epsilon_min: 0.01
+  batch_size: 64
+  gamma: 0.95
+  epsilon: 0.1
+  epsilon_decay: 0.995
+  epsilon_min: 0.01
   grad_clip: 5.0
-  eps_start: 1.0
-  eps_end: 0.0
-  eps_decay: 220
-  target_update: 500
-  demand_shape: 1
 
 trainer: 
   thread: 4 
-  ngpu: -1 
-  learning_start: -1
-  buffer_size: 10000
+  ngpu: -1
+  learning_start: 1000
+  buffer_size: 5000 
   steps: 3600 
   test_steps: 3600 
-  action_interval: 10
+  action_interval: 20
   episodes: 200
   update_model_rate: 1
   update_target_rate: 10
@@ -47,7 +42,7 @@ logger:
   load_model: False
 
 traffic:
-  one_hot: False
+  one_hot: True
   phase: True
   n_leg: 4
   thread_num: 4
@@ -99,9 +94,6 @@ traffic:
 
   phase_expansion_4_lane: {1: [0,0,1,1],2: [1,1,0,0]}
 
-
-  # list_lane_order = [0:'NL',1:'NT',2:'NR',3:'EL',4:'ET',5:'ER',6:'SL',7:'ST',8:'SR',9:'WL',10:'WT',11:'WR']
-  # The yellow light has been automatically filtered
   signal_config: {
     grid4x4: {
       phase_pairs: [[1, 7], [2, 8], [1, 2], [7, 8], [4, 10], [5, 11], [10, 11], [4, 5]],
