@@ -282,8 +282,9 @@ class MPLightAgent(RLAgent):
             os.makedirs(path)
         model_name = os.path.join(path, f'{e}_{self.rank}.pt')
         torch.save(self.target_model.state_dict(), model_name)
-
-
+    def remember(self, last_ob, last_phase, action, reward, next_ob, cur_phase, key):
+        self.replay_buffer.append((key, (last_ob, last_phase, action, reward, next_ob, cur_phase)))
+    
 class FRAP(nn.Module):
     def __init__(self, dic_agent_conf, dic_traffic_env_conf, num_actions, ob_length, num_phases):
         super(FRAP, self).__init__()
