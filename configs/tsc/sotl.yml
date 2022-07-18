@@ -1,0 +1,24 @@
+includes:
+  - configs/tsc/base.yml
+
+
+model:
+  name: sotl
+  min_green_vehicle: 5
+  max_red_vehicle: 5
+  t_min: 5
+
+
+trainer:
+  episodes: 1
+  buffer_size: 0
+  learning_rate: 0
+  learning_start: 0
+  update_model_rate: 0
+  update_target_rate: 0
+
+logger:
+  save_rate: 0
+  train_model: False
+  test_model: True
+  load_model: False

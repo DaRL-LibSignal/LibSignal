@@ -5,68 +5,71 @@ import dataset
 from common.registry import Registry
 from common import interface
 from common.utils import *
+from utils.logger import *
 import time
 from datetime import datetime
 import argparse
 
 
 # parseargs
-parser = argparse.ArgumentParser(description='Run Example')
+parser = argparse.ArgumentParser(description='Run Experiment')
 parser.add_argument('--thread_num', type=int, default=4, help='number of threads')  # used in cityflow
 parser.add_argument('--ngpu', type=str, default="-1", help='gpu to be used')  # choose gpu card
+parser.add_argument('--prefix', type=str, default='0', help="the number of prefix in this running process")
+parser.add_argument('--seed', type=int, default=None, help="seed for pytorch backend")
+parser.add_argument('--debug', type=bool, default=True)
 
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
-parser.add_argument('-a', '--agent', type=str, default="fixedtime", help="agent type of agents in RL environment")
-# parser.add_argument('-w', '--world', type=str, default="cityflow", help="simulator type")
+parser.add_argument('-a', '--agent', type=str, default="maxpressure", help="agent type of agents in RL environment")
 parser.add_argument('-w', '--world', type=str, default="sumo", help="simulator type")
+parser.add_argument('-n', '--network', type=str, default="sumo1x1", help="network name")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
-parser.add_argument('--dataset_name', type=str, default='', help='dataset_name, for frap and mplight')
-parser.add_argument('--path', type=str, default='configs/sumo1x21.cfg', help='path to cityflow path')
-parser.add_argument('--prefix', type=str, default='0', help="the number of predix in this running process")
-parser.add_argument('--seed', type=int, default=None, help="seed for pytorch backend")
-
-parser.add_argument('--mask_type', type=int, default=0, help='used to specify the type of softmax')
-parser.add_argument('--debug', type=bool, default=False)
-parser.add_argument('--test_when_train', action="store_false", default=False)
 
 
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.ngpu
 
+logging_level = logging.INFO
+if args.debug:
+    logging_level = logging.DEBUG
+
 
 class Runner:
     def __init__(self, pArgs):
-        self.config = build_config(pArgs)
+        """
+        instantiate runner object with processed config and register config into Registry class
+        """
+        self.config, self.duplicate_config = build_config(pArgs)
         self.config_registry()
 
     def config_registry(self):
-        # TODO: make it flexable in the future
-        if args.world != 'openengine':
-            cityflow_setting = json.load(open(self.config['path'], 'r'))
-            roadnet_path = os.path.join(cityflow_setting['dir'], cityflow_setting['roadnetFile'])
-            # can not directly obtain graph from sumo file, need sumo2cityflow roadnetfile
-            convertroadnet_path = os.path.join(cityflow_setting['dir'], cityflow_setting['convertroadnetFile']) if 'convertroadnetFile' in cityflow_setting else None
-        else:
-            roadnet_path = None
+        """
+        Register config into Registry class
+        """
 
+        interface.Command_Setting_Interface(self.config)
+        interface.Logger_param_Interface(self.config)  # register logger path
+        interface.World_param_Interface(self.config)
         if self.config['model'].get('graphic', False):
-            if convertroadnet_path != None:
-                interface.Graph_World_Interface(convertroadnet_path)
+            param = Registry.mapping['world_mapping']['setting'].param
+            if self.config['command']['world'] in ['cityflow', 'sumo']:
+                roadnet_path = param['dir'] + param['roadnetFile']
             else:
-                interface.Graph_World_Interface(roadnet_path)  # register graphic parameters in Registry class
-        interface.Logger_path_Interface(self.config['task'], self.config['agent'], self.config['prefix'])
-        if not os.path.exists(Registry.mapping['logger_mapping']['output_path'].path):
-            os.makedirs(Registry.mapping['logger_mapping']['output_path'].path)
-        interface.Logger_param_Interface(self.config['logger'])  # register logger path
-        interface.Traffic_param_Interface(self.config['traffic'])
-        interface.Trainer_param_Interface(self.config['trainer'])
-        interface.ModelAgent_param_Interface(self.config['model'])
+                roadnet_path = param['road_file_addr']
+            interface.Graph_World_Interface(roadnet_path)  # register graphic parameters in Registry class
+        interface.Logger_path_Interface(self.config)
+        # make output dir if not exist
+        if not os.path.exists(Registry.mapping['logger_mapping']['path'].path):
+            os.makedirs(Registry.mapping['logger_mapping']['path'].path)        
+        interface.Trainer_param_Interface(self.config)
+        interface.ModelAgent_param_Interface(self.config)
 
     def run(self):
-        self.config_registry()
-        logger = setup_logging(self.config)
-        self.trainer = Registry.mapping['trainer_mapping'][self.config['task']](self.config, logger)
-        self.task = Registry.mapping['task_mapping'][self.config['task']](self.trainer)
+        logger = setup_logging(logging_level)
+        self.trainer = Registry.mapping['trainer_mapping']\
+            [Registry.mapping['command_mapping']['setting'].param['task']](logger)
+        self.task = Registry.mapping['task_mapping']\
+            [Registry.mapping['command_mapping']['setting'].param['task']](self.trainer)
         start_time = time.time()
         self.task.run()
         logger.info(f"Total time taken: {time.time() - start_time}")

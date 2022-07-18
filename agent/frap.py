@@ -11,7 +11,6 @@ import gym
 from generator import LaneVehicleGenerator, IntersectionPhaseGenerator, IntersectionVehicleGenerator
 from torch.nn.utils import clip_grad_norm_
 from agent import utils
-from pfrl.q_functions import DiscreteActionValueHead
 
 
 @Registry.register_model('frap')
@@ -199,7 +198,6 @@ class FRAP_DQNAgent(RLAgent):
 
     def train(self):
         if len(self.replay_buffer) < self.batch_size:
-            print("error")
             return
         samples = random.sample(self.replay_buffer, self.batch_size)
         b_t, b_tp, rewards, actions = self._batchwise(samples)

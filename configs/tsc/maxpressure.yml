@@ -1,0 +1,23 @@
+includes:
+  - configs/tsc/base.yml
+
+
+model:
+  name: maxpressure
+  t_min: 10
+
+
+trainer:
+  buffer_size: 0
+  action_interval: 10
+  learning_rate: 0
+  learning_start: 0
+  update_model_rate: 0
+  update_target_rate: 0
+
+
+logger:
+  save_rate: 0
+  train_model: False
+  test_model: True
+  load_model: False

@@ -1,4 +1,4 @@
-# import lmdb
+import lmdb
 from common.registry import Registry
 import os
 import sys

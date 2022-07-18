@@ -2,9 +2,7 @@
 convert SUMO file to CityFlow file.
 """
 
-from ast import operator
 import os
-from random import random
 import sys
 from sys import platform
 import argparse
@@ -135,7 +133,7 @@ def parse_args():
     # parser.add_argument("--or_cityflownet", type=str,
     #                     default='hangzhou_1x1_bc-tyc_18041610_1h/roadnet.json')
     # parser.add_argument("--sumonet", type=str,
-    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h_test_test.net.xml')
+    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.net.xml')
     # parser.add_argument("--or_cityflowflow", type=str,
     #                     default='hangzhou_1x1_bc-tyc_18041610_1h/flow.json')
     # parser.add_argument("--sumoflow", type=str,
@@ -1120,7 +1118,7 @@ def cityflow2sumo_net(args):
         edge.setAttribute('from', road['startIntersection'])
         edge.setAttribute('to', road['endIntersection'])
         edge.setAttribute('numLanes', str(len(road['lanes'])))
-        edge.setAttribute('speed', '11.11')
+        edge.setAttribute('speed', '11.111')
         edge.setAttribute('priority', '-1')
         root_edge.appendChild(edge)
     fp_edge = open(sumo_edge, 'w')

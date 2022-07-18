@@ -1,4 +1,5 @@
 import random
+import os
 from abc import ABC, abstractmethod
 import numpy as np
 import torch
@@ -9,17 +10,15 @@ from common.registry import Registry
 class BaseTrainer(ABC):
     def __init__(
         self,
-        args,
         logger,
         gpu=0,
         cpu=False,
         name="base"
     ):
-        self.args = args
-        self.path = args['path']
-        self.seed = args['seed']
+        self.path = os.path.join('configs/sim', Registry.mapping['command_mapping']['setting'].param['network'] + '.cfg')
+        self.seed = Registry.mapping['command_mapping']['setting'].param['seed']
         self.logger = logger
-        self.debug = args['debug']
+        #self.debug = args['debug']
         self.name = name
         self.cpu = cpu
         self.epoch = 0
@@ -28,7 +27,6 @@ class BaseTrainer(ABC):
         self.env = None
         self.world = None
         self.agents = None
-        self.metric = None
 
         if torch.cuda.is_available() and not self.cpu:
             self.device = torch.device(f"cuda:{gpu}")

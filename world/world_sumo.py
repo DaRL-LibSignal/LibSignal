@@ -273,10 +273,10 @@ class World(object):
         if not sumo_dict.get('combined_file'):
             sumo_cmd += ['-n', os.path.join(sumo_dict['dir'], sumo_dict['roadnetFile']),
                          '-r', os.path.join(sumo_dict['dir'], sumo_dict['flowFile']),
-                         '--no-warnings', sumo_dict['no_warning']]
+                         '--no-warnings', str(sumo_dict['no_warning'])]
         else:
             sumo_cmd += ['-c', os.path.join(sumo_dict['dir'], sumo_dict['combined_file']),
-                         '--no-warnings', sumo_dict['no_warning']]
+                         '--no-warnings', str(sumo_dict['no_warning'])]
         self.net = os.path.join(sumo_dict['dir'], sumo_dict['roadnetFile'])
         self.route = os.path.join(sumo_dict['dir'], sumo_dict['flowFile'])
         self.sumo_cmd = sumo_cmd
@@ -333,9 +333,9 @@ class World(object):
         if not self.connection_name: traci.switch(self.connection_name)  # TODO: make sure what's this step doing
         traci.close()
         # self.connection_name = self.map + '-' + self.connection_name
-        if not os.path.exists(os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+        if not os.path.exists(os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                            self.connection_name)):
-            os.mkdir(os.path.join(Registry.mapping['logger_mapping']['output_path'].path, self.connection_name))
+            os.mkdir(os.path.join(Registry.mapping['logger_mapping']['path'].path, self.connection_name))
 
         print('Connection ID', self.connection_name)
 
@@ -377,8 +377,6 @@ class World(object):
             green_phases = []
             for phase in valid_phases[ts]:    # Convert to SUMO phase type
                 if 'y' not in phase:
-                    # condition2: avoid regarding yellow phase as green phase, which will happened in cityflow_convert file.
-                    # if (phase.count('r') + phase.count('s') != len(phase)) and (3*phase.count('G') != len(phase)):
                     if phase.count('r') + phase.count('s') != len(phase):
                         green_phases.append(self.eng.trafficlight.Phase(self.step_length, phase))
             valid_phases[ts] = green_phases
@@ -447,8 +445,7 @@ class World(object):
         for v in self.vehicles.keys():
             count += 1
             result += self.vehicles[v]
-            result_planned += self.vehicles[v]
-            # result_planned += self.vehicles_planned[v]
+            result_planned += self.vehicles_planned[v]
         if count == 0:
             return [0, 0]
         else:
@@ -480,18 +477,19 @@ class World(object):
         return result
 
     def get_pressure(self):
-        pressures = dict()
-        lane_vehicles = self.get_lane_vehicle_count()
-        for i in self.intersections:
-            pressure = 0
-            for road in i.in_roads:
-                for k in i.road_lane_mapping[road]:
-                    pressure += lane_vehicles[k]
-            for road in i.out_roads:
-                for k in i.road_lane_mapping[road]:
-                    pressure -= lane_vehicles[k]
-            pressures[i.id] = pressure
-        return pressures
+        # pressures = dict()
+        # lane_vehicles = self.get_lane_vehicle_count()
+        # for i in self.intersections:
+        #     pressure = 0
+        #     for road in i.in_roads:
+        #         for k in i.road_lane_mapping[road]:
+        #             pressure += lane_vehicles[k]
+        #     for road in i.out_roads:
+        #         for k in i.road_lane_mapping[road]:
+        #             pressure -= lane_vehicles[k]
+        #     pressures[i.id] = pressure
+        # return pressures
+        pass
 
     def get_lane_waiting_time_count(self):
         result = dict()
@@ -572,7 +570,3 @@ class World(object):
         throughput = len(self.vehicles)
         # TODO: check if only trach left cars
         return throughput
-
-
-
-

@@ -1,6 +1,4 @@
-
-
-# Borrowed from open catalyst project
+# This idea is borrowed from open catalyst project
 """
 Registry is central source of truth. Inspired from Redux's concept of
 global store, Registry maintains mappings of various information to unique
@@ -11,6 +9,7 @@ different kind of classes.
 
 class Registry:
     mapping = {
+        'command_mapping': {},
         'task_mapping': {},
         'dataset_mapping': {},
         'model_mapping': {},
@@ -18,6 +17,13 @@ class Registry:
         'world_mapping': {},
         'trainer_mapping': {}
     }
+
+    @classmethod
+    def register_command(cls, name):
+        def wrap(f):
+            cls.mapping['command_mapping'][name] = f
+            return f
+        return wrap
 
     @classmethod
     def register_world(cls, name):

@@ -15,10 +15,9 @@ class SOTLAgent(BaseAgent):
         self.world = world
         self.rank = rank
         # some threshold to deal with phase requests
-        self.min_green_vehicle = Registry.mapping['model_mapping']['model_setting'].param['min_green_vehicle']
-        self.max_red_vehicle = Registry.mapping['model_mapping']['model_setting'].param['max_red_vehicle']
-        self.t_min = Registry.mapping['model_mapping']['model_setting'].param['t_min']
-        # self.t_min = 5
+        self.min_green_vehicle = Registry.mapping['model_mapping']['setting'].param['min_green_vehicle']
+        self.max_red_vehicle = Registry.mapping['model_mapping']['setting'].param['max_red_vehicle']
+        self.t_min = Registry.mapping['model_mapping']['setting'].param['t_min']
         # get generator for each SOTL
         inter_id = self.world.intersection_ids[self.rank]
         inter_obj = self.world.id2intersection[inter_id]
@@ -36,6 +35,10 @@ class SOTLAgent(BaseAgent):
         #                                              ["lane_delay"], in_only=True,
         #                                              negative=False)
         self.action_space = gym.spaces.Discrete(len(self.inter.phases))
+
+
+        def __repr__(self):
+            return 'SOTL Agent has no Network model'
 
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]

@@ -24,9 +24,9 @@ from agent import utils
 class MPLightAgent(RLAgent):
     def __init__(self, world, rank):
         super().__init__(world,world.intersection_ids[rank])
-
-        self.dic_agent_conf = Registry.mapping['model_mapping']['model_setting']
-        self.dic_traffic_env_conf = Registry.mapping['world_mapping']['traffic_setting']
+        self.dic_agent_conf = Registry.mapping['model_mapping']['setting']
+        self.dic_traffic_env_conf = Registry.mapping['world_mapping']['setting']
+        self.dic_trainer_conf = Registry.mapping['trainer_mapping']['setting']
         
         self.gamma = self.dic_agent_conf.param["gamma"]
         self.grad_clip = self.dic_agent_conf.param["grad_clip"]
@@ -37,17 +37,17 @@ class MPLightAgent(RLAgent):
         self.batch_size = self.dic_agent_conf.param["batch_size"]
         self.num_phases = len(self.dic_traffic_env_conf.param["phases"])
         self.num_actions = len(self.dic_traffic_env_conf.param["phases"])
-        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
+        self.buffer_size = self.dic_trainer_conf.param['buffer_size']
         # self.replay_buffer = deque(maxlen=self.buffer_size)
         self.replay_buffer = replay_buffers.ReplayBuffer(self.buffer_size)
-        self.dic_trainer_conf = Registry.mapping['trainer_mapping']['trainer_setting']
+        
 
         self.world = world
         self.rank = rank
         self.sub_agents = len(self.world.intersections)
         self.inter_id = self.world.intersection_ids[self.rank]
-        self.phase = Registry.mapping['world_mapping']['traffic_setting'].param['phase']
-        self.one_hot = Registry.mapping['world_mapping']['traffic_setting'].param['one_hot']
+        self.phase = self.dic_traffic_env_conf.param['phase']
+        self.one_hot = self.dic_traffic_env_conf.param['one_hot']
         self.action_space_list = [gym.spaces.Discrete(len(x.phases)) for x in self.world.intersections]
         # create competition matrix
         map_name = self.dic_traffic_env_conf.param['dataset_name']
@@ -57,9 +57,9 @@ class MPLightAgent(RLAgent):
         self.reverse_valid = None
         self.model = None
         self.optimizer = None
-        episodes = Registry.mapping['trainer_mapping']['trainer_setting'].param['episodes'] * 0.8
-        steps = Registry.mapping['trainer_mapping']['trainer_setting'].param['steps']
-        action_interval = Registry.mapping['trainer_mapping']['trainer_setting'].param['action_interval']
+        episodes = self.dic_trainer_conf.param['episodes'] * 0.8
+        steps = self.dic_trainer_conf.param['steps']
+        action_interval = self.dic_trainer_conf.param['action_interval']
         total_steps = episodes * steps / action_interval
         self.explorer = SharedEpsGreedy(
                 self.dic_agent_conf.param["eps_start"],

@@ -298,6 +298,9 @@ class CoLightAgent(RLAgent):
         if self.sub_agents > 1:
             rewards = rewards.view(rewards.shape[0] * rewards.shape[1])
             actions = actions.view(actions.shape[0] * actions.shape[1])  # TODO: check all dimensions here
+        # rewards = rewards.view(rewards.shape[0] * rewards.shape[1])
+        # actions = torch.tensor(np.array(actions), dtype=torch.long)
+        # actions = actions.view(actions.shape[0] * actions.shape[1])  # TODO: check all dimensions here
 
         return batch_t, batch_tp, rewards, actions
 

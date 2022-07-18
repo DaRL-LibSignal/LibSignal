@@ -16,7 +16,6 @@ class LaneVehicleGenerator(BaseGenerator):
         "lane_waiting_count": get number of waiting vehicles(speed less than 0.1m/s) on each lane.
         "lane_waiting_time_count": get the sum of waiting time of vehicles on the lane since their last action.
         "lane_delay": the delay of each lane: 1 - lane_avg_speed/speed_limit.
-        "pressure_lane": the pressure of each lane
 
     in_only : boolean, whether to compute incoming lanes only
     average : None or str
