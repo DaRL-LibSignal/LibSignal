@@ -11,4 +11,3 @@ from .ppo_pfrl import IPPO_pfrl
 from .presslight import PressLightAgent
 from .fixedtime import FixedTimeAgent
 from .mplight import MPLightAgent
-from .mplight_test import MPLightAgentT

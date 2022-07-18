@@ -146,9 +146,7 @@ class TSCTrainer(BaseTrainer):
                     for idx, ag in enumerate(self.agents):
                         # TODO: test for PFRL
                         if Registry.mapping['model_mapping']['model_setting'].param['name'] == 'ppo_pfrl' or\
-                            Registry.mapping['model_mapping']['model_setting'].param['name'] == 'mplight' or\
-                            Registry.mapping['model_mapping']['model_setting'].param['name'] == 'mplight_t' or\
-                                Registry.mapping['model_mapping']['model_setting'].param['name'] == 'frap':
+                            Registry.mapping['model_mapping']['model_setting'].param['name'] == 'mplight':
                             ag.do_observe(obs[idx], cur_phase[idx], rewards[idx], dones[idx])
                         # TODO: temporary for test maddpg agent
                         elif Registry.mapping['model_mapping']['model_setting'].param['name'] == 'maddpg' or\

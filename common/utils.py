@@ -296,4 +296,5 @@ def build_config(args):
     args_dict = vars(args)
     for key in args_dict:
         config.update({key: args_dict[key]})  # short access for important param
+    config['traffic']['dataset_name'] = args.dataset_name
     return config

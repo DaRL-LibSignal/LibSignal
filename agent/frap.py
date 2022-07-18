@@ -11,61 +11,36 @@ import gym
 from generator import LaneVehicleGenerator, IntersectionPhaseGenerator, IntersectionVehicleGenerator
 from torch.nn.utils import clip_grad_norm_
 from agent import utils
-from pfrl import explorers, replay_buffers
 from pfrl.q_functions import DiscreteActionValueHead
-from pfrl.utils.contexts import evaluating
-from pfrl.agents import DQN
 
 
 @Registry.register_model('frap')
 class FRAP_DQNAgent(RLAgent):
     def __init__(self, world, rank):
-        super(FRAP_DQNAgent, self).__init__(world,world.intersection_ids[rank])
+        super().__init__(world,world.intersection_ids[rank])
         self.dic_agent_conf = Registry.mapping['model_mapping']['model_setting']
         self.dic_traffic_env_conf = Registry.mapping['world_mapping']['traffic_setting']
         
         self.gamma = self.dic_agent_conf.param["gamma"]
         self.grad_clip = self.dic_agent_conf.param["grad_clip"]
-        
+        self.epsilon = self.dic_agent_conf.param["epsilon"]
+        self.epsilon_min = self.dic_agent_conf.param["epsilon_min"]
+        self.epsilon_decay = self.dic_agent_conf.param["epsilon_decay"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
         self.num_phases = len(self.dic_traffic_env_conf.param["phases"])
         self.num_actions = len(self.dic_traffic_env_conf.param["phases"])
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
-        
-        self.replay_buffer = replay_buffers.ReplayBuffer(self.buffer_size)
-        self.dic_trainer_conf = Registry.mapping['trainer_mapping']['trainer_setting']
-        
-        self.world = world
-        self.rank = rank
-        self.sub_agents = 1
-        self.inter_id = self.world.intersection_ids[self.rank]
-        self.phase = Registry.mapping['world_mapping']['traffic_setting'].param['phase']
-        self.one_hot = Registry.mapping['world_mapping']['traffic_setting'].param['one_hot']
-        self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
-        
-        # create competition matrix
-        # TODO how to get map_name dynamically
-        map_name = 'hz1x1'
-        self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
-        self.comp_mask = self.relation()
-        self.valid_acts = self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
-        self.reverse_valid = None
-        self.model = None
-        self.optimizer = None
-        episodes = Registry.mapping['trainer_mapping']['trainer_setting'].param['episodes'] * 0.8
-        steps = Registry.mapping['trainer_mapping']['trainer_setting'].param['steps']
-        action_interval = Registry.mapping['trainer_mapping']['trainer_setting'].param['action_interval']
-        total_steps = episodes * steps / action_interval
-        self.explorer = explorers.LinearDecayEpsilonGreedy(
-                self.dic_agent_conf.param["eps_start"],
-                self.dic_agent_conf.param["eps_end"],
-                total_steps,
-                lambda: np.random.randint(len(self.phase_pairs)),
-            )
-        self.agents_iner = self._build_model()
+        self.replay_buffer = deque(maxlen=self.buffer_size)
 
-        # get generator for FRAPAgent
+        self.world = world
+        self.sub_agents = 1
+        self.rank = rank
+
+        self.phase = self.dic_traffic_env_conf.param['phase']
+        self.one_hot = self.dic_traffic_env_conf.param['one_hot']
+
+        # get generator for each Agent
         self.inter_id = self.world.intersection_ids[self.rank]
         self.inter_obj = self.world.id2intersection[self.inter_id]
         self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
@@ -76,12 +51,29 @@ class FRAP_DQNAgent(RLAgent):
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_waiting_count"], in_only=True, average="all",
                                                      negative=True)
+
         self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_waiting_count"], in_only=True,
                                                      negative=False)
         self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_delay"], in_only=True, average="all",
                                                      negative=False)
+
+        map_name = self.dic_traffic_env_conf.param['dataset_name']
+        self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
+        self.comp_mask = self.relation()
+        self.dic_phase_expansion = None
+        # if self.phase:
+        #     if self.one_hot:
+        #         if self.ob_generator.ob_length == 8:
+        #             self.dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion_8"]
+
+        self.model = self._build_model()
+        self.target_model = self._build_model()
+        self.update_target_network()
+        self.optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=self.learning_rate, eps=1e-7)
+        self.criterion = nn.MSELoss(reduction='mean')
 
     def reset(self):
         self.inter_id = self.world.intersection_ids[self.rank]
@@ -114,7 +106,12 @@ class FRAP_DQNAgent(RLAgent):
                 cnt += 1
             comp_mask.append(zeros)
         comp_mask = torch.from_numpy(np.asarray(comp_mask))
-        return comp_mask  
+        return comp_mask 
+
+
+    def _build_model(self):
+        model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
+        return model
 
     def get_ob(self):
         x_obs = []
@@ -126,7 +123,7 @@ class FRAP_DQNAgent(RLAgent):
         rewards = []
         rewards.append(self.reward_generator.generate())
         # TODO check whether to multiply 12
-        rewards = np.squeeze(np.array(rewards))
+        rewards = np.squeeze(np.array(rewards)) * self.num_phases
         return rewards
 
     def get_phase(self):
@@ -136,150 +133,116 @@ class FRAP_DQNAgent(RLAgent):
         return phase
 
     def get_action(self, ob, phase, test=False):
-        # concate ob and phase
-        if len(ob.shape) == 2:
-            ob = ob.flatten()
+        """
+        ob:(1,12)
+        phase:(1,)
+        """
+        if not test:
+            if np.random.rand() <= self.epsilon:
+                return self.sample()
+        # 12->8 
+        # ob = utils.remove_right_lane(ob)
         if self.phase:
             if self.one_hot:
-                obs = np.concatenate([utils.idx2onehot(phase, self.action_space.n), ob], axis=1)
+                feature_p = utils.idx2onehot(phase, self.action_space.n,self.dic_phase_expansion)
+                # feature_p = utils.idx2onehot(phase, self.action_space.n)
+                feature = np.concatenate([feature_p, ob], axis=1)
             else:
-                obs = np.array([np.concatenate([phase, ob.flatten()])])
+                feature = np.concatenate([phase.reshape(1,-1), ob], axis=1)
         else:
-            obs = ob
-
-        if self.reverse_valid is None and self.valid_acts is not None:
-            self.reverse_valid = dict()
-            for signal_id in self.valid_acts:
-                self.reverse_valid[signal_id] = {v: k for k, v in self.valid_acts[signal_id].items()}
-
-        batch_obs = obs
-        if self.valid_acts is None:
-            batch_valid = None
-            batch_reverse = None
-        else:
-            # TODO debug
-            batch_valid = [self.valid_acts.get(agent_id) for agent_id in
-                           ob.keys()]
-            batch_reverse = [self.reverse_valid.get(agent_id) for agent_id in
-                          ob.keys()]
-        self.agents_iner.training = not test
-        if batch_valid is None:
-            return np.array(self.agents_iner.batch_act(batch_obs))
-        with torch.no_grad(), evaluating(self.model):
-            batch_av = self._evaluate_model_and_update_recurrent_states(batch_obs)
-            # TODO do not use gpu
-            batch_qvals = batch_av.params[0].detach().cpu().numpy() # shape: [sub_agents, 1+ob_length(remove right_lane?)]
-            batch_argmax = []
-            for i in range(len(batch_obs)):
-                batch_item = batch_qvals[i]
-                max_val, max_idx = None, None
-                for idx in batch_valid[i]:
-                    batch_item_qval = batch_item[idx]
-                    if max_val is None:
-                        max_val = batch_item_qval
-                        max_idx = idx
-                    elif batch_item_qval > max_val:
-                        max_val = batch_item_qval
-                        max_idx = idx
-                batch_argmax.append(max_idx)
-            batch_argmax = np.asarray(batch_argmax)
-
-        if self.agents_iner.training:
-            batch_action = []
-            for i in range(len(batch_obs)):
-                av = batch_av[i : i + 1]
-                greed = batch_argmax[i]
-                act, greedy = self.explorer.select_action(self.t, lambda: greed, action_value=av, num_acts=len(batch_valid[i]))
-                if not greedy:
-                    act = batch_reverse[i][act]
-                batch_action.append(act)
-
-            self.batch_last_obs = list(batch_obs)
-            self.batch_last_action = list(batch_action)
-        else:
-            batch_action = batch_argmax
-
-        valid_batch_action = []
-        for i in range(len(batch_action)):
-            valid_batch_action.append(batch_valid[i][batch_action[i]])
-        batch_acts = valid_batch_action  
-        acts = np.array(batch_acts)
-        return acts      
+            feature = ob
+        observation = torch.tensor(feature, dtype=torch.float32)
+        actions = self.model(observation, train=True) #1, 8
+        actions = actions.clone().detach().numpy()
+        return np.argmax(actions, axis=1)
 
     def sample(self):
-        pass
-
-    def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
-        """pfrl.dqn have automatically implemented this part, so there is no need to implement it."""
-        pass
-        
-    def do_observe(self, ob, phase, reward, done):
-        # TODO how to handle inregular lane length?
-        # # padding ob length
-        # max_len = max([len(x) for x in ob])
-        # ob_uni = list(map(lambda l:list(l) + [0.]*(max_len - len(l)), ob))
-        # last_ob_uni = list(map(lambda l:list(l) + [0.]*(max_len - len(l)), last_ob))
-
-        # concate ob and phase
-        if self.phase:
-            if self.one_hot:
-                obs = np.concatenate([utils.idx2onehot(phase, self.action_space.n), ob], axis=1)
-            else:
-                obs = np.concatenate([phase, ob.flatten()])
-        else:
-            obs = ob
-        reset = False
-        dones = done
-        rewards = reward
-        self.agents_iner.observe(obs, rewards, dones, reset)
-
-    def _build_model(self):
-        self.model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        agent = DQN(self.model, self.optimizer, self.replay_buffer, self.gamma, self.explorer,
-                        minibatch_size=self.batch_size, replay_start_size=self.batch_size, 
-                        phi=lambda x: np.asarray(x, dtype=np.float32),
-                        # TODO check what is TARGET_UPDATE, target_update_interval, update_interval
-                        target_update_interval=self.dic_agent_conf.param["target_update"])
-        return agent
+        return np.random.randint(0, self.num_phases, self.sub_agents)
 
     def update_target_network(self):
-        pass
+        weights = self.model.state_dict()
+        self.target_model.load_state_dict(weights)
+
+    def remember(self, last_ob, last_phase, action, reward, cur_ob, cur_phase, key):
+        self.replay_buffer.append((key, (last_ob, last_phase, action, reward, cur_ob, cur_phase)))
+
+    def _batchwise(self, samples):
+        # (batch_size,12)
+        obs_t_all=[item[1][0] for item in samples] # last_obs(batch, 1, lane_num)
+        obs_tp_all=[item[1][4] for item in samples] # cur_obs
+        # obs_t = [utils.remove_right_lane(x) for x in obs_t_all]
+        # obs_tp = [utils.remove_right_lane(x) for x in obs_tp_all]
+        obs_t = obs_t_all
+        obs_tp = obs_tp_all
+        obs_t = np.concatenate(obs_t) # (batch,lane_num)
+        obs_tp = np.concatenate(obs_tp) # (batch,lane_num)
+        if self.phase:
+            if self.one_hot:
+                phase_t = np.concatenate([utils.idx2onehot(item[1][1], self.action_space.n, self.dic_phase_expansion) for item in samples])
+                phase_tp = np.concatenate([utils.idx2onehot(item[1][5], self.action_space.n, self.dic_phase_expansion) for item in samples])
+            else:
+                phase_t = np.concatenate([item[1][1].reshape(1,-1) for item in samples]) # (batch, 1)
+                phase_tp = np.concatenate([item[1][5].reshape(1,-1) for item in samples])
+            feature_t = np.concatenate([phase_t, obs_t], axis=1) # (batch,ob_length)
+            feature_tp = np.concatenate([phase_tp, obs_tp], axis=1)
+        else:
+            feature_t = obs_t
+            feature_tp = obs_tp
+        # (batch_size, ob_length)
+        state_t = torch.tensor(feature_t, dtype=torch.float32)
+        state_tp = torch.tensor(feature_tp, dtype=torch.float32)
+        # rewards:(64)
+        rewards = torch.tensor(np.array([item[1][3] for item in samples]), dtype=torch.float32)  # TODO: BETTER WA
+        # actions:(64,1)
+        actions = torch.tensor(np.array([item[1][2] for item in samples]), dtype=torch.long)
+        return state_t, state_tp, rewards, actions
 
     def train(self):
-        result = self.agents_iner.get_statistics()
-        return result[1][1]
+        if len(self.replay_buffer) < self.batch_size:
+            print("error")
+            return
+        samples = random.sample(self.replay_buffer, self.batch_size)
+        b_t, b_tp, rewards, actions = self._batchwise(samples)
+        out = self.target_model(b_tp, train=False) # (batch_size,num_actions)
+        target = rewards + self.gamma * torch.max(out, dim=1)[0] # (batch_size)
+        target_f = self.model(b_t, train=False) # (batch_size,num_actions)
+        for i, action in enumerate(actions):
+            target_f[i][action] = target[i]
+        loss = self.criterion(self.model(b_t, train=True), target_f)
+        self.optimizer.zero_grad()
+        loss.backward()
+        clip_grad_norm_(self.model.parameters(), self.grad_clip)
+        self.optimizer.step()
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+        return loss.clone().detach().numpy()
 
     def load_model(self, e):
-        model_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
-                                  'model', f'{e}_{self.rank}.pt')
-        
-        self.agents_iner = self._build_model()
-        # self.agents_iner.load_state_dict(torch.load(model_name))
-        tmp_dict = {}
-        tmp_dict.load_state_dict(torch.load(model_name))
+        model_name = os.path.join(
+            Registry.mapping['logger_mapping']['output_path'].path, 'model', f'{e}_{self.rank}.pt')
+        self.model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.model.load_state_dict(torch.load(model_name))
+        self.target_model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.target_model.load_state_dict(torch.load(model_name))
 
     def save_model(self, e):
-        path = os.path.join(Registry.mapping['logger_mapping']['output_path'].path, 'model')
+        path = os.path.join(
+            Registry.mapping['logger_mapping']['output_path'].path, 'model')
         if not os.path.exists(path):
             os.makedirs(path)
         model_name = os.path.join(path, f'{e}_{self.rank}.pt')
-        # torch.save(self.target_model.state_dict(), model_name)
-        torch.save({
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-        }, model_name)
-
+        torch.save(self.model.state_dict(), model_name)
 
 
 class FRAP(nn.Module):
-    def __init__(self, dic_agent_conf, output_shape, phase_pairs, competition_mask):
+    def __init__(self, dic_agent_conf, dic_traffic_env_conf, dic_phase_expansion, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
+        self.dic_phase_expansion = dic_phase_expansion
         self.oshape = output_shape
         self.phase_pairs = phase_pairs
         self.comp_mask = competition_mask
         self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
-
+        self.one_hot = dic_traffic_env_conf.param['one_hot']
         self.d_out = 4      # units in demand input layer
         self.p_out = 4      # size of phase embedding
         self.lane_embed_units = 16
@@ -298,40 +261,55 @@ class FRAP(nn.Module):
         self.hidden_layer = nn.Conv2d(20, 20, kernel_size=(1, 1))
         self.before_merge = nn.Conv2d(20, 1, kernel_size=(1, 1))
 
-        self.head = DiscreteActionValueHead()
-
-    def forward(self, states):
+    def _forward(self, states):
         '''
         :params states: [agents, ob_length]
         ob_length:concat[len(one_phase),len(intersection_lane)]
         '''
-        num_movements = int((states.size()[1]-1)/self.demand_shape)
+        # if lane_num=12,then num_movements=12, but turning right do not be used
+        num_movements = int((states.size()[1]-1)/self.demand_shape) if not self.one_hot else int((states.size()[1]-len(self.phase_pairs))/self.demand_shape)
         batch_size = states.size()[0]
-        acts = states[:, 0].to(torch.int64)
-        states = states[:, 1:]
+        acts = states[:, :1].to(torch.int64) if not self.one_hot else states[:, :len(self.phase_pairs)].to(torch.int64)
+        states = states[:, 1:] if not self.one_hot else states[:, len(self.phase_pairs):]
         states = states.float()
-
+        
         # Expand action index to mark demand input indices
         extended_acts = []
-        for i in range(batch_size):
-            act_idx = acts[i]
-            pair = self.phase_pairs[act_idx]
-            zeros = torch.zeros(num_movements, dtype=torch.int64)
-            zeros[pair[0]] = 1
-            zeros[pair[1]] = 1
-            extended_acts.append(zeros)
-        extended_acts = torch.stack(extended_acts)
+        if not self.one_hot:
+            for i in range(batch_size):
+                act_idx = acts[i]
+                pair = self.phase_pairs[act_idx]
+                zeros = torch.zeros(num_movements, dtype=torch.int64)
+                zeros[pair[0]] = 1
+                zeros[pair[1]] = 1
+                extended_acts.append(zeros)
+            extended_acts = torch.stack(extended_acts)
+        else:
+            extended_acts = acts
         phase_embeds = torch.sigmoid(self.p(extended_acts))
 
         phase_demands = []
+        # if num_movements == 12:
+        #     order_lane = [0,1,3,4,6,7,9,10] # remove turning_right phase
+        # else:
+        #     order_lane = [i for i in range(num_movements)]
+        # for idx, i in enumerate(order_lane):
         for i in range(num_movements):
+            # phase = phase_embeds[:, idx]  # size 4
             phase = phase_embeds[:, i]  # size 4
             demand = states[:, i:i+self.demand_shape]
             demand = torch.sigmoid(self.d(demand))    # size 4
             phase_demand = torch.cat((phase, demand), -1)
             phase_demand_embed = F.relu(self.lane_embedding(phase_demand))
             phase_demands.append(phase_demand_embed)
-        phase_demands = torch.stack(phase_demands, 1)
+        phase_demands_old = torch.stack(phase_demands, 1)
+        # turn direction from NESW to ESWN
+        if num_movements == 8:
+            phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
+        elif num_movements == 12:
+            phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
+        # phase_demands = torch.stack(phase_demands, 1)
+
 
         pairs = []
         for pair in self.phase_pairs:
@@ -360,5 +338,13 @@ class FRAP(nn.Module):
 
         # Phase score
         combine_features = torch.reshape(combine_features, (batch_size, self.oshape, self.oshape - 1))
-        q_values = torch.sum(combine_features, dim=-1)
-        return self.head(q_values)
+        q_values = (lambda x: torch.sum(x, dim=2))(combine_features) # (b,8)
+        return q_values
+        
+
+    def forward(self, states, train=True):
+        if train:
+            return self._forward(states)
+        else:
+            with torch.no_grad():
+                return self._forward(states)

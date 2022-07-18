@@ -50,9 +50,7 @@ class MPLightAgent(RLAgent):
         self.one_hot = Registry.mapping['world_mapping']['traffic_setting'].param['one_hot']
         self.action_space_list = [gym.spaces.Discrete(len(x.phases)) for x in self.world.intersections]
         # create competition matrix
-        # map_name = self.world.intersections[0].map_name
-        # TODO how to get map_name dynamically
-        map_name = 'hz1x1'
+        map_name = self.dic_traffic_env_conf.param['dataset_name']
         self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
         self.comp_mask = self.relation()
         self.valid_acts = self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
@@ -64,7 +62,6 @@ class MPLightAgent(RLAgent):
         action_interval = Registry.mapping['trainer_mapping']['trainer_setting'].param['action_interval']
         total_steps = episodes * steps / action_interval
         self.explorer = SharedEpsGreedy(
-            # TODO check what does those params mean
                 self.dic_agent_conf.param["eps_start"],
                 self.dic_agent_conf.param["eps_end"],
                 self.sub_agents*total_steps,
@@ -335,7 +332,7 @@ class MPLightAgent(RLAgent):
         self.agents_iner.observe(obs, rewards, dones, reset)
                 
     def _build_model(self):
-        self.model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.phase_pairs, self.comp_mask)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         agents = MPLight_InerAgent(self.model, self.optimizer, self.replay_buffer, self.gamma, self.explorer,
                         minibatch_size=self.batch_size, replay_start_size=self.batch_size, 
@@ -380,8 +377,8 @@ class MPLight_InerAgent(DQN):
         super().__init__(q_function, optimizer, replay_buffer, gamma, explorer,
                          minibatch_size=minibatch_size, replay_start_size=replay_start_size, phi=phi,
                          target_update_interval=target_update_interval, update_interval=update_interval)
-        self.batch_last_state = None
-        self.batch_last_action = None
+        # self.batch_last_state = None
+        # self.batch_last_action = None
 
     def act(self, obs, valid_acts=None, reverse_valid=None, test=False):
         return self.batch_act(obs, valid_acts=valid_acts, reverse_valid=reverse_valid, test=test)
@@ -391,7 +388,7 @@ class MPLight_InerAgent(DQN):
         self.batch_observe(obs, reward, done, reset)
 
     def batch_act(self, batch_obs, valid_acts=None, reverse_valid=None, test=False):
-        self.training = not test
+        # self.training = not test
         if valid_acts is None: 
             return super(MPLight_InerAgent, self).batch_act(batch_obs)
         with torch.no_grad(), evaluating(self.model):
@@ -435,13 +432,13 @@ class MPLight_InerAgent(DQN):
 
         
 class FRAP(nn.Module):
-    def __init__(self, dic_agent_conf, output_shape, phase_pairs, competition_mask):
+    def __init__(self, dic_agent_conf, dic_traffic_env_conf, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
         self.oshape = output_shape
         self.phase_pairs = phase_pairs
         self.comp_mask = competition_mask
         self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
-
+        self.one_hot = dic_traffic_env_conf.param['one_hot']
         self.d_out = 4      # units in demand input layer
         self.p_out = 4      # size of phase embedding
         self.lane_embed_units = 16
@@ -467,22 +464,25 @@ class FRAP(nn.Module):
         :params states: [agents, ob_length]
         ob_length:concat[len(one_phase),len(intersection_lane)]
         '''
-        num_movements = int((states.size()[1]-1)/self.demand_shape)
+        num_movements = num_movements = int((states.size()[1]-1)/self.demand_shape) if not self.one_hot else int((states.size()[1]-len(self.phase_pairs))/self.demand_shape)
         batch_size = states.size()[0]
-        acts = states[:, 0].to(torch.int64)
-        states = states[:, 1:]
+        acts = states[:, 0].to(torch.int64) if not self.one_hot else states[:, :len(self.phase_pairs)].to(torch.int64)
+        states = states[:, 1:] if not self.one_hot else states[:, len(self.phase_pairs):]
         states = states.float()
 
         # Expand action index to mark demand input indices
         extended_acts = []
-        for i in range(batch_size):
-            act_idx = acts[i]
-            pair = self.phase_pairs[act_idx]
-            zeros = torch.zeros(num_movements, dtype=torch.int64)
-            zeros[pair[0]] = 1
-            zeros[pair[1]] = 1
-            extended_acts.append(zeros)
-        extended_acts = torch.stack(extended_acts)
+        if not self.one_hot:
+            for i in range(batch_size):
+                act_idx = acts[i]
+                pair = self.phase_pairs[act_idx]
+                zeros = torch.zeros(num_movements, dtype=torch.int64)
+                zeros[pair[0]] = 1
+                zeros[pair[1]] = 1
+                extended_acts.append(zeros)
+            extended_acts = torch.stack(extended_acts)
+        else:
+            extended_acts = acts
         phase_embeds = torch.sigmoid(self.p(extended_acts))
 
         phase_demands = []
@@ -493,7 +493,13 @@ class FRAP(nn.Module):
             phase_demand = torch.cat((phase, demand), -1)
             phase_demand_embed = F.relu(self.lane_embedding(phase_demand))
             phase_demands.append(phase_demand_embed)
-        phase_demands = torch.stack(phase_demands, 1)
+        phase_demands_old = torch.stack(phase_demands, 1)
+        # turn direction from NESW to ESWN
+        if num_movements == 8:
+            phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
+        elif num_movements == 12:
+            phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
+        
 
         pairs = []
         for pair in self.phase_pairs:

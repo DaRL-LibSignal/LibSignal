@@ -43,7 +43,7 @@ logger:
   save_model: True
   save_rate: 20
   train_model: True
-  test_model: True
+  test_model: False
   load_model: False
 
 traffic:
