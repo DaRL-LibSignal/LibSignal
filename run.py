@@ -20,9 +20,9 @@ parser.add_argument('--seed', type=int, default=None, help="seed for pytorch bac
 parser.add_argument('--debug', type=bool, default=True)
 
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
-parser.add_argument('-a', '--agent', type=str, default="maxpressure", help="agent type of agents in RL environment")
-parser.add_argument('-w', '--world', type=str, default="sumo", help="simulator type")
-parser.add_argument('-n', '--network', type=str, default="sumo1x1", help="network name")
+parser.add_argument('-a', '--agent', type=str, default="frap", help="agent type of agents in RL environment")
+parser.add_argument('-w', '--world', type=str, default="cityflow", help="simulator type")
+parser.add_argument('-n', '--network', type=str, default="cityflow1x1", help="network name")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
 
 

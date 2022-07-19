@@ -35,8 +35,8 @@ class FixedTimeAgent(BaseAgent):
         # dirrerent datasets have the same t_fixed
         self.t_fixed = Registry.mapping['model_mapping']['setting'].param['t_fixed']
 
-        def __repr__(self):
-            return 'FixedTime Agent has no Network model'
+    def __repr__(self):
+        return 'FixedTime Agent has no Network model'
         
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]

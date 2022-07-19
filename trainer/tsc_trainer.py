@@ -57,7 +57,7 @@ class TSCTrainer(BaseTrainer):
 
     def create_metric(self):
         lane_metrics = ['rewards', 'queue', 'delay']
-        world_metrics = ['real avg travel time', 'throughput', 'plan avg travel time']
+        world_metrics = ['real avg travel time', 'throughput']
         self.metric = Metric(lane_metrics, world_metrics, self.world, self.agents)
 
     def create_agents(self):
@@ -149,15 +149,13 @@ class TSCTrainer(BaseTrainer):
             else:
                 mean_loss = 0
             
-            # sumo env has 2 travel time: [real travel time, planned travel time(aligned with Cityflow)]
-            self.writeLog("TRAIN", e, self.metric.real_average_travel_time(), self.metric.plan_average_travel_time(),\
+            self.writeLog("TRAIN", e, self.metric.real_average_travel_time(),\
                 mean_loss, self.metric.rewards(), self.metric.queue(), self.metric.delay(), self.metric.throughput())
             self.logger.info("step:{}/{}, q_loss:{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(i, self.steps,\
                 mean_loss, self.metric.rewards(), self.metric.queue(), self.metric.delay(), int(self.metric.throughput())))
             if e % self.save_rate == 0:
                 [ag.save_model(e=e) for ag in self.agents]
-            self.logger.info("episode:{}/{}, real avg travel time:{}, planned avg travel time:{}".format(e, self.episodes, self.metric.real_average_travel_time(),\
-                 self.metric.real_average_travel_time()))
+            self.logger.info("episode:{}/{}, real avg travel time:{}".format(e, self.episodes, self.metric.real_average_travel_time()))
             for j in range(len(self.world.intersections)):
                 self.logger.debug("intersection:{}, mean_episode_reward:{}, mean_queue:{}".format(j, self.metric.lane_rewards()[j],\
                      self.metric.lane_queue()[j], self.metric.lane_delay()[j]))
@@ -187,10 +185,10 @@ class TSCTrainer(BaseTrainer):
                 self.metric.update(rewards)
             if all(dones):
                 break
-        self.logger.info("Test step:{}/{}, real travel time :{}, planned travel time:{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(\
-            e, self.episodes, self.metric.real_average_travel_time(), self.metric.plan_average_travel_time(), self.metric.rewards(),\
+        self.logger.info("Test step:{}/{}, travel time :{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(\
+            e, self.episodes, self.metric.real_average_travel_time(), self.metric.rewards(),\
             self.metric.queue(), self.metric.delay(), int(self.metric.throughput())))
-        self.writeLog("TEST", e, self.metric.real_average_travel_time(), self.metric.plan_average_travel_time(),\
+        self.writeLog("TEST", e, self.metric.real_average_travel_time(),\
             100, self.metric.rewards(),self.metric.queue(),self.metric.delay(), self.metric.throughput())
         return self.metric.real_average_travel_time()
 
@@ -218,19 +216,18 @@ class TSCTrainer(BaseTrainer):
                 self.metric.update(rewards)
             if all(dones):
                 break
-        self.logger.info("Final Travel Time is %.4f, Planned Travel Time is %.4f, mean rewards: %.4f,\
+        self.logger.info("Final Travel Time is %.4f, mean rewards: %.4f,\
             queue: %.4f, delay: %.4f, throughput: %d" % (self.metric.real_average_travel_time(), \
-            self.metric.plan_average_travel_time(), self.metric.rewards(), self.metric.queue(),\
-            self.metric.delay(), self.metric.throughput()))
+            self.metric.rewards(), self.metric.queue(), self.metric.delay(), self.metric.throughput()))
         return self.metric
 
-    def writeLog(self, mode, step, travel_time, planned_tt, loss, cur_rwd, cur_queue, cur_delay, cur_throughput):
+    def writeLog(self, mode, step, travel_time, loss, cur_rwd, cur_queue, cur_delay, cur_throughput):
         """
         :param mode: "TRAIN" OR "TEST"
         :param step: int
         """
         res = Registry.mapping['model_mapping']['setting'].param['name'] + '\t' + mode + '\t' + str(
-            step) + '\t' + "%.1f" % travel_time + '\t' + "%.1f" % planned_tt + '\t' + "%.1f" % loss + "\t" +\
+            step) + '\t' + "%.1f" % travel_time + '\t' + "%.1f" % loss + "\t" +\
             "%.2f" % cur_rwd + "\t" + "%.2f" % cur_queue + "\t" + "%.2f" % cur_delay + "\t" + "%d" % cur_throughput
         log_handle = open(self.log_file, "a")
         log_handle.write(res + "\n")

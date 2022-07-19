@@ -30,9 +30,6 @@ class MPLightAgent(RLAgent):
         
         self.gamma = self.dic_agent_conf.param["gamma"]
         self.grad_clip = self.dic_agent_conf.param["grad_clip"]
-        # self.epsilon = self.dic_agent_conf.param["epsilon"]
-        # self.epsilon_min = self.dic_agent_conf.param["epsilon_min"]
-        # self.epsilon_decay = self.dic_agent_conf.param["epsilon_decay"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
         self.num_phases = len(self.dic_traffic_env_conf.param["phases"])
@@ -46,11 +43,11 @@ class MPLightAgent(RLAgent):
         self.rank = rank
         self.sub_agents = len(self.world.intersections)
         self.inter_id = self.world.intersection_ids[self.rank]
-        self.phase = self.dic_traffic_env_conf.param['phase']
-        self.one_hot = self.dic_traffic_env_conf.param['one_hot']
+        self.phase = self.dic_agent_conf.param['phase']
+        self.one_hot = self.dic_agent_conf.param['one_hot']
         self.action_space_list = [gym.spaces.Discrete(len(x.phases)) for x in self.world.intersections]
         # create competition matrix
-        map_name = self.dic_traffic_env_conf.param['dataset_name']
+        map_name = Registry.mapping['command_mapping']['setting'].param['network']
         self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
         self.comp_mask = self.relation()
         self.valid_acts = self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
@@ -137,6 +134,9 @@ class MPLightAgent(RLAgent):
         #         self.ob_length = self.ob_generator.ob_length + 1 # 25
         # else:
         #     self.ob_length = self.ob_generator.ob_length # 24
+
+    def __repr__(self):
+        return self.agents_iner.__repr__()
 
     def reset(self):
         observation_generators = []
@@ -307,9 +307,9 @@ class MPLightAgent(RLAgent):
         #     ran_phase.append(np.random.randint(0, x.n))
         # return ran_phase
 
-    def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
+    def remember(self, last_obs, last_phase, actions, actions_prob, rewards, obs, cur_phase, done, key):
         """pfrl.dqn have automatically implemented this part, so there is no need to implement it."""
-        pass
+        self.do_observe(obs, cur_phase, rewards, done)
     
     def do_observe(self, ob, phase, reward, done):
         # TODO how to handle inregular lane length?
@@ -332,7 +332,7 @@ class MPLightAgent(RLAgent):
         self.agents_iner.observe(obs, rewards, dones, reset)
                 
     def _build_model(self):
-        self.model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         agents = MPLight_InerAgent(self.model, self.optimizer, self.replay_buffer, self.gamma, self.explorer,
                         minibatch_size=self.batch_size, replay_start_size=self.batch_size, 
@@ -351,7 +351,7 @@ class MPLightAgent(RLAgent):
 
 
     def load_model(self, e):
-        model_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+        model_name = os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                   'model', f'{e}_{self.rank}.pt')
         
         self.agents_iner = self._build_model()
@@ -360,7 +360,7 @@ class MPLightAgent(RLAgent):
         tmp_dict.load_state_dict(torch.load(model_name))
 
     def save_model(self, e):
-        path = os.path.join(Registry.mapping['logger_mapping']['output_path'].path, 'model')
+        path = os.path.join(Registry.mapping['logger_mapping']['path'].path, 'model')
         if not os.path.exists(path):
             os.makedirs(path)
         model_name = os.path.join(path, f'{e}_{self.rank}.pt')
@@ -432,13 +432,13 @@ class MPLight_InerAgent(DQN):
 
         
 class FRAP(nn.Module):
-    def __init__(self, dic_agent_conf, dic_traffic_env_conf, output_shape, phase_pairs, competition_mask):
+    def __init__(self, dic_agent_conf, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
         self.oshape = output_shape
         self.phase_pairs = phase_pairs
         self.comp_mask = competition_mask
         self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
-        self.one_hot = dic_traffic_env_conf.param['one_hot']
+        self.one_hot = dic_agent_conf.param['one_hot']
         self.d_out = 4      # units in demand input layer
         self.p_out = 4      # size of phase embedding
         self.lane_embed_units = 16

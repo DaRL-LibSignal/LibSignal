@@ -1,5 +1,5 @@
 includes:
-  - configs/agents/tsc/base.yml
+  - configs/tsc/base.yml
 
 
 model:

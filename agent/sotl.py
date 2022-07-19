@@ -28,17 +28,17 @@ class SOTLAgent(BaseAgent):
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter, ["lane_waiting_count"],
                                                      in_only=True, average='all', negative=True)
-        # self.queue = LaneVehicleGenerator(self.world, self.inter,
-        #                                              ["lane_waiting_count"], in_only=True,
-        #                                              negative=False)
-        # self.delay = LaneVehicleGenerator(self.world, self.inter,
-        #                                              ["lane_delay"], in_only=True,
-        #                                              negative=False)
+        self.queue = LaneVehicleGenerator(self.world, self.inter,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter,
+                                                     ["lane_delay"], in_only=True,
+                                                     negative=False)
         self.action_space = gym.spaces.Discrete(len(self.inter.phases))
 
 
-        def __repr__(self):
-            return 'SOTL Agent has no Network model'
+    def __repr__(self):
+        return 'SOTL Agent has no Network model'
 
     def reset(self):
         inter_id = self.world.intersection_ids[self.rank]
@@ -79,7 +79,7 @@ class SOTLAgent(BaseAgent):
         lane_waiting_count = self.world.get_info("lane_waiting_count")
         assert phase[-1] == self.inter.current_phase
         action = self.inter.current_phase
-        # TODO: we assume current_phase_time always greater than yellow_Phase_time
+        # Note: we assume current_phase_time always greater than yellow_Phase_time
         if self.inter.current_phase_time >= self.t_min:
             num_green_vehicles = sum([lane_waiting_count[lane] for
                                         lane in self.inter.phase_available_startlanes[self.inter.current_phase]])

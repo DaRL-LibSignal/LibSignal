@@ -80,6 +80,13 @@ def modify_config_file(path, config):
             f.writelines(contents)
     else:
         raise NotImplementedError('Simulator environment not implemented')
+    
+    # config other world settings
+    other_world_settings = dict()
+    for k in param.keys():
+        if k not in path_config.keys():
+            other_world_settings[k] = param.get(k)
+    return other_world_settings
 
 def build_config(args):
     """
@@ -153,7 +160,7 @@ def merge_dicts(dict1, dict2):
                 duplicates.update({k: v})
     return return_dict, duplicates
 
-def load_config_dict(config_path):
+def load_config_dict(config_path, other_world_settings=None):
     """
     load .cfg file at config_path
     """
@@ -179,6 +186,8 @@ def load_config_dict(config_path):
                     except NameError:
                         val = rhs.strip().strip('\n')
                     path_config.update({lhs.strip().strip('\n'): val})
+    if other_world_settings is not None:
+        path_config.update(other_world_settings)
     return path_config
 
 def get_output_file_path(config):

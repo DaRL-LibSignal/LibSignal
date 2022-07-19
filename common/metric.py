@@ -76,8 +76,5 @@ class Metric(object):
     def real_average_travel_time(self):
         return self.world.get_average_travel_time()[0]
     
-    def plan_average_travel_time(self):
-        return self.world.get_average_travel_time()[1]
-    
 
     

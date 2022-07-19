@@ -17,8 +17,8 @@ from agent import utils
 class FRAP_DQNAgent(RLAgent):
     def __init__(self, world, rank):
         super().__init__(world,world.intersection_ids[rank])
-        self.dic_agent_conf = Registry.mapping['model_mapping']['model_setting']
-        self.dic_traffic_env_conf = Registry.mapping['world_mapping']['traffic_setting']
+        self.dic_agent_conf = Registry.mapping['model_mapping']['setting']
+        self.dic_traffic_env_conf = Registry.mapping['world_mapping']['setting']
         
         self.gamma = self.dic_agent_conf.param["gamma"]
         self.grad_clip = self.dic_agent_conf.param["grad_clip"]
@@ -29,15 +29,15 @@ class FRAP_DQNAgent(RLAgent):
         self.batch_size = self.dic_agent_conf.param["batch_size"]
         self.num_phases = len(self.dic_traffic_env_conf.param["phases"])
         self.num_actions = len(self.dic_traffic_env_conf.param["phases"])
-        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
+        self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
         self.world = world
         self.sub_agents = 1
         self.rank = rank
 
-        self.phase = self.dic_traffic_env_conf.param['phase']
-        self.one_hot = self.dic_traffic_env_conf.param['one_hot']
+        self.phase = self.dic_agent_conf.param['phase']
+        self.one_hot = self.dic_agent_conf.param['one_hot']
 
         # get generator for each Agent
         self.inter_id = self.world.intersection_ids[self.rank]
@@ -58,7 +58,7 @@ class FRAP_DQNAgent(RLAgent):
                                                      ["lane_delay"], in_only=True, average="all",
                                                      negative=False)
 
-        map_name = self.dic_traffic_env_conf.param['dataset_name']
+        map_name = Registry.mapping['command_mapping']['setting'].param['network']
         self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
         self.comp_mask = self.relation()
         self.dic_phase_expansion = None
@@ -73,6 +73,9 @@ class FRAP_DQNAgent(RLAgent):
         self.optimizer = torch.optim.Adam(
             self.model.parameters(), lr=self.learning_rate, eps=1e-7)
         self.criterion = nn.MSELoss(reduction='mean')
+
+    def __repr__(self):
+        return self.model.__repr__()
 
     def reset(self):
         self.inter_id = self.world.intersection_ids[self.rank]
@@ -109,7 +112,7 @@ class FRAP_DQNAgent(RLAgent):
 
 
     def _build_model(self):
-        model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
+        model = FRAP(self.dic_agent_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         return model
 
     def get_ob(self):
@@ -162,8 +165,8 @@ class FRAP_DQNAgent(RLAgent):
         weights = self.model.state_dict()
         self.target_model.load_state_dict(weights)
 
-    def remember(self, last_ob, last_phase, action, reward, cur_ob, cur_phase, key):
-        self.replay_buffer.append((key, (last_ob, last_phase, action, reward, cur_ob, cur_phase)))
+    def remember(self, last_obs, last_phase, actions, actions_prob, rewards, obs, cur_phase, done, key):
+        self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
 
     def _batchwise(self, samples):
         # (batch_size,12)
@@ -217,15 +220,15 @@ class FRAP_DQNAgent(RLAgent):
 
     def load_model(self, e):
         model_name = os.path.join(
-            Registry.mapping['logger_mapping']['output_path'].path, 'model', f'{e}_{self.rank}.pt')
-        self.model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+            Registry.mapping['logger_mapping']['path'].path, 'model', f'{e}_{self.rank}.pt')
+        self.model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
         self.model.load_state_dict(torch.load(model_name))
-        self.target_model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.target_model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
         self.target_model.load_state_dict(torch.load(model_name))
 
     def save_model(self, e):
         path = os.path.join(
-            Registry.mapping['logger_mapping']['output_path'].path, 'model')
+            Registry.mapping['logger_mapping']['path'].path, 'model')
         if not os.path.exists(path):
             os.makedirs(path)
         model_name = os.path.join(path, f'{e}_{self.rank}.pt')
@@ -233,14 +236,14 @@ class FRAP_DQNAgent(RLAgent):
 
 
 class FRAP(nn.Module):
-    def __init__(self, dic_agent_conf, dic_traffic_env_conf, dic_phase_expansion, output_shape, phase_pairs, competition_mask):
+    def __init__(self, dic_agent_conf, dic_phase_expansion, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
         self.dic_phase_expansion = dic_phase_expansion
         self.oshape = output_shape
         self.phase_pairs = phase_pairs
         self.comp_mask = competition_mask
         self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
-        self.one_hot = dic_traffic_env_conf.param['one_hot']
+        self.one_hot = dic_agent_conf.param['one_hot']
         self.d_out = 4      # units in demand input layer
         self.p_out = 4      # size of phase embedding
         self.lane_embed_units = 16

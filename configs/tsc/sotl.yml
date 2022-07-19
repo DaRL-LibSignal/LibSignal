@@ -4,8 +4,8 @@ includes:
 
 model:
   name: sotl
-  min_green_vehicle: 5
-  max_red_vehicle: 5
+  min_green_vehicle: 3
+  max_red_vehicle: 6
   t_min: 5
 
 
