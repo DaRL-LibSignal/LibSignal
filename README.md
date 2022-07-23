@@ -142,3 +142,15 @@ Supporing parameters:
 - <font color=red> prefix:  </font> the number of predix in this running process
 
 - <font color=red> seed:  </font> seed for pytorch backend
+  </br></br>
+
+
+# Maintaining plan
+
+*<font size=4>To ensure the stability of our traffic signal testbed, we will first push new code onto **dev** branch, after validation, then merge it into the master branch. </font>*
+
+| **UPdate index** 	| **Date** 	| **Status** 	| **Merged** 	|
+|:----------------:	|:--------:	|:----------:	|:----------:	|
+|   **MPLight implementation**  |  July-18-2022 |     &check;   |    &cross;        	|
+
+
