@@ -2,7 +2,28 @@ import numpy as np
 import torch
 import torch.nn as nn
 from collections import OrderedDict
+from pfrl import explorers
 
+class SharedEpsGreedy(explorers.LinearDecayEpsilonGreedy):
+    def select_action(self, t, greedy_action_func, action_value=None, num_acts=None):
+        self.epsilon = self.compute_epsilon(t)
+        if num_acts is None:
+            fn = self.random_action_func
+        else:
+            fn = lambda: np.random.randint(num_acts)
+        a, greedy = self.select_action_epsilon_greedily(fn, greedy_action_func)
+        greedy_str = "greedy" if greedy else "non-greedy"
+        # print("t:%s a:%s %s", t, a, greedy_str)
+        if num_acts is None:
+            return a
+        else:
+            return a, greedy
+
+    def select_action_epsilon_greedily(self, random_action_func, greedy_action_func):
+        if np.random.rand() < self.epsilon:
+            return random_action_func(), False
+        else:
+            return greedy_action_func(), True
 
 def idx2onehot(arr, spices, dict_phase=None):
     if not dict_phase:

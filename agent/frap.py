@@ -52,19 +52,22 @@ class FRAP_DQNAgent(RLAgent):
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_waiting_count"], in_only=True, average="all",
                                                      negative=True)
-        # phase:12-4=8
-        if self.phase:
-            if self.one_hot:
-                if self.num_phases == 2:
-                    self.ob_length = self.ob_generator.ob_length - 4 + 4 # 8+4=12
-                    self.dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion_4_lane"]
-                else:
-                    self.ob_length = self.ob_generator.ob_length - 4 + 8 # 8+8=16
-                    self.dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion"]
-            else:
-                self.ob_length = self.ob_generator.ob_length - 4 + 1 # 8+1=9
-        else:
-            self.ob_length = self.ob_generator.ob_length - 4 # 12-4=8
+        
+        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_delay"], in_only=True, average="all",
+                                                     negative=False)
+
+        map_name = self.dic_traffic_env_conf.param['network']
+        self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
+        self.comp_mask = self.relation()
+        self.dic_phase_expansion = None
+        # if self.phase:
+        #     if self.one_hot:
+        #         if self.ob_generator.ob_length == 8:
+        #             self.dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion_8"]
 
         self.model = self._build_model()
         self.target_model = self._build_model()
@@ -72,12 +75,6 @@ class FRAP_DQNAgent(RLAgent):
         self.optimizer = torch.optim.Adam(
             self.model.parameters(), lr=self.learning_rate, eps=1e-7)
         self.criterion = nn.MSELoss(reduction='mean')
-        # self.optimizer = optim.RMSprop(self.model.parameters(),
-        #                                lr=self.learning_rate,
-        #                                alpha=0.9, centered=False, eps=1e-7)
-
-        # self.action = 0
-        # self.last_action = 0
 
     def reset(self):
         self.inter_id = self.world.intersection_ids[self.rank]
@@ -96,36 +93,26 @@ class FRAP_DQNAgent(RLAgent):
         self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_delay"], in_only=True, average="all",
                                                      negative=False)
+    
+    def relation(self):
+        comp_mask = []
+        for i in range(len(self.phase_pairs)):
+            zeros = np.zeros(len(self.phase_pairs) - 1, dtype=np.int)
+            cnt = 0
+            for j in range(len(self.phase_pairs)):
+                if i == j: continue
+                pair_a = self.phase_pairs[i]
+                pair_b = self.phase_pairs[j]
+                if len(list(set(pair_a + pair_b))) == 3: zeros[cnt] = 1
+                cnt += 1
+            comp_mask.append(zeros)
+        comp_mask = torch.from_numpy(np.asarray(comp_mask))
+        return comp_mask 
+
 
     def _build_model(self):
-        model = FRAP(
-            self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.ob_length, self.num_phases)
+        model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         return model
-
-    # # TODO check whether to save
-    # def convert_state_to_input(self, s):
-    #     inputs = {}
-    #     # get one hot dic
-    #     if self.num_phases == 2:
-    #         dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion_4_lane"]
-    #     else:
-    #         dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion"]
-    #     for feature in self.dic_traffic_env_conf.param["list_state_feature"]:
-    #         if feature == "cur_phase":
-    #             # size:(1,action_space)--(1,8)
-    #             inputs[feature] = np.array([dic_phase_expansion[s[feature]+1]])
-    #         else:
-    #             # size:(1,lane_num)--(1,12)
-    #             inputs[feature] = np.array(s[feature])
-    #     return inputs
-
-    # # TODO check whether to save
-    # def to_tensor(self, state):
-    #     output = {}
-    #     for i in state:
-    #         output[i] = torch.from_numpy(state[i]).float()
-    #         # output[i] = torch.tensor(state[i], dtype=torch.float32)
-    #     return output
 
     def get_ob(self):
         x_obs = []
@@ -137,7 +124,7 @@ class FRAP_DQNAgent(RLAgent):
         rewards = []
         rewards.append(self.reward_generator.generate())
         # TODO check whether to multiply 12
-        rewards = np.squeeze(np.array(rewards)) * 12
+        rewards = np.squeeze(np.array(rewards)) * self.num_phases
         return rewards
 
     def get_phase(self):
@@ -155,17 +142,18 @@ class FRAP_DQNAgent(RLAgent):
             if np.random.rand() <= self.epsilon:
                 return self.sample()
         # 12->8 
-        ob = utils.remove_right_lane(ob)
+        # ob = utils.remove_right_lane(ob)
         if self.phase:
             if self.one_hot:
                 feature_p = utils.idx2onehot(phase, self.action_space.n,self.dic_phase_expansion)
-                feature = np.concatenate([ob, feature_p], axis=1)
+                # feature_p = utils.idx2onehot(phase, self.action_space.n)
+                feature = np.concatenate([feature_p, ob], axis=1)
             else:
-                feature = np.concatenate([ob, phase], axis=1)
+                feature = np.concatenate([phase.reshape(1,-1), ob], axis=1)
         else:
             feature = ob
         observation = torch.tensor(feature, dtype=torch.float32)
-        actions = self.model(observation, train=True)
+        actions = self.model(observation, train=True) #1, 8
         actions = actions.clone().detach().numpy()
         return np.argmax(actions, axis=1)
 
@@ -181,25 +169,27 @@ class FRAP_DQNAgent(RLAgent):
 
     def _batchwise(self, samples):
         # (batch_size,12)
-        obs_t_all=[item[1][0] for item in samples]
-        obs_tp_all=[item[1][4] for item in samples]
-        obs_t = [utils.remove_right_lane(x) for x in obs_t_all]
-        obs_tp = [utils.remove_right_lane(x) for x in obs_tp_all]
-        obs_t = np.concatenate(obs_t) # (batch,8)
-        obs_tp = np.concatenate(obs_tp) # (batch,8)
+        obs_t_all=[item[1][0] for item in samples] # last_obs(batch, 1, lane_num)
+        obs_tp_all=[item[1][4] for item in samples] # cur_obs
+        # obs_t = [utils.remove_right_lane(x) for x in obs_t_all]
+        # obs_tp = [utils.remove_right_lane(x) for x in obs_tp_all]
+        obs_t = obs_t_all
+        obs_tp = obs_tp_all
+        obs_t = np.concatenate(obs_t) # (batch,lane_num)
+        obs_tp = np.concatenate(obs_tp) # (batch,lane_num)
         if self.phase:
             if self.one_hot:
                 phase_t = np.concatenate([utils.idx2onehot(item[1][1], self.action_space.n, self.dic_phase_expansion) for item in samples])
                 phase_tp = np.concatenate([utils.idx2onehot(item[1][5], self.action_space.n, self.dic_phase_expansion) for item in samples])
             else:
-                phase_t = np.concatenate([item[1][1] for item in samples])
-                phase_tp = np.concatenate([item[1][5] for item in samples])
-            feature_t = np.concatenate([obs_t, phase_t], axis=1) # (batch,16)
-            feature_tp = np.concatenate([obs_tp, phase_tp], axis=1) # (batch,16)
+                phase_t = np.concatenate([item[1][1].reshape(1,-1) for item in samples]) # (batch, 1)
+                phase_tp = np.concatenate([item[1][5].reshape(1,-1) for item in samples])
+            feature_t = np.concatenate([phase_t, obs_t], axis=1) # (batch,ob_length)
+            feature_tp = np.concatenate([phase_tp, obs_tp], axis=1)
         else:
             feature_t = obs_t
             feature_tp = obs_tp
-        # (batch_size,16)
+        # (batch_size, ob_length)
         state_t = torch.tensor(feature_t, dtype=torch.float32)
         state_tp = torch.tensor(feature_tp, dtype=torch.float32)
         # rewards:(64)
@@ -213,18 +203,12 @@ class FRAP_DQNAgent(RLAgent):
             return
         samples = random.sample(self.replay_buffer, self.batch_size)
         b_t, b_tp, rewards, actions = self._batchwise(samples)
-        out = self.target_model(b_tp, train=False) # (batch_size,8)
+        out = self.target_model(b_tp, train=False) # (batch_size,num_actions)
         target = rewards + self.gamma * torch.max(out, dim=1)[0] # (batch_size)
-        target_f = self.model(b_t, train=False)
+        target_f = self.model(b_t, train=False) # (batch_size,num_actions)
         for i, action in enumerate(actions):
             target_f[i][action] = target[i]
         loss = self.criterion(self.model(b_t, train=True), target_f)
-        # for i in range(self.batch_size):
-        #     out = self.target_model(next_input, train=False)
-        #     target = reward + self.gamma * torch.max(out, dim=1)[0]
-        #     target_f = self.model(input_list, train=False)
-        #     target_f[0][action] = target[0]
-        #     loss = self.criterion(self.model(input_list, train=True), target_f)
         self.optimizer.zero_grad()
         loss.backward()
         clip_grad_norm_(self.model.parameters(), self.grad_clip)
@@ -236,11 +220,9 @@ class FRAP_DQNAgent(RLAgent):
     def load_model(self, e):
         model_name = os.path.join(
             Registry.mapping['logger_mapping']['output_path'].path, 'model', f'{e}_{self.rank}.pt')
-        self.model = FRAP(
-            self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.ob_length, self.num_phases)
+        self.model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         self.model.load_state_dict(torch.load(model_name))
-        self.target_model = FRAP(
-            self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.ob_length, self.num_phases)
+        self.target_model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         self.target_model.load_state_dict(torch.load(model_name))
 
     def save_model(self, e):
@@ -253,109 +235,116 @@ class FRAP_DQNAgent(RLAgent):
 
 
 class FRAP(nn.Module):
-    def __init__(self, dic_agent_conf, dic_traffic_env_conf, num_actions, ob_length, num_phases):
+    def __init__(self, dic_agent_conf, dic_traffic_env_conf, dic_phase_expansion, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
-        self.num_actions = num_actions
-        self.ob_length = ob_length
-        self.num_phases = num_phases
-        self.dic_traffic_env_conf = dic_traffic_env_conf
-        self.dic_agent_conf = dic_agent_conf
+        self.dic_phase_expansion = dic_phase_expansion
+        self.oshape = output_shape
+        self.phase_pairs = phase_pairs
+        self.comp_mask = competition_mask
+        self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
+        self.one_hot = dic_traffic_env_conf.param['one_hot']
+        self.d_out = 4      # units in demand input layer
+        self.p_out = 4      # size of phase embedding
+        self.lane_embed_units = 16
+        relation_embed_size = 4
 
-        self.embedding_1 = nn.Embedding(2, 4)
-        self.dense = nn.Linear(1, 4)
-        self.lane_embedding = nn.Linear(8, 16)
-        self.relation_embedd = nn.Embedding(2, 4)
-        self.conv_feature = nn.Conv2d(
-            in_channels=32, out_channels=self.dic_agent_conf.param["d_dense"], kernel_size=1)
-        self.conv_relation = nn.Conv2d(
-            in_channels=4, out_channels=self.dic_agent_conf.param["d_dense"], kernel_size=1)
-        self.hidden_layer1 = nn.Conv2d(
-            in_channels=20, out_channels=self.dic_agent_conf.param["d_dense"], kernel_size=1)
-        self.hidden_layer2 = nn.Conv2d(
-            in_channels=20, out_channels=1, kernel_size=1)
+        self.p = nn.Embedding(2, self.p_out)
+        self.d = nn.Linear(self.demand_shape, self.d_out)
 
-    def _forward(self, feature_list):
+        self.lane_embedding = nn.Linear(self.p_out + self.d_out, self.lane_embed_units)
+
+        self.lane_conv = nn.Conv2d(2*self.lane_embed_units, 20, kernel_size=(1, 1))
+
+        self.relation_embedding = nn.Embedding(2, relation_embed_size)
+        self.relation_conv = nn.Conv2d(relation_embed_size, 20, kernel_size=(1, 1))
+
+        self.hidden_layer = nn.Conv2d(20, 20, kernel_size=(1, 1))
+        self.before_merge = nn.Conv2d(20, 1, kernel_size=(1, 1))
+
+    def _forward(self, states):
         '''
-        feature_list:(batch_size,16)
-            [:8]: lane_num_vehicle
-            [8:]: cur_phase
+        :params states: [agents, ob_length]
+        ob_length:concat[len(one_phase),len(intersection_lane)]
         '''
-        batch_size, _ = feature_list.shape
-        p = F.sigmoid(self.embedding_1(feature_list[::,8:].long())) # (b,8,4)
-        dic_lane = {}
-        for i, m in enumerate(self.dic_traffic_env_conf.param["list_lane_order"]):
-            tmp_vec = F.sigmoid(self.dense(feature_list[::,i:i+1])) # (b,4)
-            dic_lane[m] = torch.cat([tmp_vec, p[:,i]],dim=1) # (b,8)
-        if self.num_actions == 8:
-            list_phase_pressure = []
-            for phase in self.dic_traffic_env_conf.param["phases"]:
-                m1, m2 = phase.split("_")
-                tmp1 = F.relu(self.lane_embedding(dic_lane[m1])) #(b,16)
-                tmp2 = F.relu(self.lane_embedding(dic_lane[m2])) #(b,16)
-                list_phase_pressure.append(tmp1.add(tmp2))
+        # if lane_num=12,then num_movements=12, but turning right do not be used
+        num_movements = int((states.size()[1]-1)/self.demand_shape) if not self.one_hot else int((states.size()[1]-len(self.phase_pairs))/self.demand_shape)
+        batch_size = states.size()[0]
+        acts = states[:, :1].to(torch.int64) if not self.one_hot else states[:, :len(self.phase_pairs)].to(torch.int64)
+        states = states[:, 1:] if not self.one_hot else states[:, len(self.phase_pairs):]
+        states = states.float()
+        
+        # Expand action index to mark demand input indices
+        extended_acts = []
+        if not self.one_hot:
+            for i in range(batch_size):
+                act_idx = acts[i]
+                pair = self.phase_pairs[act_idx]
+                zeros = torch.zeros(num_movements, dtype=torch.int64)
+                zeros[pair[0]] = 1
+                zeros[pair[1]] = 1
+                extended_acts.append(zeros)
+            extended_acts = torch.stack(extended_acts)
+        else:
+            extended_acts = acts
+        phase_embeds = torch.sigmoid(self.p(extended_acts))
 
-        elif self.num_actions == 4:
-            list_phase_pressure = []
-            for phase in self.dic_traffic_env_conf.param["phases"]:
-                m1, m2 = phase.split("_")
-                list_phase_pressure.append(torch.cat([dic_lane[m1], dic_lane[m2]],dim=1))
+        phase_demands = []
+        # if num_movements == 12:
+        #     order_lane = [0,1,3,4,6,7,9,10] # remove turning_right phase
+        # else:
+        #     order_lane = [i for i in range(num_movements)]
+        # for idx, i in enumerate(order_lane):
+        for i in range(num_movements):
+            # phase = phase_embeds[:, idx]  # size 4
+            phase = phase_embeds[:, i]  # size 4
+            demand = states[:, i:i+self.demand_shape]
+            demand = torch.sigmoid(self.d(demand))    # size 4
+            phase_demand = torch.cat((phase, demand), -1)
+            phase_demand_embed = F.relu(self.lane_embedding(phase_demand))
+            phase_demands.append(phase_demand_embed)
+        phase_demands_old = torch.stack(phase_demands, 1)
+        # turn direction from NESW to ESWN
+        if num_movements == 8:
+            phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
+        elif num_movements == 12:
+            phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
+        # phase_demands = torch.stack(phase_demands, 1)
 
-        constant = self.relation(batch_size) # (b,8,7)
-        relation_embedding = self.relation_embedd(constant.long()) # (b,8,7,4)
 
-        # rotate the phase pressure
-        if self.dic_agent_conf.param["rotation"]:
-            list_phase_pressure_recomb = []
-            num_phase = self.num_phases
-            for i in range(num_phase):
-                for j in range(num_phase):
-                    if i != j:
-                        list_phase_pressure_recomb.append(
-                            torch.cat([list_phase_pressure[i], list_phase_pressure[j]],dim=1)) # (b,32)
-            list_phase_pressure_recomb = (torch.stack(list_phase_pressure_recomb)).permute(1,0,2) # (b,56,32)
+        pairs = []
+        for pair in self.phase_pairs:
+            pairs.append(phase_demands[:, pair[0]] + phase_demands[:, pair[1]])
 
-            feature_map = torch.reshape(list_phase_pressure_recomb, shape=(-1, 8, 7, 32)) #(b,8,7,32)
-            lane_conv = F.relu(self.conv_feature(feature_map.permute(0, 3, 1, 2))) #(b,8,7,32)->(b,32,8,7)->(b,20,8,7)
-            relation_embedding = relation_embedding.permute(0, 3, 1, 2) # (b,8,7,4)->(b,4,8,7)
-            if self.dic_agent_conf.param["merge"] == "multiply":
-                relation_conv = self.conv_relation(relation_embedding) # (b,20,8,7)
-                combine_feature = lane_conv*relation_conv # (b,20,8,7)
-            # TODO check two methods
-            elif self.dic_agent_conf.param["merge"] == "concat":
-                relation_conv = self.conv_relation(relation_embedding)
-                combine_feature = torch.cat(lane_conv, relation_conv)
-            elif self.dic_agent_conf.param["merge"] == "weight":
-                relation_conv = self.conv_relation(relation_embedding)
-                tmp_wei = (lambda x: x.repeat(1, 1, 5))(relation_conv)
-                combine_feature = lane_conv*tmp_wei
-            hidden_layer = F.relu(self.hidden_layer1(combine_feature)) # (b,20,8,7)
-            before_merge = self.hidden_layer2(hidden_layer) # (b,1,8,7)
-            before_merge = torch.reshape(before_merge, shape=(-1, 8, 7)) # (b,8,7)
-            q_values = (lambda x: torch.sum(x, dim=2))(before_merge) # (b,8)
+        rotated_phases = []
+        for i in range(len(pairs)):
+            for j in range(len(pairs)):
+                if i != j: rotated_phases.append(torch.cat((pairs[i], pairs[j]), -1))
+        rotated_phases = torch.stack(rotated_phases, 1)
+        rotated_phases = torch.reshape(rotated_phases,
+                                       (batch_size, self.oshape, self.oshape - 1, 2 * self.lane_embed_units))
+        rotated_phases = rotated_phases.permute(0, 3, 1, 2)  # Move channels up
+        rotated_phases = F.relu(self.lane_conv(rotated_phases))  # Conv-20x1x1  pair demand representation
+
+        # Phase competition mask
+        competition_mask = self.comp_mask.repeat((batch_size, 1, 1))
+        relations = F.relu(self.relation_embedding(competition_mask))
+        relations = relations.permute(0, 3, 1, 2)  # Move channels up
+        relations = F.relu(self.relation_conv(relations))  # Pair demand representation
+
+        # Phase pair competition
+        combine_features = rotated_phases * relations
+        combine_features = F.relu(self.hidden_layer(combine_features))  # Phase competition representation
+        combine_features = self.before_merge(combine_features)  # Pairwise competition result
+
+        # Phase score
+        combine_features = torch.reshape(combine_features, (batch_size, self.oshape, self.oshape - 1))
+        q_values = (lambda x: torch.sum(x, dim=2))(combine_features) # (b,8)
         return q_values
+        
 
-    def forward(self, feature_list, train=True):
+    def forward(self, states, train=True):
         if train:
-            return self._forward(feature_list)
+            return self._forward(states)
         else:
             with torch.no_grad():
-                return self._forward(feature_list)
-
-    def relation(self, batch_size):
-        relations = []
-        for p1 in self.dic_traffic_env_conf.param["phases"]:
-            zeros = [0, 0, 0, 0, 0, 0, 0]
-            count = 0
-            for p2 in self.dic_traffic_env_conf.param["phases"]:
-                if p1 == p2:
-                    continue
-                m1 = p1.split("_")
-                m2 = p2.split("_")
-                if len(list(set(m1 + m2))) == 3:
-                    zeros[count] = 1
-                count += 1
-            relations.append(zeros)
-        relations = np.array(relations).reshape(8, 7)
-        constant = torch.tensor(relations, dtype=torch.float32)
-        constant = constant.repeat(batch_size, 1, 1)
-        return constant
+                return self._forward(states)

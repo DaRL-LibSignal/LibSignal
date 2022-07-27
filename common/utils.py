@@ -282,5 +282,9 @@ def build_config(args):
     args_dict = vars(args)
     for key in args_dict:
         config.update({key: args_dict[key]})  # short access for important param
+
+    # add network(for FRAP and MPLight)
+    cityflow_setting = json.load(open(config['path'], 'r'))
+    config['traffic']['network'] = cityflow_setting['network'] if 'network' in cityflow_setting.keys() else None
     return config
 

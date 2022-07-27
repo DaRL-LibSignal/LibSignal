@@ -3,27 +3,33 @@ includes:
 
 model:
   name: mplight
+  train_model: True
   n_layers: 2
   rotation: true
   conflict_matrix: true
   merge: multiply
   d_dense: 20
   learning_rate: 0.001
-  batch_size: 64
-  gamma: 0.95
-  epsilon: 0.1
-  epsilon_decay: 0.995
-  epsilon_min: 0.01
+  batch_size: 32
+  gamma: 0.99
+  epsilon: 0.5
+  epsilon_decay: 0.99
+  epsilon_min: 0.05
   grad_clip: 5.0
+  eps_start: 1.0
+  eps_end: 0.0
+  eps_decay: 220
+  target_update: 500
+  demand_shape: 1
 
 trainer: 
   thread: 4 
   ngpu: -1 
-  learning_start: 1000
-  buffer_size: 5000 
+  learning_start: -1
+  buffer_size: 10000
   steps: 3600 
   test_steps: 3600 
-  action_interval: 20
+  action_interval: 10
   episodes: 200
   update_model_rate: 1
   update_target_rate: 10
@@ -42,7 +48,7 @@ logger:
   load_model: False
 
 traffic:
-  one_hot: True
+  one_hot: False
   phase: True
   n_leg: 4
   thread_num: 4
@@ -93,3 +99,34 @@ traffic:
   }
 
   phase_expansion_4_lane: {1: [0,0,1,1],2: [1,1,0,0]}
+
+  signal_config: {
+    grid4x4: {
+      phase_pairs: [[1, 7], [2, 8], [1, 2], [7, 8], [4, 10], [5, 11], [10, 11], [4, 5]],
+      valid_acts: null
+    },
+    hz1x1: {
+      # phases: ['ET_WT','NT_ST','EL_WL','NL_SL','WL_WT','EL_ET','SL_ST','NL_NT']
+      # phase_pairs: [[3, 7], [1, 5], [2, 6], [0, 4], [6, 7], [2, 3], [4, 5], [0, 1]],
+      # phases: ['NT_ST','WT_ET','NL_SL','WL_EL','NL_NT','SL_ST','WL_WT','EL_ET']
+      phase_pairs: [[1, 5], [3, 7], [0, 4], [2, 6], [0, 1], [4, 5], [6, 7], [2, 3]],
+      valid_acts: null
+    },
+    hz4x4: {
+      # phases: ['NT_ST','WT_ET','NL_SL','WL_EL','NL_NT','SL_ST','WL_WT','EL_ET']
+      phase_pairs: [[4, 10], [1, 7], [3, 9], [0, 6], [9, 10], [3, 4], [6, 7], [0, 1]],
+      valid_acts: null
+    },
+    cologne1: {
+      phase_pairs: [[1, 7], [2, 8], [4, 10], [5, 11]],
+      valid_acts: null
+    },
+    cologne3: {
+      phase_pairs: [[1, 7], [2, 8], [1, 2], [7, 8], [4, 10], [5, 11], [10, 11], [4, 5], [9, 11]],
+      valid_acts: {
+        GS_cluster_2415878664_254486231_359566_359576: {4: 0, 5: 1, 0: 2, 1: 3},
+        360086: {4: 0, 5: 1, 0: 2, 1: 3},
+        360082: {4: 0, 5: 1, 1: 2}
+      }
+    }
+  }
