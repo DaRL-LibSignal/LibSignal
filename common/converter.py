@@ -90,11 +90,11 @@ def parse_args():
     parser.add_argument("--or_sumonet", type=str,
                         default='grid4x4/grid4x4.net.xml')
     parser.add_argument("--cityflownet", type=str,
-                        default='grid4x4/grid4x4_roadnet_test.json')
+                        default='grid4x4/grid4x4_roadnet_red.json')
     parser.add_argument("--or_sumotraffic", type=str,
                         default='grid4x4/grid4x4.rou.xml')
     parser.add_argument("--cityflowtraffic", type=str,
-                        default='grid4x4/grid4x4_flow_test.json')
+                        default='grid4x4/grid4x4_flow.json')
     parser.add_argument("--sumocfg", type=str,
                         default='grid4x4/grid4x4.sumocfg')
 
