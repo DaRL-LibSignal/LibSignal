@@ -84,6 +84,26 @@ CBEngine currently works stably under the Linux system; we highly recommend user
 
 <br>
 
+### Converter
+<br />
+
+We provide a converter to transform configurations including road net and traffic flow files across CityFlow and SUMO. More details in [converter.py](./common/converter.py)
+
+To convert from CityFlow to SUMO: 
+
+```
+
+python converter.py --typ c2s --or_cityflownet CityFlowNetPath --sumonet ConvertedSUMONetPath --or_cityflowtraffic CityFlowTrafficPath --sumotraffic ConvertedSUMOTrafficPath 
+
+```
+
+To convert from SUMO to CityFlow: 
+```
+python converter.py --typ s2c --or_sumonet SUMONetPath --cityflownet ConvertedCityFlowNetPath --or_sumotraffic SUMOTrafficPath --cityflowtraffic ConvertedCityFlowTrafficPath --sumocfg SUMOConfigs
+```
+After running the code, the converted traffic network files, traffic flow files, and some intermediate files will be generated in the specified folder.
+
+<br>
 
 ## Requirment
 <br />
