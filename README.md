@@ -105,7 +105,7 @@ After running the code, the converted traffic network files, traffic flow files,
 
 <br>
 
-## Requirment
+## Requirement
 <br />
 
 Our code is based on Python version 3.9 and Pytorch version 1.11.0. For example, if your CUDA version is 11.3 you can follow the instruction on [PyTorch](https://pytorch.org/get-started/locally/)
@@ -169,8 +169,10 @@ Supporing parameters:
 
 *<font size=4>To ensure the stability of our traffic signal testbed, we will first push new code onto **dev** branch, after validation, then merge it into the master branch. </font>*
 
-| **UPdate index** 	| **Date** 	| **Status** 	| **Merged** 	|
-|:----------------:	|:--------:	|:----------:	|:----------:	|
-|   **MPLight implementation**  |  July-18-2022 |     &check;   |    &cross;        	|
+| **UPdate index**           | **Date**      | **Status** | **Merged** |
+|----------------------------|---------------|------------|------------|
+| **MPLight implementation** | July-18-2022  | developed  | ✗          |
+| **Libsumo integration**    | August-8-2022 | deleloping | ✗          |
+| **Delay calculation**      | August-8-2022 | deleloping |            |
 
 
