@@ -1,3 +1,7 @@
+"""
+Part of this code is borrowed from RESCO: https://github.com/Pi-Star-Lab/RESCO
+"""
+
 import os
 import sys
 from math import atan2, pi
