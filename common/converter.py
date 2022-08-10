@@ -1,5 +1,7 @@
 """
 Convert to transform configurations across CityFlow and SUMO.
+
+Part of the codes on SUMO-to-CityFlow are borrowed from CityFlow: https://github.com/cityflow-project/CityFlow
 """
 
 import os
