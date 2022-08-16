@@ -43,7 +43,7 @@ logger:
   load_model: False
 
 traffic:
-  one_hot: True
+  one_hot: False
   phase: True
   n_leg: 4
   thread_num: 4
@@ -98,23 +98,31 @@ traffic:
   signal_config: {
     grid4x4: {
       phase_pairs: [[1, 7], [2, 8], [1, 2], [7, 8], [4, 10], [5, 11], [10, 11], [4, 5]],
-      valid_acts: null
+      valid_acts: null,
+      cf_order: {'N': 0,'E': 1,'S': 2, 'W': 3},
+      sumo_order: {'N': 2,'E': 3,'S': 0, 'W': 1}
     },
     hz1x1: {
       # phases: ['ET_WT','NT_ST','EL_WL','NL_SL','WL_WT','EL_ET','SL_ST','NL_NT']
-      # phase_pairs: [[3, 7], [1, 5], [2, 6], [0, 4], [6, 7], [2, 3], [4, 5], [0, 1]],
+      phase_pairs: [[2, 6], [0, 4], [3, 7], [1, 5], [6, 7], [2, 3], [4, 5], [0, 1]],
       # phases: ['NT_ST','WT_ET','NL_SL','WL_EL','NL_NT','SL_ST','WL_WT','EL_ET']
-      phase_pairs: [[1, 5], [3, 7], [0, 4], [2, 6], [0, 1], [4, 5], [6, 7], [2, 3]],
-      valid_acts: null
+      # phase_pairs: [[1, 5], [3, 7], [0, 4], [2, 6], [0, 1], [4, 5], [6, 7], [2, 3]],
+      valid_acts: null,
+      cf_order: {'N': 0,'E': 1,'S': 2, 'W': 3},
+      sumo_order: {'N': 2,'E': 3,'S': 0, 'W': 1}
     },
     hz4x4: {
       # phases: ['NT_ST','WT_ET','NL_SL','WL_EL','NL_NT','SL_ST','WL_WT','EL_ET']
       phase_pairs: [[4, 10], [1, 7], [3, 9], [0, 6], [9, 10], [3, 4], [6, 7], [0, 1]],
-      valid_acts: null
+      valid_acts: null,
+      cf_order: {'N': ,'E': ,'S': , 'W': },
+      sumo_order: {'N': ,'E': ,'S': , 'W': }
     },
     cologne1: {
-      phase_pairs: [[1, 7], [2, 8], [4, 10], [5, 11]],
-      valid_acts: null
+      phase_pairs: [[1, 5], [0, 4], [3, 7], [2, 6]],
+      valid_acts: null,
+      cf_order: {'N': 3,'E': 0,'S': 1, 'W': 2},
+      sumo_order: {'N': 1,'E': 2,'S': 3, 'W': 0}
     },
     cologne3: {
       phase_pairs: [[1, 7], [2, 8], [1, 2], [7, 8], [4, 10], [5, 11], [10, 11], [4, 5], [9, 11]],
@@ -122,6 +130,16 @@ traffic:
         GS_cluster_2415878664_254486231_359566_359576: {4: 0, 5: 1, 0: 2, 1: 3},
         360086: {4: 0, 5: 1, 0: 2, 1: 3},
         360082: {4: 0, 5: 1, 1: 2}
+      },
+      cf_order: {
+        '360082': {'N': -1,'E': 0,'S': 1, 'W': 2},
+        '360086': {'N': 3,'E': 0,'S': 1, 'W': 2},
+        'cluster_2415878664_254486231_359566_359576': {'N': 3,'E': 0,'S': 1, 'W': 2}
+        },
+      sumo_order: {
+        '360082': {'N': -1,'E': 1,'S': 2, 'W': 0},
+        '360086': {'N': 1,'E': 2,'S': 3, 'W': 0},
+        'cluster_2415878664_254486231_359566_359576': {'N': 1,'E': 2,'S': 3, 'W': 0}
       }
     }
   }

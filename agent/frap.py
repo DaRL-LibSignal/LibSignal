@@ -29,8 +29,6 @@ class FRAP_DQNAgent(RLAgent):
         self.epsilon_decay = self.dic_agent_conf.param["epsilon_decay"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
-        self.num_phases = len(self.dic_traffic_env_conf.param["phases"])
-        self.num_actions = len(self.dic_traffic_env_conf.param["phases"])
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
@@ -64,6 +62,8 @@ class FRAP_DQNAgent(RLAgent):
         self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
         self.comp_mask = self.relation()
         self.dic_phase_expansion = None
+        self.num_phases = len(self.phase_pairs)
+        self.num_actions = len(self.phase_pairs)
         # if self.phase:
         #     if self.one_hot:
         #         if self.ob_generator.ob_length == 8:
@@ -302,12 +302,13 @@ class FRAP(nn.Module):
             phase_demand = torch.cat((phase, demand), -1)
             phase_demand_embed = F.relu(self.lane_embedding(phase_demand))
             phase_demands.append(phase_demand_embed)
-        phase_demands_old = torch.stack(phase_demands, 1)
-        # turn direction from NESW to ESWN
-        if num_movements == 8:
-            phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
-        elif num_movements == 12:
-            phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
+        phase_demands = torch.stack(phase_demands, 1)
+        # phase_demands_old = torch.stack(phase_demands, 1)
+        # # turn direction from NESW to ESWN
+        # if num_movements == 8:
+        #     phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
+        # elif num_movements == 12:
+        #     phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
         # phase_demands = torch.stack(phase_demands, 1)
 
 

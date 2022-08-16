@@ -34,10 +34,17 @@ class LaneVehicleGenerator(BaseGenerator):
             roads = I.in_roads
         else:
             roads = I.roads
+        # resort roads order to NESW
+        if self.I.lane_order_cf != None:
+            tmp = []
+            for x in ['N', 'E', 'S', 'W']:
+                if self.I.lane_order_cf[x] != -1:
+                    tmp.append(roads[self.I.lane_order_cf[x]])
+            roads = tmp
         # TODO: register it in Registry
         if isinstance(world, world_sumo.World):
             for r in roads:
-                if self.world.RIGHT:
+                if not self.world.RIGHT:
                     tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]), reverse=True)
                 else:
                     tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]))

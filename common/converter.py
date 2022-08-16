@@ -85,28 +85,28 @@ else:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--typ", type=str,
-                        default='s2c', help='CityFlow2SUMO or SUMO2CityFlow')
+                        default='c2s', help='CityFlow2SUMO or SUMO2CityFlow')
     # sumo2cityflow
-    parser.add_argument("--or_sumonet", type=str,
-                        default='grid4x4/grid4x4.net.xml')
-    parser.add_argument("--cityflownet", type=str,
-                        default='grid4x4/grid4x4_roadnet_red.json')
-    parser.add_argument("--or_sumotraffic", type=str,
-                        default='grid4x4/grid4x4.rou.xml')
-    parser.add_argument("--cityflowtraffic", type=str,
-                        default='grid4x4/grid4x4_flow.json')
-    parser.add_argument("--sumocfg", type=str,
-                        default='grid4x4/grid4x4.sumocfg')
+    # parser.add_argument("--or_sumonet", type=str,
+    #                     default='grid4x4/grid4x4.net.xml')
+    # parser.add_argument("--cityflownet", type=str,
+    #                     default='grid4x4/grid4x4_roadnet_red.json')
+    # parser.add_argument("--or_sumotraffic", type=str,
+    #                     default='grid4x4/grid4x4.rou.xml')
+    # parser.add_argument("--cityflowtraffic", type=str,
+    #                     default='grid4x4/grid4x4_flow.json')
+    # parser.add_argument("--sumocfg", type=str,
+    #                     default='grid4x4/grid4x4.sumocfg')
 
     # cityflow2sumo
-    # parser.add_argument("--or_cityflownet", type=str,
-    #                     default='hangzhou_4x4_gudang_18041610_1h/roadnet_4X4.json')
-    # parser.add_argument("--sumonet", type=str,
-    #                     default='hangzhou_4x4_gudang_18041610_1h/roadnet_4X4.net.xml')
-    # parser.add_argument("--or_cityflowtraffic", type=str,
-    #                     default='hangzhou_4x4_gudang_18041610_1h/hangzhou_4x4_gudang_18041610_1h.json')
-    # parser.add_argument("--sumotraffic", type=str,
-    #                     default='hangzhou_4x4_gudang_18041610_1h/roadnet_4X4.rou.xml')
+    parser.add_argument("--or_cityflownet", type=str,
+                        default='hangzhou_1x1_qc-yn_18041608_1h/roadnet.json')
+    parser.add_argument("--sumonet", type=str,
+                        default='hangzhou_1x1_qc-yn_18041608_1h/hangzhou_1x1_qc-yn_18041608_1h.net.xml')
+    parser.add_argument("--or_cityflowtraffic", type=str,
+                        default='hangzhou_1x1_qc-yn_18041608_1h/flow.json')
+    parser.add_argument("--sumotraffic", type=str,
+                        default='hangzhou_1x1_qc-yn_18041608_1h/hangzhou_1x1_qc-yn_18041608_1h.rou.xml')
 
 
 

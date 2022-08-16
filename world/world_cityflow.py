@@ -1,3 +1,4 @@
+from ast import Param
 import json
 import os.path as osp
 import cityflow
@@ -31,6 +32,17 @@ class Intersection(object):
         self.directions = []
         self.out_roads = None
         self.in_roads = None
+
+        map_name = Registry.mapping['world_mapping']['traffic_setting'].param['network']
+        self.lane_order_cf = None
+        self.lane_order_sumo = None
+        if 'signal_config' in Registry.mapping['world_mapping']['traffic_setting'].param.keys():
+            if 'N' in Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'].keys():
+                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order']
+                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order']
+            else:
+                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'][self.id]
+                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order'][self.id]
 
         # links and phase information of each intersection
         self.current_phase = 0
@@ -173,8 +185,8 @@ class World(object):
         # (in sumo_convert file, the "virtual" value of all intersections are set to "False"),
         # if so, then must use "gt_virtual" to create non-virtual intersections,
         # if not, just use "virtual" to create.
-        if_sumo = True if "gt_virtual" in self.roadnet["intersections"][0] else False
-        if if_sumo:
+        self.if_sumo = True if "gt_virtual" in self.roadnet["intersections"][0] else False
+        if self.if_sumo:
             self.intersections = [i for i in self.roadnet["intersections"] if not i["gt_virtual"]]
         else:
             self.intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]
@@ -182,7 +194,7 @@ class World(object):
 
         # create non-virtual Intersections
         print("creating intersections...")
-        if if_sumo:
+        if self.if_sumo:
             non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["gt_virtual"]]
         else:
             non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["virtual"]]

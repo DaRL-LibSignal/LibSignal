@@ -62,6 +62,17 @@ class Intersection(object):
         self.in_roads = []
         self.road_lane_mapping = {}
 
+        map_name = Registry.mapping['world_mapping']['traffic_setting'].param['network']
+        self.lane_order_cf = None
+        self.lane_order_sumo = None
+        if 'signal_config' in Registry.mapping['world_mapping']['traffic_setting'].param.keys():
+            if 'N' in Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'].keys():
+                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order']
+                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order']
+            else:
+                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'][self.id]
+                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order'][self.id]
+
         # links and phase information of each intersection
         self.current_phase = 0
         self.virtual_phase = 0  # see yellow phase as the same phase after changing
@@ -299,6 +310,7 @@ class World(object):
         for ts in self.eng.trafficlight.getIDList():
             self.id2intersection[ts] = Intersection(ts, self, self.green_phases[ts])  # this IntSec has different phases
             self.intersections.append(self.id2intersection[ts])
+        self.id2idx = {i: idx for idx,i in enumerate(self.id2intersection)}
         # TODO: to see if its necessary to test .intersections or .observe here
         # TODO: to see if pass observation and its shape by generator
         self.all_roads = []
@@ -414,6 +426,7 @@ class World(object):
         for ts in self.eng.trafficlight.getIDList():
             self.id2intersection[ts] = Intersection(ts, self, self.green_phases[ts])  # this IntSec has different phases
             self.intersections.append(self.id2intersection[ts])
+        self.id2idx = {i: idx for idx,i in enumerate(self.id2intersection)}
 
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)

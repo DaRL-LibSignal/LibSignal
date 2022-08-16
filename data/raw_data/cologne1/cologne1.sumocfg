@@ -7,4 +7,7 @@
     <begin value="25200"/>
     <end value="28800"/>
   </time>
+  <processing>
+		<time-to-teleport value="-1"/>
+	</processing>
 </configuration>

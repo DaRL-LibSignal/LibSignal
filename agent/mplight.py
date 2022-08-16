@@ -31,8 +31,6 @@ class MPLightAgent(RLAgent):
         self.grad_clip = self.dic_agent_conf.param["grad_clip"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
-        self.num_phases = len(self.dic_traffic_env_conf.param["phases"])
-        self.num_actions = len(self.dic_traffic_env_conf.param["phases"])
         self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
         self.replay_buffer = replay_buffers.ReplayBuffer(self.buffer_size)
 
@@ -52,6 +50,8 @@ class MPLightAgent(RLAgent):
         self.reverse_valid = None
         self.model = None
         self.optimizer = None
+        self.num_phases = len(self.phase_pairs)
+        self.num_actions = len(self.phase_pairs)
         episodes = Registry.mapping['trainer_mapping']['trainer_setting'].param['episodes'] * 0.8
         steps = Registry.mapping['trainer_mapping']['trainer_setting'].param['steps']
         action_interval = Registry.mapping['trainer_mapping']['trainer_setting'].param['action_interval']
@@ -323,7 +323,7 @@ class MPLightAgent(RLAgent):
         else:
             obs = ob
         reset = [False] * self.sub_agents
-        dones = [done] * self.sub_agents
+        dones = [done] * self.sub_agents if isinstance(reward, bool) else done
         rewards = [reward] if isinstance(reward, float) else reward
         self.agents_iner.observe(obs, rewards, dones, reset)
 
@@ -460,7 +460,7 @@ class FRAP(nn.Module):
         :params states: [agents, ob_length]
         ob_length:concat[len(one_phase),len(intersection_lane)]
         '''
-        num_movements = num_movements = int((states.size()[1]-1)/self.demand_shape) if not self.one_hot else int((states.size()[1]-len(self.phase_pairs))/self.demand_shape)
+        num_movements = int((states.size()[1]-1)/self.demand_shape) if not self.one_hot else int((states.size()[1]-len(self.phase_pairs))/self.demand_shape)
         batch_size = states.size()[0]
         acts = states[:, 0].to(torch.int64) if not self.one_hot else states[:, :len(self.phase_pairs)].to(torch.int64)
         states = states[:, 1:] if not self.one_hot else states[:, len(self.phase_pairs):]
@@ -489,12 +489,13 @@ class FRAP(nn.Module):
             phase_demand = torch.cat((phase, demand), -1)
             phase_demand_embed = F.relu(self.lane_embedding(phase_demand))
             phase_demands.append(phase_demand_embed)
-        phase_demands_old = torch.stack(phase_demands, 1)
-        # turn direction from NESW to ESWN
-        if num_movements == 8:
-            phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
-        elif num_movements == 12:
-            phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
+        phase_demands = torch.stack(phase_demands, 1)
+        # phase_demands_old = torch.stack(phase_demands, 1)
+        # # turn direction from NESW to ESWN
+        # if num_movements == 8:
+        #     phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
+        # elif num_movements == 12:
+        #     phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
         
 
         pairs = []

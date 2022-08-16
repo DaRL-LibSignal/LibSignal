@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
-    <vType id="pkw" length="4.30" minGap="1.50" vClass="passenger"/>
-    <vehicle id="124779_406_0" type="pkw" depart="25205.00">
-        <route edges="28198821#3 32324544#0"/>
-    </vehicle>
-</routes>

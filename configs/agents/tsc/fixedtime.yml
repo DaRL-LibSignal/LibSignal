@@ -4,7 +4,7 @@ includes:
 
 model:
   name: fixedtime
-  t_fixed: 10
+  t_fixed: 30
 
 trainer:
   thread: 4
