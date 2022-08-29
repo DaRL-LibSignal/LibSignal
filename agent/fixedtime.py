@@ -30,7 +30,8 @@ class FixedTimeAgent(BaseAgent):
 
         self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_delay"], in_only=True,
-                                                     negative=False)
+                                                     negative=False) 
+
         self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
         # dirrerent datasets have the same t_fixed
         self.t_fixed = Registry.mapping['model_mapping']['model_setting'].param['t_fixed']

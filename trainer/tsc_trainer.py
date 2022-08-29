@@ -179,10 +179,11 @@ class TSCTrainer(BaseTrainer):
             episodes_throughput = self.env.world.get_cur_throughput()
             mean_reward = np.sum(episodes_rewards) / episodes_decision_num
             cur_travel_time = self.env.world.get_average_travel_time()
+            real_delay = self.env.world.get_real_delay()
             # sumo env has 2 travel time: [real travel time, planned travel time(aligned with Cityflow)]
-            self.writeLog("TRAIN", e, cur_travel_time[0], cur_travel_time[1], mean_loss, mean_reward, mean_queue, mean_delay, episodes_throughput)
-            self.logger.info("step:{}/{}, q_loss:{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(i, self.steps,
-                                                        mean_loss, mean_reward, mean_queue, mean_delay, int(episodes_throughput)))
+            self.writeLog("TRAIN", e, cur_travel_time[0], cur_travel_time[1], mean_loss, mean_reward, mean_queue, mean_delay, real_delay, episodes_throughput)
+            self.logger.info("step:{}/{}, q_loss:{}, rewards:{}, queue:{}, delay:{}, real_delay:{}, throughput:{}".format(i, self.steps,
+                                                        mean_loss, mean_reward, mean_queue, mean_delay, real_delay,int(episodes_throughput)))
             if e % self.save_rate == 0:
                 [ag.save_model(e=e) for ag in self.agents]
             self.logger.info("episode:{}/{}, real avg travel time:{}, planned avg travel time:{}".format(e, self.episodes, cur_travel_time[0], cur_travel_time[1]))
@@ -276,7 +277,8 @@ class TSCTrainer(BaseTrainer):
         mean_queue = np.sum(ep_queue) / (eps_nums * len(self.world.intersections))
         mean_delay = np.sum(ep_delay) / (eps_nums * len(self.world.intersections))
         ep_throughput = self.env.world.get_cur_throughput()
-        self.logger.info("Final Travel Time is %.4f, Planned Travel Time is %.4f, mean rewards: %.4f, queue: %.4f, delay: %.4f, throughput: %d" % (trv_time[0], trv_time[1], mean_rwd, mean_queue, mean_delay, ep_throughput))
+        real_delay = self.env.world.get_real_delay()
+        self.logger.info("Final Travel Time is %.4f, Planned Travel Time is %.4f, mean rewards: %.4f, queue: %.4f, delay: %.4f, real_delay:%.4f, throughput: %d" % (trv_time[0], trv_time[1], mean_rwd, mean_queue, mean_delay, real_delay, ep_throughput))
         
         # TODO: add attention record
         if Registry.mapping['logger_mapping']['logger_setting'].param['get_attention']:
@@ -285,13 +287,13 @@ class TSCTrainer(BaseTrainer):
         # self.env.eng.set_replay_file(self.replay_file_dir + "replay.txt")
         return trv_time
 
-    def writeLog(self, mode, step, travel_time, planned_tt, loss, cur_rwd, cur_queue, cur_delay, cur_throughput):
+    def writeLog(self, mode, step, travel_time, planned_tt, loss, cur_rwd, cur_queue, cur_delay, real_delay, cur_throughput):
         """
         :param mode: "TRAIN" OR "TEST"
         :param step: int
         """
         res = self.args['model']['name'] + '\t' + mode + '\t' + str(
-            step) + '\t' + "%.1f" % travel_time + '\t' + "%.1f" % planned_tt + '\t' + "%.1f" % loss + "\t" + "%.2f" % cur_rwd + "\t" + "%.2f" % cur_queue + "\t" + "%.2f" % cur_delay + "\t" + "%d" % cur_throughput
+            step) + '\t' + "%.1f" % travel_time + '\t' + "%.1f" % planned_tt + '\t' + "%.1f" % loss + "\t" + "%.2f" % cur_rwd + "\t" + "%.2f" % cur_queue + "\t" + "%.2f" % cur_delay + "\t" + "%.2f" % real_delay + "\t" + "%d" % cur_throughput
         log_handle = open(self.log_file, "a")
         log_handle.write(res + "\n")
         log_handle.close()
