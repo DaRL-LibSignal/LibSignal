@@ -171,7 +171,7 @@ class World(object):
     Create a CityFlow engine and maintain informations about CityFlow world
     """
 
-    def __init__(self, cityflow_config, thread_num):
+    def __init__(self, cityflow_config, thread_num, **kwargs):
         print("building world...")
         self.eng = cityflow.Engine(cityflow_config, thread_num=thread_num)
         with open(cityflow_config) as f:

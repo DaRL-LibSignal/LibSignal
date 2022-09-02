@@ -14,14 +14,15 @@ import argparse
 parser = argparse.ArgumentParser(description='Run Example')
 parser.add_argument('--thread_num', type=int, default=4, help='number of threads')  # used in cityflow
 parser.add_argument('--ngpu', type=str, default="-1", help='gpu to be used')  # choose gpu card
+parser.add_argument('--interface', type=str, default="libsumo", help="interface type") # libsumo(fast) or traci(slow)
 
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
 parser.add_argument('-a', '--agent', type=str, default="mplight", help="agent type of agents in RL environment")
-parser.add_argument('-w', '--world', type=str, default="cityflow", help="simulator type")
-# parser.add_argument('-w', '--world', type=str, default="sumo", help="simulator type")
+# parser.add_argument('-w', '--world', type=str, default="cityflow", help="simulator type")
+parser.add_argument('-w', '--world', type=str, default="sumo", help="simulator type")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
-parser.add_argument('--path', type=str, default='configs/cityflow1x1.cfg', help='path to cityflow path')
-# parser.add_argument('--path', type=str, default='configs/sumohz1x1.cfg', help='path to cityflow path')
+# parser.add_argument('--path', type=str, default='configs/cityflow1x1.cfg', help='path to cityflow path')
+parser.add_argument('--path', type=str, default='configs/sumo1x3.cfg', help='path to cityflow path')
 parser.add_argument('--prefix', type=str, default='0', help="the number of predix in this running process")
 parser.add_argument('--seed', type=int, default=None, help="seed for pytorch backend")
 

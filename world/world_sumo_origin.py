@@ -15,12 +15,10 @@ import re
 import copy
 
 import sumolib
-import libsumo
 import traci
 
 # TODO: change it in the future. Accoring to _get_direction
 DIRECTION_RANK = {'N': 0, 'W': 1, 'S': 2, 'E': 3}
-# interface_flag # 1:libsumo, 0: traci
 
 
 # TODO: revert x and y
@@ -31,7 +29,7 @@ def _get_direction(road):
     return tmp if tmp >= 0 else (tmp + 2 * pi)
 
 
-def create_yellows(phases, yellow_length, interface_flag):
+def create_yellows(phases, yellow_length):
     new_phases = copy.copy(phases)
     yellow_dict = {}    # current phase + next phase keyed to corresponding yellow phase index
     # Automatically create yellow phases, traci will report missing phases as it assumes execution by index order
@@ -46,10 +44,7 @@ def create_yellows(phases, yellow_length, interface_flag):
                     else:
                         yellow_str += phases[i].state[sig_idx]
                 if need_yellow:  # If a yellow is required
-                    if interface_flag:
-                        new_phases.append(libsumo.trafficlight.Phase(yellow_length, yellow_str))
-                    else:
-                        new_phases.append(traci.trafficlight.Phase(yellow_length, yellow_str))
+                    new_phases.append(traci.trafficlight.Phase(yellow_length, yellow_str))
                     yellow_dict[str(i) + '_' + str(j)] = len(new_phases) - 1  # The index of the yellow phase in SUMO
     return new_phases, yellow_dict
 
@@ -66,7 +61,6 @@ class Intersection(object):
         self.out_roads = []
         self.in_roads = []
         self.road_lane_mapping = {}
-        self.interface_flag = world.interface_flag
 
         map_name = Registry.mapping['world_mapping']['traffic_setting'].param['network']
         self.lane_order_cf = None
@@ -76,12 +70,8 @@ class Intersection(object):
                 self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order']
                 self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order']
             else:
-                if self.id in Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'].keys():
-                    self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'][self.id]
-                    self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order'][self.id]
-                else:
-                    self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'][self.id[3:]] # exclude 'GS_'
-                    self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order'][self.id[3:]]
+                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'][self.id]
+                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order'][self.id]
 
         # links and phase information of each intersection
         self.current_phase = 0
@@ -138,7 +128,7 @@ class Intersection(object):
             self.phase_available_startlanes.append(tmp_startane)
             self.phase_available_lanelinks.append(tmp_lanelinks)
 
-        self.full_phases, self.yellow_dict = create_yellows(self.green_phases, self.yellow_phase_time, self.interface_flag)
+        self.full_phases, self.yellow_dict = create_yellows(self.green_phases, self.yellow_phase_time)
         programs = self.eng.trafficlight.getAllProgramLogics(self.id)
         logic = programs[0]
         logic.type = 0
@@ -185,10 +175,7 @@ class Intersection(object):
     def prep_phase(self, new_phase):
         if self.get_current_phase() == new_phase:
             self.next_phase = self.get_current_phase()
-            if self.interface_flag:
-                self.eng.trafficlight.setPhase(self.id, int(self.next_phase))
-            else:
-                self.eng.trafficlight.setPhase(self.id, self.next_phase)
+            self.eng.trafficlight.setPhase(self.id, self.next_phase)
             self.current_phase = self.get_current_phase()
         else:
             self.next_phase = new_phase
@@ -196,17 +183,11 @@ class Intersection(object):
             y_key = str(self.get_current_phase()) + '_' + str(new_phase)
             if y_key in self.yellow_dict:
                 y_id = self.yellow_dict[y_key]
-                if self.interface_flag:
-                    self.eng.trafficlight.setPhase(self.id, int(y_id))  # phase turns into yellow here
-                else:
-                    self.eng.trafficlight.setPhase(self.id, y_id)  # phase turns into yellow here
+                self.eng.trafficlight.setPhase(self.id, y_id)  # phase turns into yellow here
                 self.current_phase = self.get_current_phase()
 
     def _change_phase(self, phase):
-        if self.interface_flag:
-            self.eng.trafficlight.setPhase(self.id, int(phase))
-        else:
-            self.eng.trafficlight.setPhase(self.id, phase)
+        self.eng.trafficlight.setPhase(self.id, phase)
         self.current_phase = self.get_current_phase()
 
     def pseudo_step(self, action):
@@ -285,13 +266,7 @@ class Intersection(object):
 
 @Registry.register_world('sumo')
 class World(object):
-    def __init__(self, sumo_config, placeholder=0, **kwargs):
-        if kwargs['interface'] == 'libsumo':
-            self.interface_flag = True
-        elif kwargs['interface'] == 'traci':
-            self.interface_flag = False
-        else:
-            raise Exception('NOT IMPORTED YET')
+    def __init__(self, sumo_config, placeholder=0):
         with open(sumo_config) as f:
             sumo_dict = json.load(f)
         if sumo_dict['gui'] == "True":
@@ -312,17 +287,12 @@ class World(object):
         print("building world...")
         self.connection_name = sumo_dict['name']
         self.map = sumo_dict['roadnetFile'].split('/')[-1].split('.')[0]
-        
-        if self.interface_flag:
-            libsumo.start(sumo_cmd)
-            self.eng = libsumo
+        if not sumo_dict['name']:
+            traci.start(sumo_cmd)
+            self.eng = traci
         else:
-            if not sumo_dict['name']:
-                traci.start(sumo_cmd)
-                self.eng = traci
-            else:
-                traci.start(sumo_cmd, label=sumo_dict['name'])
-                self.eng = traci.getConnection(sumo_dict['name'])
+            traci.start(sumo_cmd, label=sumo_dict['name'])
+            self.eng = traci.getConnection(sumo_dict['name'])
         # TODO: roadnet not implemented but not necessary
         self.RIGHT = True  # TODO: currently set to be true
         self.interval = sumo_dict['interval']
@@ -362,14 +332,9 @@ class World(object):
         self.vehicles_planned = dict()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
-        if self.interface_flag:
-            if not self.connection_name: 
-                libsumo.switch(self.connection_name)  # TODO: make sure what's this step doing
-            libsumo.close()
-        else:
-            if not self.connection_name: 
-                traci.switch(self.connection_name)  # TODO: make sure what's this step doing
-            traci.close()
+
+        if not self.connection_name: traci.switch(self.connection_name)  # TODO: make sure what's this step doing
+        traci.close()
         # self.connection_name = self.map + '-' + self.connection_name
         if not os.path.exists(os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
                                            self.connection_name)):
@@ -447,22 +412,15 @@ class World(object):
     def reset(self):
         if self.run != 0:
             # TODO: test why need switch in original code
-            if self.interface_flag:
-                libsumo.close()
-            else:
-                traci.close()
+            traci.close()
         self.run = 0
         self.vehicles = dict()
         self.vehicles_planned = dict()
         self.inside_vehicles = dict()
         # TODO: check when to close traci
-        if self.interface_flag:
-            libsumo.start(self.sumo_cmd)
-            # TODO: set trip info output
-            self.eng = libsumo
-        else:
-            traci.start(self.sumo_cmd, label=self.connection_name)
-            self.eng = traci.getConnection(self.connection_name)
+        traci.start(self.sumo_cmd, label=self.connection_name)
+        # TODO: set trip info output
+        self.eng = traci.getConnection(self.connection_name)
         self.id2intersection = dict()
         self.intersections = []
         for ts in self.eng.trafficlight.getIDList():
@@ -522,19 +480,7 @@ class World(object):
         return result
 
     def get_pressure(self):
-        pressures = dict()
-        lane_vehicles = self.get_lane_vehicle_count()
-        for i in self.intersections:
-            pressure = 0
-            for road in i.in_roads:
-                for k in i.road_lane_mapping[road]:
-                    pressure += lane_vehicles[k]
-            for road in i.out_roads:
-                for k in i.road_lane_mapping[road]:
-                    pressure -= lane_vehicles[k]
-            pressures[i.id] = pressure
-        return pressures
-        # pass
+        pass
 
     def get_lane_waiting_time_count(self):
         result = dict()

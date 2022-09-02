@@ -48,6 +48,10 @@ class MPLightAgent(RLAgent):
         self.comp_mask = self.relation()
         self.valid_acts = self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
         self.reverse_valid = None
+        self.ob_order = None
+        if 'lane_order' in self.dic_traffic_env_conf.param['signal_config'][map_name].keys():
+            self.ob_order = self.dic_traffic_env_conf.param['signal_config'][map_name]['lane_order']
+        self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
         self.model = None
         self.optimizer = None
         self.num_phases = len(self.phase_pairs)
@@ -210,8 +214,53 @@ class MPLightAgent(RLAgent):
         """
         x_obs = []  # sub_agents * lane_nums,
         for i in range(len(self.ob_generator)):
-            x_obs.append((self.ob_generator[i][1].generate()))
-        # x_obs = np.array(x_obs, dtype=np.float32)
+            tmp = self.ob_generator[i][1].generate()
+            if self.ob_order != None:
+                tt = []
+                if self.ob_generator[i][1].I.id[:3] == 'GS_':
+                    name = self.ob_generator[i][1].I.id[3:]
+                else:
+                    name = self.ob_generator[i][1].I.id
+                for i in range(12):
+                    if i in self.ob_order[name].keys():
+                        tt.append(tmp[self.ob_order[name][i]])
+                    else:
+                        tt.append(0.)
+                x_obs.append(np.array(tt))  
+
+                # if tmp.shape[-1] == 5:
+                #     dic = {0:0,1:1,4:2,6:3,7:4}
+                #     tt = []
+                #     for i in range(12):
+                #         if i in dic.keys():
+                #             tt.append(tmp[dic[i]])
+                #         else:
+                #             tt.append(0.)
+                #     x_obs.append(np.array(tt))       
+                # elif tmp.shape[-1] == 6:
+                #     dic = {0:0,1:1,4:2,6:3,7:4,10:5}
+                #     tt = []
+                #     for i in range(12):
+                #         if i in dic.keys():
+                #             tt.append(tmp[dic[i]])
+                #         else:
+                #             tt.append(0.)
+                #     x_obs.append(np.array(tt))     
+                # else: # 8
+                #     dic = {0:0,1:1,3:2,4:3,6:4,7:5,9:6,10:7}
+                #     tt = []
+                #     for i in range(12):
+                #         if i in dic.keys():
+                #             tt.append(tmp[dic[i]])
+                #         else:
+                #             tt.append(0.)
+                #     x_obs.append(np.array(tt))     
+            
+            else:
+                x_obs.append(self.ob_generator[i][1].generate())
+            
+        if self.ob_order != None:
+            x_obs = np.array(x_obs, dtype=np.float32)
         return x_obs
 
     def get_reward(self):
@@ -284,10 +333,11 @@ class MPLightAgent(RLAgent):
             batch_reverse = None
         else:
             # TODO debug
-            batch_valid = [self.valid_acts.get(agent_id) for agent_id in
-                           ob.keys()]
-            batch_reverse = [self.reverse_valid.get(agent_id) for agent_id in
-                          ob.keys()]
+            # batch_valid = [self.valid_acts.get(agent_id) for agent_id in ob.keys()]
+            # batch_reverse = [self.reverse_valid.get(agent_id) for agent_id in ob.keys()]
+            dic = {0:'360082',1:'360086',2:'GS_cluster_2415878664_254486231_359566_359576'}
+            batch_valid = [self.valid_acts.get(dic[i]) for i in range(ob.shape[0])]
+            batch_reverse = [self.reverse_valid.get(dic[i]) for i in range(ob.shape[0])]
         batch_acts = self.agents_iner.act(batch_obs,
                                 valid_acts=batch_valid,
                                 reverse_valid=batch_reverse, test=test)
@@ -413,7 +463,7 @@ class MPLight_InerAgent(DQN):
                 greed = batch_argmax[i]
                 act, greedy = self.explorer.select_action(self.t, lambda: greed, action_value=av, num_acts=len(valid_acts[i]))
                 if not greedy:
-                    act = reverse_valid[i][act]
+                    act = reverse_valid[i][act] # get the real action(12 dims)
                 batch_action.append(act)
 
             self.batch_last_obs = list(batch_obs)

@@ -35,25 +35,56 @@ class LaneVehicleGenerator(BaseGenerator):
         else:
             roads = I.roads
         # resort roads order to NESW
-        if self.I.lane_order_cf != None:
+        if self.I.lane_order_cf != None or self.I.lane_order_sumo != None:
             tmp = []
-            for x in ['N', 'E', 'S', 'W']:
-                if self.I.lane_order_cf[x] != -1:
-                    tmp.append(roads[self.I.lane_order_cf[x]])
-            roads = tmp
-        # TODO: register it in Registry
-        if isinstance(world, world_sumo.World):
-            for r in roads:
-                if not self.world.RIGHT:
-                    tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]), reverse=True)
-                else:
-                    tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]))
-                self.lanes.append(tmp)
-                # TODO: rank lanes by lane ranking [0,1,2], assume we only have one digit for ranking
-        elif isinstance(world, world_cityflow.World):
-            for road in roads:
-                from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
-                self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
+            if isinstance(world, world_sumo.World):
+                for x in ['N', 'E', 'S', 'W']:
+                    if self.I.lane_order_sumo[x] != -1:
+                        tmp.append(roads[self.I.lane_order_sumo[x]])
+                    # else:
+                    #     tmp.append('padding_roads')
+                roads = tmp
+
+                # TODO padding roads into 12 dims
+                for r in roads:
+                    if not self.world.RIGHT:
+                        tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]), reverse=True)
+                    else:
+                        tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]))
+                    self.lanes.append(tmp)
+
+            elif isinstance(world, world_cityflow.World):
+                for x in ['N', 'E', 'S', 'W']:
+                    if self.I.lane_order_cf[x] != -1:
+                        tmp.append(roads[self.I.lane_order_cf[x]])
+                    # else:
+                    #     tmp.append('padding_roads')
+                roads = tmp
+
+                # TODO padding roads into 12 dims
+                for road in roads:
+                    from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
+                    self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
+
+
+            
+
+        # ---------------------------------------------------------------------------------------------------------------
+        # # TODO: register it in Registry
+        # if isinstance(world, world_sumo.World):
+        #     for r in roads:
+        #         if not self.world.RIGHT:
+        #             tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]), reverse=True)
+        #         else:
+        #             tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]))
+        #         self.lanes.append(tmp)
+        #         # TODO: rank lanes by lane ranking [0,1,2], assume we only have one digit for ranking
+        # elif isinstance(world, world_cityflow.World):
+        #     for road in roads:
+        #         from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
+        #         self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
+        # ---------------------------------------------------------------------------------------------------------------
+        
         # elif isinstance(world, world_openengine.World):
         #     for r in roads:
         #         if self.world.RIGHT:

@@ -88,7 +88,7 @@ class IPPO_pfrl(RLAgent):
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_time_count"],
                                                      in_only=True, average='all', negative=True)
-        self.vehicles_generator = IntersectionVehicleGenerator(self.world, inter_obj, ["lane_vehicles"])
+        # self.vehicles_generator = IntersectionVehicleGenerator(self.world, inter_obj, ["lane_vehicles"])
     def get_ob(self):
         x_obs = []
         x_obs.append(self.ob_generator.generate())

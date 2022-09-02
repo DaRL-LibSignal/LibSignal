@@ -49,7 +49,7 @@ class TSCTrainer(BaseTrainer):
     def create_world(self):
         # traffic setting is in the world mapping
         self.world = Registry.mapping['world_mapping'][self.args['world']](
-            self.path, Registry.mapping['world_mapping']['traffic_setting'].param['thread_num'])
+            self.path, Registry.mapping['world_mapping']['traffic_setting'].param['thread_num'],interface=self.args['interface'])
 
     def create_metric(self):
         self.metric = TravelTimeMetric(self.world)
