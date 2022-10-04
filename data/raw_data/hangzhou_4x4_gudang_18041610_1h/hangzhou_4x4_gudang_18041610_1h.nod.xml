@@ -5,28 +5,28 @@
 	<node id="intersection_0_3" type="priority" x="-800" y="1200"/>
 	<node id="intersection_0_4" type="priority" x="-800" y="1800"/>
 	<node id="intersection_1_0" type="priority" x="0" y="-600"/>
-	<node id="intersection_1_1" type="traffic_light" x="0" y="0"/>
-	<node id="intersection_1_2" type="traffic_light" x="0" y="600"/>
-	<node id="intersection_1_3" type="traffic_light" x="0" y="1200"/>
-	<node id="intersection_1_4" type="traffic_light" x="0" y="1800"/>
+	<node id="intersection_1_1" type="traffic_light_right_on_red" x="0" y="0"/>
+	<node id="intersection_1_2" type="traffic_light_right_on_red" x="0" y="600"/>
+	<node id="intersection_1_3" type="traffic_light_right_on_red" x="0" y="1200"/>
+	<node id="intersection_1_4" type="traffic_light_right_on_red" x="0" y="1800"/>
 	<node id="intersection_1_5" type="priority" x="0" y="2400"/>
 	<node id="intersection_2_0" type="priority" x="800" y="-600"/>
-	<node id="intersection_2_1" type="traffic_light" x="800" y="0"/>
-	<node id="intersection_2_2" type="traffic_light" x="800" y="600"/>
-	<node id="intersection_2_3" type="traffic_light" x="800" y="1200"/>
-	<node id="intersection_2_4" type="traffic_light" x="800" y="1800"/>
+	<node id="intersection_2_1" type="traffic_light_right_on_red" x="800" y="0"/>
+	<node id="intersection_2_2" type="traffic_light_right_on_red" x="800" y="600"/>
+	<node id="intersection_2_3" type="traffic_light_right_on_red" x="800" y="1200"/>
+	<node id="intersection_2_4" type="traffic_light_right_on_red" x="800" y="1800"/>
 	<node id="intersection_2_5" type="priority" x="800" y="2400"/>
 	<node id="intersection_3_0" type="priority" x="1600" y="-600"/>
-	<node id="intersection_3_1" type="traffic_light" x="1600" y="0"/>
-	<node id="intersection_3_2" type="traffic_light" x="1600" y="600"/>
-	<node id="intersection_3_3" type="traffic_light" x="1600" y="1200"/>
-	<node id="intersection_3_4" type="traffic_light" x="1600" y="1800"/>
+	<node id="intersection_3_1" type="traffic_light_right_on_red" x="1600" y="0"/>
+	<node id="intersection_3_2" type="traffic_light_right_on_red" x="1600" y="600"/>
+	<node id="intersection_3_3" type="traffic_light_right_on_red" x="1600" y="1200"/>
+	<node id="intersection_3_4" type="traffic_light_right_on_red" x="1600" y="1800"/>
 	<node id="intersection_3_5" type="priority" x="1600" y="2400"/>
 	<node id="intersection_4_0" type="priority" x="2400" y="-600"/>
-	<node id="intersection_4_1" type="traffic_light" x="2400" y="0"/>
-	<node id="intersection_4_2" type="traffic_light" x="2400" y="600"/>
-	<node id="intersection_4_3" type="traffic_light" x="2400" y="1200"/>
-	<node id="intersection_4_4" type="traffic_light" x="2400" y="1800"/>
+	<node id="intersection_4_1" type="traffic_light_right_on_red" x="2400" y="0"/>
+	<node id="intersection_4_2" type="traffic_light_right_on_red" x="2400" y="600"/>
+	<node id="intersection_4_3" type="traffic_light_right_on_red" x="2400" y="1200"/>
+	<node id="intersection_4_4" type="traffic_light_right_on_red" x="2400" y="1800"/>
 	<node id="intersection_4_5" type="priority" x="2400" y="2400"/>
 	<node id="intersection_5_1" type="priority" x="3200" y="0"/>
 	<node id="intersection_5_2" type="priority" x="3200" y="600"/>

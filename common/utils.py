@@ -127,3 +127,114 @@ def analyse_vehicle_nums(file_path):
     print("the min of vehicle nums is ", observation.min())
     print("the std of vehicle nums is ", observation.std())
 
+
+def get_output_file_path(task, model, prefix):
+    path = os.path.join('./data/output_data', task, model, prefix)
+    return path
+
+
+def load_config(path, previous_includes=[]):
+    if path in previous_includes:
+        raise ValueError(
+            f"Cyclic configs include detected. {path} included in sequence {previous_includes}."
+        )
+    previous_includes = previous_includes + [path]
+
+    direct_config = yaml.load(open(path, "r"), Loader=yaml.Loader)
+
+    # Load configs from included files.
+    if "includes" in direct_config:
+        includes = direct_config.pop("includes")
+    else:
+        includes = []
+    if not isinstance(includes, list):
+        raise AttributeError(
+            "Includes must be a list, '{}' provided".format(type(includes))
+        )
+
+    config = {}
+    duplicates_warning = []
+    duplicates_error = []
+
+    # TODO: Need test duplication here
+    for include in includes:
+        include_config, inc_dup_warning, inc_dup_error = load_config(
+            include, previous_includes
+        )
+        duplicates_warning += inc_dup_warning
+        duplicates_error += inc_dup_error
+
+        # Duplicates between includes causes an error
+        config, merge_dup_error = merge_dicts(config, include_config)
+        duplicates_error += merge_dup_error
+
+    # Duplicates between included and main file causes warnings
+    config, merge_dup_warning = merge_dicts(config, direct_config)
+    duplicates_warning += merge_dup_warning
+
+    return config, duplicates_warning, duplicates_error
+
+
+def merge_dicts(dict1: dict, dict2: dict):
+    """Recursively merge two dictionaries.
+    Values in dict2 override values in dict1. If dict1 and dict2 contain a dictionary as a
+    value, this will call itself recursively to merge these dictionaries.
+    This does not modify the input dictionaries (creates an internal copy).
+    Additionally returns a list of detected duplicates.
+    Adapted from https://github.com/TUM-DAML/seml/blob/master/seml/utils.py
+    Parameters
+    ----------
+    dict1: dict
+        First dict.
+    dict2: dict
+        Second dict. Values in dict2 will override values from dict1 in case they share the same key.
+    Returns
+    -------
+    return_dict: dict
+        Merged dictionaries.
+    """
+    if not isinstance(dict1, dict):
+        raise ValueError(f"Expecting dict1 to be dict, found {type(dict1)}.")
+    if not isinstance(dict2, dict):
+        raise ValueError(f"Expecting dict2 to be dict, found {type(dict2)}.")
+
+    return_dict = copy.deepcopy(dict1)
+    duplicates = []
+
+    for k, v in dict2.items():
+        if k not in dict1:
+            return_dict[k] = v
+        else:
+            if isinstance(v, dict) and isinstance(dict1[k], dict):
+                return_dict[k], duplicates_k = merge_dicts(dict1[k], dict2[k])
+                duplicates += [f"{k}.{dup}" for dup in duplicates_k]
+            else:
+                return_dict[k] = dict2[k]
+                duplicates.append(k)
+
+    return return_dict, duplicates
+
+
+def build_config(args):
+    # configs file of specific agents is loaded from configs/agents/{agent_name}
+    agent_name = os.path.join('./configs/agents', args.task, f'{args.agent}.yml')
+    config, duplicates_warning, duplicates_error = load_config(agent_name)
+    if len(duplicates_warning) > 0:
+        logging.warning(
+            f"Overwritten configs parameters from included configs "
+            f"(non-included parameters take precedence): {duplicates_warning}"
+        )
+    if len(duplicates_error) > 0:
+        raise ValueError(
+            f"Conflicting (duplicate) parameters in simultaneously "
+            f"included configs: {duplicates_error}"
+        )
+    args_dict = vars(args)
+    for key in args_dict:
+        config.update({key: args_dict[key]})  # short access for important param
+
+    # add network(for FRAP and MPLight)
+    cityflow_setting = json.load(open(config['path'], 'r'))
+    config['traffic']['network'] = cityflow_setting['network'] if 'network' in cityflow_setting.keys() else None
+    return config
+

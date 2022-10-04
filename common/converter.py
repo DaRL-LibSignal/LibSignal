@@ -1,5 +1,7 @@
 """
-convert SUMO file to CityFlow file.
+Convert to transform configurations across CityFlow and SUMO.
+
+Part of the codes on SUMO-to-CityFlow are borrowed from CityFlow: https://github.com/cityflow-project/CityFlow
 """
 
 import os
@@ -84,6 +86,8 @@ else:
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--typ", type=str,
+                        default='c2s', help='CityFlow2SUMO or SUMO2CityFlow')
     # sumo2cityflow
     # parser.add_argument("--or_sumonet", type=str,
     #                     default='grid4x4/grid4x4.net.xml')
@@ -97,26 +101,15 @@ def parse_args():
     #                     default='grid4x4/grid4x4.sumocfg')
 
     # parser.add_argument("--or_sumonet", type=str,
-    #                     default='cologne1/cologne1.net.xml')
+    #                     default='grid4x4/grid4x4.net.xml')
     # parser.add_argument("--cityflownet", type=str,
-    #                     default='cologne1/cologne1_roadnet_red.json')
-    # parser.add_argument("--or_sumoflow", type=str,
-    #                     default='cologne1/cologne1.rou.xml')
-    # parser.add_argument("--cityflowflow", type=str,
-    #                     default='cologne1/cologne1_flow.json')
+    #                     default='grid4x4/grid4x4_roadnet_red.json')
+    # parser.add_argument("--or_sumotraffic", type=str,
+    #                     default='grid4x4/grid4x4.rou.xml')
+    # parser.add_argument("--cityflowtraffic", type=str,
+    #                     default='grid4x4/grid4x4_flow.json')
     # parser.add_argument("--sumocfg", type=str,
-    #                     default='cologne1/cologne1.sumocfg')
-
-    # parser.add_argument("--or_sumonet", type=str,
-    #                     default='cologne3/cologne3.net.xml')
-    # parser.add_argument("--cityflownet", type=str,
-    #                     default='cologne3/cologne3_roadnet_red.json')
-    # parser.add_argument("--or_sumoflow", type=str,
-    #                     default='cologne3/cologne3.rou.xml')
-    # parser.add_argument("--cityflowflow", type=str,
-    #                     default='cologne3/cologne3_flow.json')
-    # parser.add_argument("--sumocfg", type=str,
-    #                     default='cologne3/cologne3.sumocfg')
+    #                     default='grid4x4/grid4x4.sumocfg')
 
     # parser.add_argument("--or_sumonet", type=str,
     #                     default='ingolstadt21/ingolstadt21.net.xml')
@@ -130,14 +123,16 @@ def parse_args():
     #                     default='ingolstadt21/ingolstadt21.sumocfg')
 
     # cityflow2sumo
-    # parser.add_argument("--or_cityflownet", type=str,
-    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/roadnet.json')
-    # parser.add_argument("--sumonet", type=str,
-    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.net.xml')
-    # parser.add_argument("--or_cityflowflow", type=str,
-    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/flow.json')
-    # parser.add_argument("--sumoflow", type=str,
-    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.rou.xml')
+    parser.add_argument("--or_cityflownet", type=str,
+                        default='hangzhou_1x1_qc-yn_18041608_1h/roadnet.json')
+    parser.add_argument("--sumonet", type=str,
+                        default='hangzhou_1x1_qc-yn_18041608_1h/hangzhou_1x1_qc-yn_18041608_1h.net.xml')
+    parser.add_argument("--or_cityflowtraffic", type=str,
+                        default='hangzhou_1x1_qc-yn_18041608_1h/flow.json')
+    parser.add_argument("--sumotraffic", type=str,
+                        default='hangzhou_1x1_qc-yn_18041608_1h/hangzhou_1x1_qc-yn_18041608_1h.rou.xml')
+
+
 
     # parser.add_argument("--or_cityflownet", type=str,
     #                     default='hangzhou_4x4_gudang_18041610_1h/roadnet_4X4.json')
@@ -157,14 +152,14 @@ def parse_args():
     # parser.add_argument("--sumoflow", type=str,
     #                     default='atlanta_1x5/atlanta_1x5.rou.xml')
 
-    parser.add_argument("--or_cityflownet", type=str,
-                        default='manhattan_28x7/roadnet_28_7.json')
-    parser.add_argument("--sumonet", type=str,
-                        default='manhattan_28x7/manhattan_28x7.net.xml')
-    parser.add_argument("--or_cityflowflow", type=str,
-                        default='manhattan_28x7/anon_28_7_newyork_real_triple.json')
-    parser.add_argument("--sumoflow", type=str,
-                        default='manhattan_28x7/manhattan_28x7.rou.xml')
+    # parser.add_argument("--or_cityflownet", type=str,
+    #                     default='manhattan_28x7/roadnet_28_7.json')
+    # parser.add_argument("--sumonet", type=str,
+    #                     default='manhattan_28x7/manhattan_28x7.net.xml')
+    # parser.add_argument("--or_cityflowflow", type=str,
+    #                     default='manhattan_28x7/anon_28_7_newyork_real_triple.json')
+    # parser.add_argument("--sumoflow", type=str,
+    #                     default='manhattan_28x7/manhattan_28x7.rou.xml')
 
     return parser.parse_args()
 
@@ -505,7 +500,7 @@ def node_to_intersection(node, tls_dict, edge_dict):
                 phase, duration = idx_phase.state, idx_phase.duration
                 lane_list = []
                 for i, alpha in enumerate(phase):
-                    if (alpha == 'G' or alpha == 'g') and i in G_to_lane_dict.keys():
+                    if (alpha == 'G' or alpha == 'g' or alpha == 's') and i in G_to_lane_dict.keys():
                         lane_list.append(G_to_lane_dict[i])
 
                 lane_list_ = []
@@ -612,8 +607,8 @@ def get_final_roads(net):
 def sumo2cityflow_flow(args):
     # parent dir of current dir
     f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
-    sumofile = os.path.join(f_cwd, 'data/raw_data', args.or_sumoflow)
-    cityflowfile = os.path.join(f_cwd, 'data/raw_data', args.cityflowflow)
+    sumofile = os.path.join(f_cwd, 'data/raw_data', args.or_sumotraffic)
+    cityflowfile = os.path.join(f_cwd, 'data/raw_data', args.cityflowtraffic)
 
     sumocfg = os.path.join(f_cwd, 'data/raw_data', args.sumocfg)
     print("Converting sumo flow file", sumofile)
@@ -621,7 +616,7 @@ def sumo2cityflow_flow(args):
     root = tree.getroot()
     # TODO check whether need to get truth rou.xml from trip.xml
     if root.find('trip') != None and 'rou' in sumofile:
-        # 1. rename sumoflowfile from rou.xml to trip.xml
+        # 1. rename sumotrafficfile from rou.xml to trip.xml
         src = sumofile
         dst = get_filename(sumofile, typ='trip')
         try:
@@ -638,7 +633,7 @@ def sumo2cityflow_flow(args):
             f"duarouter --route-files={dst} --net-file={sumonet} --output-file={sumofile}")
         print("SUMO rou file generated successfully!")
     
-    # redirect tree of sumoflow file
+    # redirect tree of sumotraffic file
     tree = ET.parse(sumofile)
     root = tree.getroot()
     tree_cfg = ET.parse(sumocfg)
@@ -722,8 +717,8 @@ def sumo2cityflow_net(args):
 def cityflow2sumo_flow(args):
     # parent dir of current dir
     f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
-    sumofile = os.path.join(f_cwd, 'data/raw_data', args.sumoflow)
-    cityflowfile = os.path.join(f_cwd, 'data/raw_data', args.or_cityflowflow)
+    sumofile = os.path.join(f_cwd, 'data/raw_data', args.sumotraffic)
+    cityflowfile = os.path.join(f_cwd, 'data/raw_data', args.or_cityflowtraffic)
 
     data = json.load(open(cityflowfile, 'r', encoding="utf-8"))
     # sorted vehicle according to depart time
@@ -961,14 +956,6 @@ def cityflow2sumo_net(args):
                 if idx != 0 and light['availableRoadLinks'] is not None: # idx=0 means yellow phase
                     for act_roadlink in light['availableRoadLinks']:
                         state[phase_dic[act_roadlink][0]:sum(phase_dic[act_roadlink])] = ['G']*phase_dic[act_roadlink][1]
-                        
-                        # act_p = dic_phase[inter['trafficLight']['roadLinkIndices'][act_roadlink]]
-                        # state[act_p*lane_num:act_p*lane_num+lane_num] = ['G']*lane_num
-                        
-                        # if num_phase == 12:
-                        #     state[act_p*3:act_p*3+3] = ['G']*3
-                        # elif num_phase == 8:
-                        #     state[act_p*2:act_p*2+2] = ['G']*2
                     # add yellow phase behind green phase
                     phase = doc_node.createElement('phase')
                     phase.setAttribute('duration', str(light['time']))
@@ -987,108 +974,28 @@ def cityflow2sumo_net(args):
                     assert idx == 0
                     for act_roadlink in light['availableRoadLinks']:
                         yellow_state[phase_dic[act_roadlink][0]:sum(phase_dic[act_roadlink])] = ['G']*phase_dic[act_roadlink][1]
-                        # act_p = dic_phase[inter['trafficLight']['roadLinkIndices'][act_roadlink]]
-                        # state[act_p*lane_num:act_p*lane_num+lane_num] = ['G']*lane_num
-                        
-                        # if num_phase == 12:
-                        #     yellow_state[act_p*3:act_p*3+3] = ['G']*3
-                        # elif num_phase == 8:
-                        #     yellow_state[act_p*2:act_p*2+2] = ['G']*2
-
-
-        # if not inter['virtual']:
-        #     # lane_type = len(set([i['type'] for i in inter['roadLinks']]))
-        #     # group roads according to startRoad.
-        #     road_group = []
-        #     sortorder = {"turn_right":0, "go_straight":1, "turn_left":2, "turn_u":3}
-        #     for idx, items in groupby(inter['roadLinks'], key=itemgetter('startRoad')):
-        #         # sort roads according to order: turn right, turn straight, turn left, turn u
-        #         l_items = list(items)
-        #         for x in l_items:
-        #             if x['type'] == 'turn_left':
-        #                 if judg_turn_u(x, data['roads']):
-        #                     x.update({'type':'turn_u'})
-        #         sorted_items = sorted(l_items,key=lambda x: sortorder[x['type']])
-        #         road_group.insert(0,sorted_items) # items' order is the same order as settings of SUMO: NESW
-        #     # sort roads according to order: turn right, turn straight, turn left, turn u
-        #     road_group = [y for x in road_group for y in x]
-        #     phase_dic = {}
-        #     for idx, x in enumerate(inter['roadLinks']):
-        #         dst_idx = road_group.index(x)
-        #         phase_dic[idx] = dict({dst_idx:len(road_group[dst_idx]['laneLinks'])})
-        #     phase_dic = get_start_idx(phase_dic)
-        #     phase_num_all = sum(len(i['laneLinks']) for i in inter['roadLinks'])
-        #     # num_phase = len(inter['roadLinks'])
-        #     # dic_phase = [0] * num_phase
-        #     for idx, link in enumerate(inter['roadLinks']):
-        #         # con.xml
-        #         # num_lanelinks = len(link['laneLinks'])-1
-        #         start_num_lanelinks = [len(x['lanes']) for x in data['roads'] if x['id']==link['startRoad']][0]-1
-        #         end_num_lanelinks = [len(x['lanes']) for x in data['roads'] if x['id']==link['endRoad']][0]-1
-        #         for lanelink in link['laneLinks']:
-        #             con = doc_con.createElement('connection')
-        #             con.setAttribute('from', link['startRoad'])
-        #             con.setAttribute('to', link['endRoad'])
-        #             # sumo (outer to inner) is opposite from cityflow(inner to outer) in lane order.
-        #             con.setAttribute('fromLane', str(
-        #                 abs(start_num_lanelinks-lanelink['startLaneIndex'])))
-        #             con.setAttribute('toLane', str(
-        #                 abs(end_num_lanelinks-lanelink['endLaneIndex'])))
-        #             root_con.appendChild(con)
+                #     # add yellow phase behind green phase
+                #     phase = doc_node.createElement('phase')
+                #     phase.setAttribute('duration', str(light['time']))
+                #     phase.setAttribute('state', ''.join(state))
+                #     tll.appendChild(phase)
+                #     root_tll.appendChild(tll)
+                #     # add yellow phase behind green phase
+                #     phase_y = doc_node.createElement('phase')
+                #     phase_y.setAttribute('duration', '5')
+                #     phase_y.setAttribute('state', ''.join(yellow_state))
+                #     tll.appendChild(phase_y)
+                #     root_tll.appendChild(tll)
+                # if light['time'] == 5:
+                #     # first should set yellow phase, then can add this yellow phase when adding a green phase
+                #     assert idx == 0
+                #     for act_roadlink in light['availableRoadLinks']:
+                #             act_p = dic_phase[inter['trafficLight']['roadLinkIndices'][act_roadlink]]
+                #             if num_phase == 12:
+                #                 yellow_state[act_p*3:act_p*3+3] = ['G']*3
+                #             elif num_phase == 8:
+                #                 yellow_state[act_p*2:act_p*2+2] = ['G']*2
                 
-        #         # # create dic for {direction,type} and idx(roadLinks)
-        #         # phase_idx = get_phase2lane(link['direction'], link['type'], num_phase)
-        #         # dic_phase[inter['trafficLight']['roadLinkIndices'][idx]] = phase_idx
-            
-        #     # tll.xml,in cityflow setting, only conside G and r phase
-        #     tll = doc_node.createElement('tlLogic')
-        #     tll.setAttribute('id', inter['id'])
-        #     tll.setAttribute('type', 'static')
-        #     tll.setAttribute('programID', '0')
-        #     tll.setAttribute('offset', '0')
-        #     yellow_state = ['r'] * phase_num_all
-        #     # yellow_state = ['r'] * num_phase * lane_num
-        #     # yellow_state = ['r'] * num_phase * 3
-        #     for idx,light in enumerate(inter['trafficLight']['lightphases']):
-        #         state = ['r'] * phase_num_all
-        #         # state = ['r'] * num_phase * lane_num
-        #         # state = ['r'] * num_phase * 3
-        #         if idx != 0 and light['availableRoadLinks'] is not None: # idx=0 means yellow phase
-        #             for act_roadlink in light['availableRoadLinks']:
-        #                 state[phase_dic[act_roadlink][0]:sum(phase_dic[act_roadlink])] = ['G']*phase_dic[act_roadlink][1]
-                        
-        #                 # act_p = dic_phase[inter['trafficLight']['roadLinkIndices'][act_roadlink]]
-        #                 # state[act_p*lane_num:act_p*lane_num+lane_num] = ['G']*lane_num
-                        
-        #                 # if num_phase == 12:
-        #                 #     state[act_p*3:act_p*3+3] = ['G']*3
-        #                 # elif num_phase == 8:
-        #                 #     state[act_p*2:act_p*2+2] = ['G']*2
-        #             # add yellow phase behind green phase
-        #             phase = doc_node.createElement('phase')
-        #             phase.setAttribute('duration', str(light['time']))
-        #             phase.setAttribute('state', ''.join(state))
-        #             tll.appendChild(phase)
-        #             root_tll.appendChild(tll)
-        #             # add yellow phase behind green phase
-        #             phase_y = doc_node.createElement('phase')
-        #             phase_y.setAttribute('duration', '5')
-        #             phase_y.setAttribute('state', ''.join(yellow_state))
-        #             tll.appendChild(phase_y)
-        #             root_tll.appendChild(tll)
-        #         if light['time'] <= 5:
-        #             # first should set yellow phase, then can add this yellow phase when adding a green phase
-        #             assert idx == 0
-        #             for act_roadlink in light['availableRoadLinks']:
-        #                 yellow_state[phase_dic[act_roadlink][0]:sum(phase_dic[act_roadlink])] = ['G']*phase_dic[act_roadlink][1]
-        #                 # act_p = dic_phase[inter['trafficLight']['roadLinkIndices'][act_roadlink]]
-        #                 # state[act_p*lane_num:act_p*lane_num+lane_num] = ['G']*lane_num
-                        
-        #                 # if num_phase == 12:
-        #                 #     yellow_state[act_p*3:act_p*3+3] = ['G']*3
-        #                 # elif num_phase == 8:
-        #                 #     yellow_state[act_p*2:act_p*2+2] = ['G']*2
-
                 
     fp_node = open(sumo_node, 'w')
     doc_node.writexml(fp_node, addindent='\t', newl='\n', encoding="utf-8")
@@ -1226,11 +1133,11 @@ def cityflow2sumo_cfg(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    # sumo2cityflow
-    # sumo2cityflow_net(args)
-    # sumo2cityflow_flow(args)
-
     # cityflow2sumo
-    cityflow2sumo_net(args)
-    # cityflow2sumo_flow(args)
-    # cityflow2sumo_cfg(args)
+    if args.typ == 'c2s':
+        cityflow2sumo_net(args)
+        cityflow2sumo_flow(args)
+        cityflow2sumo_cfg(args)
+    else: # sumo2cityflow
+        sumo2cityflow_net(args)
+        sumo2cityflow_flow(args)

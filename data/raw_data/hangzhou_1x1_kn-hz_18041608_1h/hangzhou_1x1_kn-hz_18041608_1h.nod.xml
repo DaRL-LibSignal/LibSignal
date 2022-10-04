@@ -2,7 +2,7 @@
 <nodes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/nodes_file.xsd">
 	<node id="intersection_0_1" type="priority" x="-300" y="0"/>
 	<node id="intersection_1_0" type="priority" x="0" y="-300"/>
-	<node id="intersection_1_1" type="traffic_light" x="0" y="0"/>
+	<node id="intersection_1_1" type="traffic_light_right_on_red" x="0" y="0"/>
 	<node id="intersection_1_2" type="priority" x="0" y="300"/>
 	<node id="intersection_2_1" type="priority" x="300" y="0"/>
 </nodes>

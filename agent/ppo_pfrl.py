@@ -91,7 +91,7 @@ class IPPO_pfrl(RLAgent):
                                                           targets=["cur_phase"], negative=False)
         self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_time_count"],
                                                      in_only=True, average='all', negative=True)
-        self.vehicles_generator = IntersectionVehicleGenerator(self.world, inter_obj, ["lane_vehicles"])
+        # self.vehicles_generator = IntersectionVehicleGenerator(self.world, inter_obj, ["lane_vehicles"])
     def get_ob(self):
         x_obs = []
         x_obs.append(self.ob_generator.generate())
@@ -148,8 +148,8 @@ class IPPO_pfrl(RLAgent):
 
     def remember(self, last_obs, last_phase, actions, actions_prob, rewards, obs, cur_phase, done, key):
         # reformat it later
-        self.replay_buffer.append((key, (obs, cur_phase, rewards, dones)))
-        self.do_observe(ob, phase, reward, done)
+        self.replay_buffer.append((key, (obs, cur_phase, rewards, done)))
+        self.do_observe(obs, cur_phase, rewards, done)
 
     def _build_model(self):
         """
@@ -207,5 +207,4 @@ class IPPO_pfrl(RLAgent):
             os.makedirs(path)
         model_name = os.path.join(path, f'{e}_{self.rank}.pt')
         torch.save(self.model.state_dict(), model_name)
-
 

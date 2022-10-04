@@ -27,9 +27,7 @@ class FRAP_DQNAgent(RLAgent):
         self.epsilon_decay = self.dic_agent_conf.param["epsilon_decay"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
-        self.num_phases = len(self.dic_traffic_env_conf.param["phases"])
-        self.num_actions = len(self.dic_traffic_env_conf.param["phases"])
-        self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
+        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
         self.world = world
@@ -50,7 +48,7 @@ class FRAP_DQNAgent(RLAgent):
         self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_waiting_count"], in_only=True, average="all",
                                                      negative=True)
-
+        
         self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_waiting_count"], in_only=True,
                                                      negative=False)
@@ -58,10 +56,12 @@ class FRAP_DQNAgent(RLAgent):
                                                      ["lane_delay"], in_only=True, average="all",
                                                      negative=False)
 
-        map_name = Registry.mapping['command_mapping']['setting'].param['network']
+        map_name = self.dic_traffic_env_conf.param['network']
         self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
         self.comp_mask = self.relation()
         self.dic_phase_expansion = None
+        self.num_phases = len(self.phase_pairs)
+        self.num_actions = len(self.phase_pairs)
         # if self.phase:
         #     if self.one_hot:
         #         if self.ob_generator.ob_length == 8:
@@ -94,6 +94,22 @@ class FRAP_DQNAgent(RLAgent):
         self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_delay"], in_only=True, average="all",
                                                      negative=False)
+    
+    def relation(self):
+        comp_mask = []
+        for i in range(len(self.phase_pairs)):
+            zeros = np.zeros(len(self.phase_pairs) - 1, dtype=np.int)
+            cnt = 0
+            for j in range(len(self.phase_pairs)):
+                if i == j: continue
+                pair_a = self.phase_pairs[i]
+                pair_b = self.phase_pairs[j]
+                if len(list(set(pair_a + pair_b))) == 3: zeros[cnt] = 1
+                cnt += 1
+            comp_mask.append(zeros)
+        comp_mask = torch.from_numpy(np.asarray(comp_mask))
+        return comp_mask 
+
 
     def relation(self):
         comp_mask = []
@@ -112,7 +128,7 @@ class FRAP_DQNAgent(RLAgent):
 
 
     def _build_model(self):
-        model = FRAP(self.dic_agent_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
+        model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         return model
 
     def get_ob(self):
@@ -220,10 +236,10 @@ class FRAP_DQNAgent(RLAgent):
 
     def load_model(self, e):
         model_name = os.path.join(
-            Registry.mapping['logger_mapping']['path'].path, 'model', f'{e}_{self.rank}.pt')
-        self.model = FRAP(self.dic_agent_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
+            Registry.mapping['logger_mapping']['output_path'].path, 'model', f'{e}_{self.rank}.pt')
+        self.model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         self.model.load_state_dict(torch.load(model_name))
-        self.target_model = FRAP(self.dic_agent_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.target_model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         self.target_model.load_state_dict(torch.load(model_name))
 
     def save_model(self, e):
@@ -236,14 +252,14 @@ class FRAP_DQNAgent(RLAgent):
 
 
 class FRAP(nn.Module):
-    def __init__(self, dic_agent_conf, dic_phase_expansion, output_shape, phase_pairs, competition_mask):
+    def __init__(self, dic_agent_conf, dic_traffic_env_conf, dic_phase_expansion, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
         self.dic_phase_expansion = dic_phase_expansion
         self.oshape = output_shape
         self.phase_pairs = phase_pairs
         self.comp_mask = competition_mask
         self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
-        self.one_hot = dic_agent_conf.param['one_hot']
+        self.one_hot = dic_traffic_env_conf.param['one_hot']
         self.d_out = 4      # units in demand input layer
         self.p_out = 4      # size of phase embedding
         self.lane_embed_units = 16
@@ -303,12 +319,13 @@ class FRAP(nn.Module):
             phase_demand = torch.cat((phase, demand), -1)
             phase_demand_embed = F.relu(self.lane_embedding(phase_demand))
             phase_demands.append(phase_demand_embed)
-        phase_demands_old = torch.stack(phase_demands, 1)
-        # turn direction from NESW to ESWN
-        if num_movements == 8:
-            phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
-        elif num_movements == 12:
-            phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
+        phase_demands = torch.stack(phase_demands, 1)
+        # phase_demands_old = torch.stack(phase_demands, 1)
+        # # turn direction from NESW to ESWN
+        # if num_movements == 8:
+        #     phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
+        # elif num_movements == 12:
+        #     phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
         # phase_demands = torch.stack(phase_demands, 1)
 
 

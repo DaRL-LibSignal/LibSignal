@@ -4,4 +4,3 @@ mpmath==1.2.1
 numpy==1.21.5
 PyYAML==6.0
 sympy==1.10.1
-

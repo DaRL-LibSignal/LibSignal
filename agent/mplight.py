@@ -32,31 +32,34 @@ class MPLightAgent(RLAgent):
         self.grad_clip = self.dic_agent_conf.param["grad_clip"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
-        self.num_phases = len(self.dic_traffic_env_conf.param["phases"])
-        self.num_actions = len(self.dic_traffic_env_conf.param["phases"])
-        self.buffer_size = self.dic_trainer_conf.param['buffer_size']
-        # self.replay_buffer = deque(maxlen=self.buffer_size)
+        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
         self.replay_buffer = replay_buffers.ReplayBuffer(self.buffer_size)
-        
+
 
         self.world = world
         self.rank = rank
         self.sub_agents = len(self.world.intersections)
         self.inter_id = self.world.intersection_ids[self.rank]
-        self.phase = self.dic_agent_conf.param['phase']
-        self.one_hot = self.dic_agent_conf.param['one_hot']
+        self.phase = self.dic_traffic_env_conf.param['phase']
+        self.one_hot = self.dic_traffic_env_conf.param['one_hot']
         self.action_space_list = [gym.spaces.Discrete(len(x.phases)) for x in self.world.intersections]
         # create competition matrix
-        map_name = Registry.mapping['command_mapping']['setting'].param['network']
+        map_name = self.dic_traffic_env_conf.param['network']
         self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
         self.comp_mask = self.relation()
         self.valid_acts = self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
         self.reverse_valid = None
+        self.ob_order = None
+        if 'lane_order' in self.dic_traffic_env_conf.param['signal_config'][map_name].keys():
+            self.ob_order = self.dic_traffic_env_conf.param['signal_config'][map_name]['lane_order']
+        self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
         self.model = None
         self.optimizer = None
-        episodes = self.dic_trainer_conf.param['episodes'] * 0.8
-        steps = self.dic_trainer_conf.param['steps']
-        action_interval = self.dic_trainer_conf.param['action_interval']
+        self.num_phases = len(self.phase_pairs)
+        self.num_actions = len(self.phase_pairs)
+        episodes = Registry.mapping['trainer_mapping']['trainer_setting'].param['episodes'] * 0.8
+        steps = Registry.mapping['trainer_mapping']['trainer_setting'].param['steps']
+        action_interval = Registry.mapping['trainer_mapping']['trainer_setting'].param['action_interval']
         total_steps = episodes * steps / action_interval
         self.explorer = SharedEpsGreedy(
                 self.dic_agent_conf.param["eps_start"],
@@ -65,7 +68,7 @@ class MPLightAgent(RLAgent):
                 lambda: np.random.randint(len(self.phase_pairs)),
             )
         self.agents_iner = self._build_model()
-
+        
         # get generators for MPLightAgent
         observation_generators = []
         for inter in self.world.intersections:
@@ -214,8 +217,53 @@ class MPLightAgent(RLAgent):
         """
         x_obs = []  # sub_agents * lane_nums,
         for i in range(len(self.ob_generator)):
-            x_obs.append((self.ob_generator[i][1].generate()))
-        # x_obs = np.array(x_obs, dtype=np.float32)
+            tmp = self.ob_generator[i][1].generate()
+            if self.ob_order != None:
+                tt = []
+                if self.ob_generator[i][1].I.id[:3] == 'GS_':
+                    name = self.ob_generator[i][1].I.id[3:]
+                else:
+                    name = self.ob_generator[i][1].I.id
+                for i in range(12):
+                    if i in self.ob_order[name].keys():
+                        tt.append(tmp[self.ob_order[name][i]])
+                    else:
+                        tt.append(0.)
+                x_obs.append(np.array(tt))  
+
+                # if tmp.shape[-1] == 5:
+                #     dic = {0:0,1:1,4:2,6:3,7:4}
+                #     tt = []
+                #     for i in range(12):
+                #         if i in dic.keys():
+                #             tt.append(tmp[dic[i]])
+                #         else:
+                #             tt.append(0.)
+                #     x_obs.append(np.array(tt))       
+                # elif tmp.shape[-1] == 6:
+                #     dic = {0:0,1:1,4:2,6:3,7:4,10:5}
+                #     tt = []
+                #     for i in range(12):
+                #         if i in dic.keys():
+                #             tt.append(tmp[dic[i]])
+                #         else:
+                #             tt.append(0.)
+                #     x_obs.append(np.array(tt))     
+                # else: # 8
+                #     dic = {0:0,1:1,3:2,4:3,6:4,7:5,9:6,10:7}
+                #     tt = []
+                #     for i in range(12):
+                #         if i in dic.keys():
+                #             tt.append(tmp[dic[i]])
+                #         else:
+                #             tt.append(0.)
+                #     x_obs.append(np.array(tt))     
+            
+            else:
+                x_obs.append(self.ob_generator[i][1].generate())
+            
+        if self.ob_order != None:
+            x_obs = np.array(x_obs, dtype=np.float32)
         return x_obs
 
     def get_reward(self):
@@ -288,10 +336,11 @@ class MPLightAgent(RLAgent):
             batch_reverse = None
         else:
             # TODO debug
-            batch_valid = [self.valid_acts.get(agent_id) for agent_id in
-                           ob.keys()]
-            batch_reverse = [self.reverse_valid.get(agent_id) for agent_id in
-                          ob.keys()]
+            # batch_valid = [self.valid_acts.get(agent_id) for agent_id in ob.keys()]
+            # batch_reverse = [self.reverse_valid.get(agent_id) for agent_id in ob.keys()]
+            dic = {0:'360082',1:'360086',2:'GS_cluster_2415878664_254486231_359566_359576'}
+            batch_valid = [self.valid_acts.get(dic[i]) for i in range(ob.shape[0])]
+            batch_reverse = [self.reverse_valid.get(dic[i]) for i in range(ob.shape[0])]
         batch_acts = self.agents_iner.act(batch_obs,
                                 valid_acts=batch_valid,
                                 reverse_valid=batch_reverse, test=test)
@@ -327,12 +376,12 @@ class MPLightAgent(RLAgent):
         else:
             obs = ob
         reset = [False] * self.sub_agents
-        dones = [done] * self.sub_agents
+        dones = [done] * self.sub_agents if isinstance(reward, bool) else done
         rewards = [reward] if isinstance(reward, float) else reward
         self.agents_iner.observe(obs, rewards, dones, reset)
-                
+
     def _build_model(self):
-        self.model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.phase_pairs, self.comp_mask)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         agents = MPLight_InerAgent(self.model, self.optimizer, self.replay_buffer, self.gamma, self.explorer,
                         minibatch_size=self.batch_size, replay_start_size=self.batch_size, 
@@ -353,7 +402,6 @@ class MPLightAgent(RLAgent):
     def load_model(self, e):
         model_name = os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                   'model', f'{e}_{self.rank}.pt')
-        
         self.agents_iner = self._build_model()
         # self.agents_iner.load_state_dict(torch.load(model_name))
         tmp_dict = {}
@@ -417,7 +465,7 @@ class MPLight_InerAgent(DQN):
                 greed = batch_argmax[i]
                 act, greedy = self.explorer.select_action(self.t, lambda: greed, action_value=av, num_acts=len(valid_acts[i]))
                 if not greedy:
-                    act = reverse_valid[i][act]
+                    act = reverse_valid[i][act] # get the real action(12 dims)
                 batch_action.append(act)
 
             self.batch_last_obs = list(batch_obs)
@@ -432,13 +480,13 @@ class MPLight_InerAgent(DQN):
 
         
 class FRAP(nn.Module):
-    def __init__(self, dic_agent_conf, output_shape, phase_pairs, competition_mask):
+    def __init__(self, dic_agent_conf, dic_traffic_env_conf, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
         self.oshape = output_shape
         self.phase_pairs = phase_pairs
         self.comp_mask = competition_mask
         self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
-        self.one_hot = dic_agent_conf.param['one_hot']
+        self.one_hot = dic_traffic_env_conf.param['one_hot']
         self.d_out = 4      # units in demand input layer
         self.p_out = 4      # size of phase embedding
         self.lane_embed_units = 16
@@ -464,7 +512,7 @@ class FRAP(nn.Module):
         :params states: [agents, ob_length]
         ob_length:concat[len(one_phase),len(intersection_lane)]
         '''
-        num_movements = num_movements = int((states.size()[1]-1)/self.demand_shape) if not self.one_hot else int((states.size()[1]-len(self.phase_pairs))/self.demand_shape)
+        num_movements = int((states.size()[1]-1)/self.demand_shape) if not self.one_hot else int((states.size()[1]-len(self.phase_pairs))/self.demand_shape)
         batch_size = states.size()[0]
         acts = states[:, 0].to(torch.int64) if not self.one_hot else states[:, :len(self.phase_pairs)].to(torch.int64)
         states = states[:, 1:] if not self.one_hot else states[:, len(self.phase_pairs):]
@@ -493,12 +541,13 @@ class FRAP(nn.Module):
             phase_demand = torch.cat((phase, demand), -1)
             phase_demand_embed = F.relu(self.lane_embedding(phase_demand))
             phase_demands.append(phase_demand_embed)
-        phase_demands_old = torch.stack(phase_demands, 1)
-        # turn direction from NESW to ESWN
-        if num_movements == 8:
-            phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
-        elif num_movements == 12:
-            phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
+        phase_demands = torch.stack(phase_demands, 1)
+        # phase_demands_old = torch.stack(phase_demands, 1)
+        # # turn direction from NESW to ESWN
+        # if num_movements == 8:
+        #     phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
+        # elif num_movements == 12:
+        #     phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
         
 
         pairs = []

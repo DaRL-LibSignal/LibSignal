@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-06-01 06:18:52 by Eclipse SUMO netconvert Version 1.13.0
+<!-- generated on 2022-06-08 17:25:03 by Eclipse SUMO netconvert Version 1.13.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
@@ -104,15 +104,22 @@
     </edge>
 
     <tlLogic id="intersection_1_1" type="static" programID="0" offset="0">
-        <phase duration="5"  state="rrrrrrrrrrrrrrrrrrrrrrrr"/>
-        <phase duration="30" state="rrrrGGrrrrrrGGrrrrrrrrrr"/>
-        <phase duration="30" state="GGrrrrrrGGrrrrrrrrrrrrrr"/>
-        <phase duration="30" state="rrrrrrGGrrrrrrGGrrrrrrrr"/>
-        <phase duration="30" state="rrGGrrrrrrGGrrrrrrrrrrrr"/>
-        <phase duration="30" state="rrrrrrrrrrrrGGGGrrrrrrrr"/>
-        <phase duration="30" state="rrrrGGGGrrrrrrrrrrrrrrrr"/>
-        <phase duration="30" state="rrrrrrrrGGGGrrrrrrrrrrrr"/>
-        <phase duration="30" state="GGGGrrrrrrrrrrrrrrrrrrrr"/>
+        <phase duration="30" state="rrrrGGrrrrrrGGrr"/>
+        <phase duration="5"  state="rrrrrrrrrrrrrrrr"/>
+        <phase duration="30" state="GGrrrrrrGGrrrrrr"/>
+        <phase duration="5"  state="rrrrrrrrrrrrrrrr"/>
+        <phase duration="30" state="rrrrrrGGrrrrrrGG"/>
+        <phase duration="5"  state="rrrrrrrrrrrrrrrr"/>
+        <phase duration="30" state="rrGGrrrrrrGGrrrr"/>
+        <phase duration="5"  state="rrrrrrrrrrrrrrrr"/>
+        <phase duration="30" state="rrrrrrrrrrrrGGGG"/>
+        <phase duration="5"  state="rrrrrrrrrrrrrrrr"/>
+        <phase duration="30" state="rrrrGGGGrrrrrrrr"/>
+        <phase duration="5"  state="rrrrrrrrrrrrrrrr"/>
+        <phase duration="30" state="rrrrrrrrGGGGrrrr"/>
+        <phase duration="5"  state="rrrrrrrrrrrrrrrr"/>
+        <phase duration="30" state="GGGGrrrrrrrrrrrr"/>
+        <phase duration="5"  state="rrrrrrrrrrrrrrrr"/>
     </tlLogic>
 
     <junction id="intersection_0_1" type="priority" x="0.00" y="300.00" incLanes="road_1_1_2_0 road_1_1_2_1" intLanes=":intersection_0_1_0_0" shape="0.00,300.00 0.00,306.40 0.00,300.00">

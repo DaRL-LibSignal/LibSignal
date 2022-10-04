@@ -52,8 +52,9 @@ class TSCTrainer(BaseTrainer):
                                      )
 
     def create_world(self):
-        self.world = Registry.mapping['world_mapping'][Registry.mapping['command_mapping']['setting'].param['world']](
-            self.path, Registry.mapping['command_mapping']['setting'].param['thread_num'])
+        # traffic setting is in the world mapping
+        self.world = Registry.mapping['world_mapping'][self.args['world']](
+            self.path, Registry.mapping['world_mapping']['traffic_setting'].param['thread_num'],interface=self.args['interface'])
 
     def create_metric(self):
         lane_metrics = ['rewards', 'queue', 'delay']

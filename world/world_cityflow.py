@@ -1,3 +1,4 @@
+from ast import Param
 import json
 import os.path as osp
 import cityflow
@@ -31,6 +32,17 @@ class Intersection(object):
         self.directions = []
         self.out_roads = None
         self.in_roads = None
+
+        map_name = Registry.mapping['world_mapping']['traffic_setting'].param['network']
+        self.lane_order_cf = None
+        self.lane_order_sumo = None
+        if 'signal_config' in Registry.mapping['world_mapping']['traffic_setting'].param.keys():
+            if 'N' in Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'].keys():
+                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order']
+                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order']
+            else:
+                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'][self.id]
+                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order'][self.id]
 
         # links and phase information of each intersection
         self.current_phase = 0
@@ -161,7 +173,7 @@ class World(object):
     Create a CityFlow engine and maintain information about CityFlow world
     """
 
-    def __init__(self, cityflow_config, thread_num):
+    def __init__(self, cityflow_config, thread_num, **kwargs):
         print("building world...")
         self.eng = cityflow.Engine(cityflow_config, thread_num=thread_num)
         with open(cityflow_config) as f:
@@ -188,7 +200,7 @@ class World(object):
 
         # create non-virtual Intersections
         print("creating intersections...")
-        if if_sumo:
+        if self.if_sumo:
             non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["gt_virtual"]]
         else:
             if if_cf_virtual:
