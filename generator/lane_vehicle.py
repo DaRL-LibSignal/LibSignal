@@ -66,6 +66,26 @@ class LaneVehicleGenerator(BaseGenerator):
                     from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
                     self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
 
+            else:
+                raise Exception('NOT IMPLEMENTED YET')
+        
+        else:
+            if isinstance(world, world_sumo.World):
+                for r in roads:
+                    if not self.world.RIGHT:
+                        tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]), reverse=True)
+                    else:
+                        tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(ob[-1]))
+                    self.lanes.append(tmp)
+                    # TODO: rank lanes by lane ranking [0,1,2], assume we only have one digit for ranking
+            elif isinstance(world, world_cityflow.World):
+                for road in roads:
+                    from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
+                    self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
+            
+            else:
+                raise Exception('NOT IMPLEMENTED YET')
+
 
             
 
@@ -92,8 +112,8 @@ class LaneVehicleGenerator(BaseGenerator):
         #         else:
         #             tmp = sorted(I.road_lane_mapping[r], key=lambda ob: int(str(ob)[-1]))
         #         self.lanes.append(tmp)
-        else:
-            raise Exception('NOT IMPLEMENTED YET')
+        # else:
+        #     raise Exception('NOT IMPLEMENTED YET')
 
         # subscribe functions
         self.world.subscribe(fns)
