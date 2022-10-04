@@ -4,3 +4,12 @@ includes:
 model:
   name: dqn
   train_model: True
+  epsilon: 0.1
+  epsilon_decay: 0.995
+  epsilon_min: 0.01
+  one_hot: True
+  phase: True
+
+trainer:
+  learning_start: 1000
+  buffer_size: 5000
