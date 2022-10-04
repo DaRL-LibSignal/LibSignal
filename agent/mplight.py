@@ -32,7 +32,7 @@ class MPLightAgent(RLAgent):
         self.grad_clip = self.dic_agent_conf.param["grad_clip"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
-        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
+        self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
         self.replay_buffer = replay_buffers.ReplayBuffer(self.buffer_size)
 
 
@@ -40,8 +40,8 @@ class MPLightAgent(RLAgent):
         self.rank = rank
         self.sub_agents = len(self.world.intersections)
         self.inter_id = self.world.intersection_ids[self.rank]
-        self.phase = self.dic_traffic_env_conf.param['phase']
-        self.one_hot = self.dic_traffic_env_conf.param['one_hot']
+        self.phase = self.dic_agent_conf.param['phase']
+        self.one_hot = self.dic_agent_conf.param['one_hot']
         self.action_space_list = [gym.spaces.Discrete(len(x.phases)) for x in self.world.intersections]
         # create competition matrix
         map_name = self.dic_traffic_env_conf.param['network']
@@ -57,9 +57,9 @@ class MPLightAgent(RLAgent):
         self.optimizer = None
         self.num_phases = len(self.phase_pairs)
         self.num_actions = len(self.phase_pairs)
-        episodes = Registry.mapping['trainer_mapping']['trainer_setting'].param['episodes'] * 0.8
-        steps = Registry.mapping['trainer_mapping']['trainer_setting'].param['steps']
-        action_interval = Registry.mapping['trainer_mapping']['trainer_setting'].param['action_interval']
+        episodes = Registry.mapping['trainer_mapping']['setting'].param['episodes'] * 0.8
+        steps = Registry.mapping['trainer_mapping']['setting'].param['steps']
+        action_interval = Registry.mapping['trainer_mapping']['setting'].param['action_interval']
         total_steps = episodes * steps / action_interval
         self.explorer = SharedEpsGreedy(
                 self.dic_agent_conf.param["eps_start"],
@@ -376,12 +376,12 @@ class MPLightAgent(RLAgent):
         else:
             obs = ob
         reset = [False] * self.sub_agents
-        dones = [done] * self.sub_agents if isinstance(reward, bool) else done
+        dones = [done] * self.sub_agents if isinstance(done, bool) else done
         rewards = [reward] if isinstance(reward, float) else reward
         self.agents_iner.observe(obs, rewards, dones, reset)
 
     def _build_model(self):
-        self.model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         agents = MPLight_InerAgent(self.model, self.optimizer, self.replay_buffer, self.gamma, self.explorer,
                         minibatch_size=self.batch_size, replay_start_size=self.batch_size, 
@@ -480,13 +480,13 @@ class MPLight_InerAgent(DQN):
 
         
 class FRAP(nn.Module):
-    def __init__(self, dic_agent_conf, dic_traffic_env_conf, output_shape, phase_pairs, competition_mask):
+    def __init__(self, dic_agent_conf, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
         self.oshape = output_shape
         self.phase_pairs = phase_pairs
         self.comp_mask = competition_mask
         self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
-        self.one_hot = dic_traffic_env_conf.param['one_hot']
+        self.one_hot = dic_agent_conf.param['one_hot']
         self.d_out = 4      # units in demand input layer
         self.p_out = 4      # size of phase embedding
         self.lane_embed_units = 16

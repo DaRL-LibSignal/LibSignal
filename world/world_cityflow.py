@@ -33,16 +33,16 @@ class Intersection(object):
         self.out_roads = None
         self.in_roads = None
 
-        map_name = Registry.mapping['world_mapping']['traffic_setting'].param['network']
+        map_name = Registry.mapping['world_mapping']['setting'].param['network']
         self.lane_order_cf = None
         self.lane_order_sumo = None
-        if 'signal_config' in Registry.mapping['world_mapping']['traffic_setting'].param.keys():
-            if 'N' in Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'].keys():
-                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order']
-                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order']
+        if 'signal_config' in Registry.mapping['world_mapping']['setting'].param.keys():
+            if 'N' in Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'].keys():
+                self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order']
+                self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order']
             else:
-                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'][self.id]
-                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order'][self.id]
+                self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'][self.id]
+                self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id]
 
         # links and phase information of each intersection
         self.current_phase = 0
@@ -200,7 +200,7 @@ class World(object):
 
         # create non-virtual Intersections
         print("creating intersections...")
-        if self.if_sumo:
+        if if_sumo:
             non_virtual_intersections = [i for i in self.roadnet["intersections"] if not i["gt_virtual"]]
         else:
             if if_cf_virtual:

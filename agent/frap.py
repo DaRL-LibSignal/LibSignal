@@ -27,7 +27,7 @@ class FRAP_DQNAgent(RLAgent):
         self.epsilon_decay = self.dic_agent_conf.param["epsilon_decay"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
-        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
+        self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
         self.world = world
@@ -128,7 +128,7 @@ class FRAP_DQNAgent(RLAgent):
 
 
     def _build_model(self):
-        model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
+        model = FRAP(self.dic_agent_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         return model
 
     def get_ob(self):
@@ -237,9 +237,9 @@ class FRAP_DQNAgent(RLAgent):
     def load_model(self, e):
         model_name = os.path.join(
             Registry.mapping['logger_mapping']['output_path'].path, 'model', f'{e}_{self.rank}.pt')
-        self.model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.model = FRAP(self.dic_agent_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         self.model.load_state_dict(torch.load(model_name))
-        self.target_model = FRAP(self.dic_agent_conf, self.dic_traffic_env_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
+        self.target_model = FRAP(self.dic_agent_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         self.target_model.load_state_dict(torch.load(model_name))
 
     def save_model(self, e):
@@ -252,14 +252,14 @@ class FRAP_DQNAgent(RLAgent):
 
 
 class FRAP(nn.Module):
-    def __init__(self, dic_agent_conf, dic_traffic_env_conf, dic_phase_expansion, output_shape, phase_pairs, competition_mask):
+    def __init__(self, dic_agent_conf, dic_phase_expansion, output_shape, phase_pairs, competition_mask):
         super(FRAP, self).__init__()
         self.dic_phase_expansion = dic_phase_expansion
         self.oshape = output_shape
         self.phase_pairs = phase_pairs
         self.comp_mask = competition_mask
         self.demand_shape = dic_agent_conf.param['demand_shape']      # Allows more than just queue to be used
-        self.one_hot = dic_traffic_env_conf.param['one_hot']
+        self.one_hot = dic_agent_conf.param['one_hot']
         self.d_out = 4      # units in demand input layer
         self.p_out = 4      # size of phase embedding
         self.lane_embed_units = 16
