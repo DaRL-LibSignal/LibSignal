@@ -57,9 +57,12 @@ class TSCTrainer(BaseTrainer):
             self.path, Registry.mapping['command_mapping']['setting'].param['thread_num'],interface=Registry.mapping['command_mapping']['setting'].param['interface'])
 
     def create_metric(self):
-        delay_type = 'apx_delay' if Registry.mapping['command_mapping']['setting'].param['delay_type']=='apx' else 'real_delay'
-        lane_metrics = ['rewards', 'queue', delay_type]
-        world_metrics = ['real avg travel time', 'throughput']
+        if Registry.mapping['command_mapping']['setting'].param['delay_type'] == 'apx':
+            lane_metrics = ['rewards', 'queue', 'delay']
+            world_metrics = ['real avg travel time', 'throughput']
+        else:
+            lane_metrics = ['rewards', 'queue']
+            world_metrics = ['delay', 'real avg travel time', 'throughput']
         self.metric = Metric(lane_metrics, world_metrics, self.world, self.agents)
 
     def create_agents(self):

@@ -399,7 +399,8 @@ class World(object):
             "pressure": self.get_pressure,
             "lane_waiting_time_count": self.get_lane_waiting_time_count,
             "lane_delay": self.get_lane_delay,
-            "vehicle_trajectory": None,
+            "real_delay": self.get_real_delay,
+            "vehicle_trajectory": self.get_vehicle_trajectory,
             "history_vehicles": None,
             "phase": self.get_cur_phase,
             "throughput": self.get_cur_throughput,
@@ -408,6 +409,9 @@ class World(object):
         self.fns = []
         self.info = {}
         # test generate observation information
+        self.vehicle_trajectory = {}
+        self.vehicle_maxspeed = {}
+        self.real_delay = {}
 
     def generate_valid_phase(self):
         valid_phases = dict()
@@ -455,6 +459,7 @@ class World(object):
             self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
             # self.vehicles_planned.update({v: self.get_current_time() - self.inside_vehicles_planned[v]})
         self._update_infos()
+        self.vehicle_trajectory, self.vehicle_maxspeed = self.get_vehicle_trajectory()
         self.run += 1
 
     def reset(self):
@@ -490,6 +495,9 @@ class World(object):
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
             self.inside_vehicles.update({v: self.get_current_time()})
+        self.vehicle_trajectory = {}
+        self.vehicle_maxspeed = {}
+        self.real_delay= {}
 
     def get_current_time(self):
         result = self.eng.simulation.getTime()
