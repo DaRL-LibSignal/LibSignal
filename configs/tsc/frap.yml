@@ -2,24 +2,6 @@ includes:
   - configs/tsc/base.yml
 
 model:
-  # name: frap
-  # n_layers: 2
-  # rotation: true
-  # conflict_matrix: true
-  # merge: multiply
-  # d_dense: 20
-  # learning_rate: 0.001
-  # batch_size: 32
-  # gamma: 0.99
-  # # epsilon: 0.1
-  # # epsilon_decay: 0.995
-  # # epsilon_min: 0.01
-  # grad_clip: 5.0
-  # eps_start: 1.0
-  # eps_end: 0.0
-  # eps_decay: 220
-  # target_update: 500
-  # demand_shape: 1
   name: frap
   train_model: True
   n_layers: 2
@@ -27,21 +9,15 @@ model:
   conflict_matrix: true
   merge: multiply
   d_dense: 20
-  learning_rate: 0.001
-  batch_size: 64
-  gamma: 0.95
   epsilon: 0.1
   epsilon_decay: 0.995
   epsilon_min: 0.01
   demand_shape: 1
 
-  one_hot: True
+  one_hot: False
   phase: True
 
 trainer: 
-  # learning_start: -1
-  # buffer_size: 10000
-
   learning_start: 1000
 
 world:

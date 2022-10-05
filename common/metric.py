@@ -16,9 +16,12 @@ class Metric(object):
     def update(self, rewards=None):
         if rewards is not None:
             self.lane_metrics['rewards'] += rewards.flatten()
-        if 'delay' in self.lane_metrics.keys():
-            self.lane_metrics['delay'] += (np.stack(np.array(
+        if 'apx_delay' in self.lane_metrics.keys():
+            self.lane_metrics['apx_delay'] += (np.stack(np.array(
                 [ag.get_delay() for ag in self.agents], dtype=np.float32))).flatten()
+        if 'real_delay' in self.lane_metrics.keys():
+            self.lane_metrics['real_delay'] += (np.stack(np.array(
+                [ag.get_real_delay() for ag in self.agents], dtype=np.float32))).flatten()
         if 'queue' in self.lane_metrics.keys():
             self.lane_metrics['queue'] += (np.stack(np.array(
                 [ag.get_queue() for ag in self.agents], dtype=np.float32))).flatten()
@@ -31,7 +34,8 @@ class Metric(object):
 
     def delay(self):
         try:
-            result = self.lane_metrics['delay']
+            delay_type = 'apx_delay' if 'apx_delay' in self.lane_metrics.keys() else 'real_delay'
+            result = self.lane_metrics[delay_type]
             return np.sum(result) / (self.decision_num * len(self.world.intersections))
         except KeyError:
             print(('lane delay is not recorded in lane_metrics, please add it into the list'))
@@ -39,7 +43,8 @@ class Metric(object):
 
     def lane_delay(self):
         try:
-            result = self.lane_metrics['delay']
+            delay_type = 'apx_delay' if 'apx_delay' in self.lane_metrics.keys() else 'real_delay'
+            result = self.lane_metrics[delay_type]
             return result / self.decision_num 
         except KeyError:
             print('lane delay is not recorded in lane_metrics, please add it into the list')
