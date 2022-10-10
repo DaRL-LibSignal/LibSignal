@@ -80,20 +80,20 @@ class Intersection(object):
         self.road_lane_mapping = {}
         self.interface_flag = world.interface_flag
 
-        map_name = Registry.mapping['world_mapping']['traffic_setting'].param['network']
+        map_name = Registry.mapping['world_mapping']['setting'].param['network']
         self.lane_order_cf = None
         self.lane_order_sumo = None
-        if 'signal_config' in Registry.mapping['world_mapping']['traffic_setting'].param.keys():
-            if 'N' in Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'].keys():
-                self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order']
-                self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order']
+        if 'signal_config' in Registry.mapping['world_mapping']['setting'].param.keys():
+            if 'N' in Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'].keys():
+                self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order']
+                self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order']
             else:
-                if self.id in Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'].keys():
-                    self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'][self.id]
-                    self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order'][self.id]
+                if self.id in Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'].keys():
+                    self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'][self.id]
+                    self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id]
                 else:
-                    self.lane_order_cf = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['cf_order'][self.id[3:]] # exclude 'GS_'
-                    self.lane_order_sumo = Registry.mapping['world_mapping']['traffic_setting'].param['signal_config'][map_name]['sumo_order'][self.id[3:]]
+                    self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'][self.id[3:]] # exclude 'GS_'
+                    self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id[3:]]
 
         # links and phase information of each intersection
         self.current_phase = 0
@@ -369,9 +369,7 @@ class World(object):
         # restart eng
         self.run = 0
         self.inside_vehicles = dict()
-        # self.inside_vehicles_planned = self.get_plan_depart_time() # all vehicles appeared in rou.xml
         self.vehicles = dict()
-        # self.vehicles_planned = dict()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
         if self.interface_flag:
@@ -453,11 +451,9 @@ class World(object):
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
             self.inside_vehicles.update({v: self.get_current_time()})
-            # traci.vehicle.setLaneChangeMode(v,256)
         exiting_v = self.eng.simulation.getArrivedIDList()
         for v in exiting_v:
             self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
-            # self.vehicles_planned.update({v: self.get_current_time() - self.inside_vehicles_planned[v]})
         self._update_infos()
         self.vehicle_trajectory, self.vehicle_maxspeed = self.get_vehicle_trajectory()
         self.run += 1
@@ -471,7 +467,6 @@ class World(object):
                 traci.close()
         self.run = 0
         self.vehicles = dict()
-        # self.vehicles_planned = dict()
         self.inside_vehicles = dict()
         # TODO: check when to close traci
         if self.interface_flag:
@@ -504,18 +499,15 @@ class World(object):
         return result
 
     def get_vehicles(self):
-        # assert len(self.vehicles) == len(self.vehicles_planned)
         result = 0
-        result_planned = 0
         count = 0
         for v in self.vehicles.keys():
             count += 1
             result += self.vehicles[v]
-            result_planned += self.vehicles_planned[v]
         if count == 0:
-            return [0, 0]
+            return 0
         else:
-            return [result/count, result_planned/count]
+            return result/count
 
     def subscribe(self, fns):
         if isinstance(fns, str):
@@ -578,9 +570,6 @@ class World(object):
         return result
 
     def get_average_travel_time(self):
-        """
-        return: [real travel time, planned travel time(aligned with Cityflow)]
-        """
         return self.get_vehicles()
 
     def get_lane_vehicles(self):
@@ -636,3 +625,60 @@ class World(object):
         throughput = len(self.vehicles)
         # TODO: check if only trach left cars
         return throughput
+
+    def get_vehicle_lane(self):
+        # get the current lane of each vehicle. {vehicle_id: lane_id}
+        vehicle_lane = {}
+        for lane in self.all_lanes:
+            vehicles = 	self.eng.lane.getLastStepVehicleIDs(lane)
+            for vehicle in vehicles:
+                vehicle_lane[vehicle] = lane
+                self.vehicle_maxspeed[(vehicle,lane)] = self.eng.vehicle.getAllowedSpeed(vehicle)
+        return vehicle_lane, self.vehicle_maxspeed
+
+    def get_vehicle_trajectory(self):
+        # lane_id and time spent on the corresponding lane that each vehicle went through
+        vehicle_lane, self.vehicle_maxspeed = self.get_vehicle_lane() # get vehicles on tne roads except turning
+        vehicles = list(self.eng.vehicle.getIDList())
+        # vehicles = [x for x in vehicle_lane]
+        for vehicle in vehicles:
+            if vehicle not in self.vehicle_trajectory:
+                self.vehicle_trajectory[vehicle] = [[vehicle_lane[vehicle], int(self.eng.simulation.getTime()), 0]]
+            else:
+                if vehicle not in vehicle_lane.keys(): # vehicle is turning
+                    continue
+                if vehicle_lane[vehicle] == self.vehicle_trajectory[vehicle][-1][0]: # vehicle is running on the same lane 
+                    self.vehicle_trajectory[vehicle][-1][2] += 1
+                else: # vehicle has changed the lane
+                    self.vehicle_trajectory[vehicle].append(
+                        [vehicle_lane[vehicle], int(self.eng.simulation.getTime()), 0])
+        return self.vehicle_trajectory, self.vehicle_maxspeed
+
+    def get_real_delay(self):
+        self.vehicle_trajectory, self.vehicle_maxspeed = self.get_vehicle_trajectory()
+        for v in self.vehicle_trajectory:
+            # get road level routes of vehicle
+            routes = self.vehicle_trajectory[v] # lane_level
+            for idx, lane in enumerate(routes):
+                speed = min(self.eng.lane.getMaxSpeed(lane[0]), self.vehicle_maxspeed[(v,lane[0])])
+                lane_length = self.eng.lane.getLength(lane[0])
+                if idx == len(routes)-1: # the last lane
+                    # judge whether the vehicle run over the whole lane.
+                    lane_length = self.eng.vehicle.getLanePosition(v) if v in self.eng.vehicle.getIDList() else lane_length
+                planned_tt = float(lane_length)/speed
+                real_delay = lane[-1] - planned_tt if lane[-1]>planned_tt else 0.
+                if v not in self.real_delay.keys():
+                    self.real_delay[v] = real_delay
+                else:
+                    self.real_delay[v] += real_delay
+
+        avg_delay = 0.
+        count = 0
+        for dic in self.real_delay.items():
+            avg_delay += dic[1]
+            count += 1
+        avg_delay = avg_delay / count
+        return avg_delay
+
+
+

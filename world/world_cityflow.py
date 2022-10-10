@@ -1,12 +1,10 @@
-from ast import Param
 import json
-import os.path as osp
+import os
 import cityflow
 from common.registry import Registry
 
 import numpy as np
 from math import atan2, pi
-import sys
 import math
 
 
@@ -571,7 +569,7 @@ class World(object):
 
     def get_average_travel_time(self):
         tvg_time = self.eng.get_average_travel_time()
-        return [tvg_time, tvg_time]
+        return tvg_time
 
     def get_lane_queue_length(self):
         return self.eng.get_lane_waiting_vehicle_count()

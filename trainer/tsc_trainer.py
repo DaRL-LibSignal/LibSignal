@@ -31,12 +31,14 @@ class TSCTrainer(BaseTrainer):
         self.update_model_rate = Registry.mapping['trainer_mapping']['setting'].param['update_model_rate']
         self.update_target_rate = Registry.mapping['trainer_mapping']['setting'].param['update_target_rate']
         self.test_when_train = Registry.mapping['trainer_mapping']['setting'].param['test_when_train']
+        self.save_replay = Registry.mapping['world_mapping']['setting'].param['saveReplay']
         # replay file is only valid in cityflow now. 
         # TODO: support SUMO and Openengine later
         self.replay_file_dir = None
-        if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
-            self.replay_file_dir = os.path.join(Registry.mapping['world_mapping']['setting'].param['dir'],
-                os.path.dirname(Registry.mapping['world_mapping']['setting'].param['roadnetLogFile']))
+        if self.save_replay:
+            if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
+                self.replay_file_dir = os.path.join(Registry.mapping['world_mapping']['setting'].param['dir'],
+                    os.path.dirname(Registry.mapping['world_mapping']['setting'].param['roadnetLogFile']))
         
         # TODO: support other dataset in the future
         self.dataset = Registry.mapping['dataset_mapping'][Registry.mapping['command_mapping']['setting'].param['dataset']](
@@ -93,7 +95,7 @@ class TSCTrainer(BaseTrainer):
 
             for a in self.agents:
                 a.reset()
-            if e % self.save_rate == 0:
+            if self.save_replay and e % self.save_rate == 0:
                 # self.env.eng.set_save_replay(True)
                 if not os.path.exists(self.replay_file_dir):
                     os.makedirs(self.replay_file_dir)
@@ -163,7 +165,7 @@ class TSCTrainer(BaseTrainer):
             self.logger.info("episode:{}/{}, real avg travel time:{}".format(e, self.episodes, self.metric.real_average_travel_time()))
             for j in range(len(self.world.intersections)):
                 self.logger.debug("intersection:{}, mean_episode_reward:{}, mean_queue:{}".format(j, self.metric.lane_rewards()[j],\
-                     self.metric.lane_queue()[j], self.metric.lane_delay()[j]))
+                     self.metric.lane_queue()[j]))
             if self.test_when_train:
                 self.train_test(e)
         # self.dataset.flush([ag.replay_buffer for ag in self.agents])
@@ -221,8 +223,7 @@ class TSCTrainer(BaseTrainer):
                 self.metric.update(rewards)
             if all(dones):
                 break
-        self.logger.info("Final Travel Time is %.4f, mean rewards: %.4f,\
-            queue: %.4f, delay: %.4f, throughput: %d" % (self.metric.real_average_travel_time(), \
+        self.logger.info("Final Travel Time is %.4f, mean rewards: %.4f, queue: %.4f, delay: %.4f, throughput: %d" % (self.metric.real_average_travel_time(), \
             self.metric.rewards(), self.metric.queue(), self.metric.delay(), self.metric.throughput()))
         return self.metric
 

@@ -31,7 +31,7 @@ class Metric(object):
 
     def delay(self):
         # real_delay
-        if 'delay' in self.world_metrics.keys():
+        if 'delay' not in self.lane_metrics.keys():
             return self.world.get_real_delay()
         
         # apx_delay
@@ -79,7 +79,7 @@ class Metric(object):
         return self.world.get_cur_throughput()
     
     def real_average_travel_time(self):
-        return self.world.get_average_travel_time()[0]
+        return self.world.get_average_travel_time()
     
 
     
