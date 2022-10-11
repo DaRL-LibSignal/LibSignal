@@ -4,24 +4,22 @@ import math
 
 
 class IntersectionVehicleGenerator():
-    """
-    Generate State or Reward based on statistics of intersection vehicles.
+    '''
+    Generate state or reward based on statistics of intersection vehicles.
 
-    Parameters
-    ----------
-    world : World object
-    I : Intersection object
-    fns : list of statistics to get,"vehicle_trajectory", "lane_vehicles", "history_vehicles" is needed for result "passed_count" and "passed_time_count",
-                                    "vehicle_distance", "lane_vehicles" is needed for result "vehicle_map"
-                                    "phase" is needed for result "cur_phase"
-    targets : list of results to return, currently support "vehicle_map": map of vehicles: an image representation of vehicles’ position in this intersection
-                                                           "passed_count": total number of vehicles that passed the intersection during time interval ∆t after the last action
-                                                           "passed_time_count": total time (in minutes) spent on approaching lanes of vehicles that passed the intersection during time interval ∆t after the last action
-                                                           "cur_phase": current phase of the intersection (not before yellow phase)
+    :param world: World object
+    :param I: Intersection object
+    :param fns: list of statistics to get,"vehicle_trajectory", "lane_vehicles", "history_vehicles" is needed for result "passed_count" and "passed_time_count", 
+                                    "vehicle_distance", "lane_vehicles" is needed for result "vehicle_map", 
+                                    "phase" is needed for result "cur_phase". 
+    :param targets: list of results to return, currently support "vehicle_map": map of vehicles: an image representation of vehicles' position in this intersection. 
+                                                           "passed_count": total number of vehicles that passed the intersection during time interval ∆t after the last action. 
+                                                           "passed_time_count": total time (in minutes) spent on approaching lanes of vehicles that passed the intersection during time interval ∆t after the last action. 
+                                                           "cur_phase": current phase of the intersection (not before yellow phase). 
              See section 4.2 of the intelliLight paper[Hua Wei et al, KDD'18] for more detailed description on these targets.
-    negative : boolean, whether return negative values (mostly for Reward)
-    time_interval: use to calculate
-    """
+    :param negative: boolean, whether return negative values (mostly for Reward).
+    :param time_interval: use to calculate
+    '''
     def __init__(self, world, I, fns=("vehicle_trajectory", "lane_vehicles", "history_vehicles", "vehicle_distance"), targets=("vehicle_map"), negative=False):
         self.world = world
         self.I = I
@@ -62,6 +60,15 @@ class IntersectionVehicleGenerator():
         self.negative = negative
 
     def if_vehicle_passed_intersection(self, vehicle_trajectory, current_time, action_interval):
+        '''
+        if_vehicle_passed_intersection
+        Judge whether a vehicle passes through intersection during time interval ∆t after the last action.
+        
+        :param vehicle_trajectory: trajectory of a vehicle
+        :param current_time: current time of simulation
+        :param action_interval: time duration between change actions
+        :return result: boolean, whether the vehicle passes through intersection
+        '''
         def get_target_trajectory(trajectory, last_time, current_time):
             target = []
 
@@ -91,6 +98,13 @@ class IntersectionVehicleGenerator():
 
 
     def get_passed_vehicles(self, fns):
+        '''
+        get_passed_vehicles
+        Get the total number of vehicles that pass through intersections.
+        
+        :param fns: information of current intersection, including vehicle_trajectory, lane_vehicles, etc
+        :return passed_vehicles: the number of vehicles that pass through intersections.
+        '''
         vehicle_trajectory = fns["vehicle_trajectory"]
         history_vehicles = fns["history_vehicles"]
 
@@ -102,34 +116,51 @@ class IntersectionVehicleGenerator():
 
 
     def get_vehicle_position(self, distance, lane):
+        '''
+        get_vehicle_position
+        Get the location of vehicles in the roadnet.
+        
+        :param distance: calculate position of vehicles within the limited distance of a lane
+        :param lane: lane id
+        :return result: the location of vehicles appearing in the road network
+        '''
         road = lane[:-2]
         # start_point = list(self.world.all_roads_starting_point[road].values())
         start_point = list(self.road_starting_points[road].values())
-
-
         # 0 right, 1 up, 2 left, 3 down
         direction_code = int(road[-1])
-
         # 0 x-axis, 1 y-axis
         way = direction_code % 2
-
         # 0 1 -> 1,    2 3 -> -1
         direction = -((direction_code * 2 - 3) / abs(direction_code * 2 - 3))
-
         cur_position = start_point.copy()
         distance = int(distance)
-
         cur_position[way] += direction * distance
-
-        return tuple(cur_position)
+        result = tuple(cur_position)
+        return result
 
 
     def passed_count(self, fns):
+        '''
+        passed_count
+        Get the total number of vehicles that passed the intersection during time interval ∆t after the last action.
+        
+        :param fns: information of current intersection, including vehicle_trajectory, lane_vehicles, etc
+        :return result: the total number of vehicles that passed the intersection
+        '''
         passed_vehicles = self.get_passed_vehicles(fns)
-        return len(passed_vehicles)
+        result = len(passed_vehicles)
+        return result
 
 
     def passed_time_count(self, fns):
+        '''
+        passed_time_count
+        Get the total time (in minutes) spent on approaching lanes of vehicles that passed the intersection during time interval ∆t after the last action.
+        
+        :param fns: information of current intersection, including vehicle_trajectory, lane_vehicles, etc
+        :return passed_time_count: the total time
+        '''
         vehicle_trajectory = fns["vehicle_trajectory"]
         passed_vehicles = self.get_passed_vehicles(fns)
         # for i in passed_vehicles:
@@ -141,6 +172,13 @@ class IntersectionVehicleGenerator():
 
 
     def vehicle_map(self, fns):
+        '''
+        vehicle_map
+        Get the location of vehicles in the roadnet.
+        
+        :param fns: information of current intersection, including vehicle_trajectory, lane_vehicles, etc
+        :return mapOfCars: matrix that record location of all vehicles appearing in the road network
+        '''
         def vehicle_location_mapper(coordinate, area_length, area_width):
             transformX = math.floor((coordinate[0] + area_length / 2) / grid_width)
             length_width_map = float(area_length) / area_width
@@ -173,10 +211,24 @@ class IntersectionVehicleGenerator():
         return mapOfCars
 
     def cur_phase(self,fns):
+        '''
+        cur_phase
+        Get current phase of current intersection.
+        
+        :param fns: information of current intersection, including vehicle_trajectory, lane_vehicles, etc
+        :return cur_phase: current phase
+        '''
         cur_phase = fns["phase"]
         return cur_phase
 
     def generate(self, action_interval=10):
+        '''
+        generate
+        Generate state or reward based on current simulation state.
+        
+        :param: None
+        :return ret: state or reward
+        '''
         self.action_interval = action_interval
         self.time = self.world.eng.get_current_time()
 

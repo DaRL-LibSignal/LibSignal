@@ -21,6 +21,9 @@ def _get_direction(road, out=True):
 
 
 class Intersection(object):
+    '''
+    Intersection Class is mainly used for describing crossing information and defining acting methods.
+    '''
     def __init__(self, intersection, world):
         self.id = intersection["id"]
         self.eng = world.eng
@@ -99,11 +102,27 @@ class Intersection(object):
         self.reset()
 
     def insert_road(self, road, out):
+        '''
+        insert_road
+        It's used to append a road into self.road and add the corresponding direction with the added road.
+        
+        :param road: newly added road
+        :param out: newly added out
+        :return: None
+        '''
         self.roads.append(road)
         self.outs.append(out)
         self.directions.append(_get_direction(road, out))
 
     def sort_roads(self, RIGHT):
+        '''
+        sort_roads
+        Sort roads information by arranging an order.
+        
+        :param RIGHT: decide whether to sort from right side, 
+        currently always set to true due to CityFlow's mechanism.
+        :return: None
+        '''
         order = sorted(range(len(self.roads)),
                        key=lambda i: (self.directions[i], self.outs[i] if RIGHT else not self.outs[i]))
         self.roads = [self.roads[i] for i in order]
@@ -113,7 +132,17 @@ class Intersection(object):
         self.in_roads = [self.roads[i] for i, x in enumerate(self.outs) if not x]
 
     def _change_phase(self, phase, interval, typ='init'):
-        """phase: true phase id (including yellows)"""
+        '''
+        _change_phase
+        Change current phase and calculate time duration of current phase.
+        
+        :param phase: true phase id (including yellows)
+        :param interval: the non-acting time slice
+        :param typ: calculation type of current phase time, 
+        'init' means calculate from scratch, 
+        'add' means current phase time add interval time.
+        :return: None
+        '''
         self.eng.set_tl_phase(self.id, phase)
         self._current_phase = phase
         if typ == 'add':
@@ -122,6 +151,14 @@ class Intersection(object):
             self.current_phase_time = interval
 
     def step(self, action, interval):
+        '''
+        step
+        Take relative actions according to interval.
+        
+        :param action: the changes to take
+        :param interval: the non-acting time slice
+        :return: None
+        '''
         # if current phase is yellow, then continue to finish the yellow phase
         # recall self._current_phase means true phase id (including yellows)
         # self.current_phase means phase id in self.phases (excluding yellow)
@@ -154,6 +191,13 @@ class Intersection(object):
                     self.action_executed = action
 
     def reset(self):
+        '''
+        reset
+        Reset information, including current_phase, action_before_yellow and action_executed, etc.
+
+        :param: None
+        :return: None
+        '''
         # record phase info
         self.current_phase = 0  # phase id in self.phases (excluding yellow)
         if len(self.phases) == 0:
@@ -168,9 +212,9 @@ class Intersection(object):
 
 @Registry.register_world('cityflow')
 class World(object):
-    """
-    Create a CityFlow engine and maintain information about CityFlow world
-    """
+    '''
+    World Class is mainly used for creating a CityFlow engine and maintain information about CityFlow world.
+    '''
 
     def __init__(self, cityflow_config, thread_num, **kwargs):
         print("building world...")
@@ -283,7 +327,13 @@ class World(object):
         print("world built.")
 
     def reset_vehicle_info(self):
-        """reset vehicle infos,including waiting_time, trajectory,etc."""
+        '''
+        reset_vehicle_info
+        Reset vehicle infos, including waiting_time, trajectory, etc.
+
+        :param: None
+        :return: None
+        '''
         self.vehicle_waiting_time = {}  # key: vehicle_id, value: the waiting time of this vehicle since last halt.
         self.vehicle_trajectory = {}  # key: vehicle_id, value: [[lane_id_1, enter_time, time_spent_on_lane_1], ... , [lane_id_n, enter_time, time_spent_on_lane_n]]
         self.history_vehicles = set()
@@ -293,6 +343,13 @@ class World(object):
         self.dic_vehicle_arrive_leave_time = dict()
 
     def _update_arrive_time(self, list_vehicle_arrive):
+        '''
+        _update_arrive_time
+        Update enter time of vehicles.
+
+        :param list_vehicle_arrive: vehicles' id that have entered in roadnet
+        :return: None
+        '''
         ts = self.eng.get_current_time()
         # init vehicle enter leave time
         for vehicle in list_vehicle_arrive:
@@ -304,6 +361,13 @@ class World(object):
                 pass
 
     def _update_left_time(self, list_vehicle_left):
+        '''
+        _update_left_time
+        Update left time of vehicles.
+
+        :param list_vehicle_left: vehicles' id that have left from roadnet
+        :return: None
+        '''
         ts = self.eng.get_current_time()
         # update the time for vehicle to leave entering lane
         for vehicle in list_vehicle_left:
@@ -316,6 +380,13 @@ class World(object):
                 print("vehicle not recorded when entering!")
 
     def update_current_measurements(self):
+        '''
+        update_current_measurements
+        Update information, including enter time of vehicle, left time of vehicle, lane id that vehicles are running, etc.
+        
+        :param: None
+        :return: None
+        '''
         def _change_lane_vehicle_dic_to_list(dic_lane_vehicle):
             list_lane_vehicle = []
             for value in dic_lane_vehicle.values():
@@ -338,6 +409,13 @@ class World(object):
     
 
     def get_cur_throughput(self):
+        '''
+        get_cur_throughput
+        Get vehicles' count in the whole roadnet at current step.
+
+        :param: None
+        :return throughput: throughput in the whole roadnet at current step
+        '''
         throughput = 0
         for dic in self.dic_vehicle_arrive_leave_time:
             vehicle = self.dic_vehicle_arrive_leave_time[dic]
@@ -346,18 +424,40 @@ class World(object):
         return throughput
 
     def get_executed_action(self):
+        '''
+        get_executed_action
+        Get executed action of each intersection at current step.
+
+        :param: None
+        :return actions: executed action of each intersection at current step
+        '''
         actions = []
         for i in self.intersections:
             actions.append(i.action_executed)
         return actions
 
     def get_cur_phase(self):
+        '''
+        get_cur_phase
+        Get current phase of each intersection.
+
+        :param: None
+        :return phases: current phase of each intersection
+        '''
         phases = []
         for i in self.intersections:
             phases.append(i.current_phase)
         return phases
 
     def get_pressure(self):
+        '''
+        get_pressure
+        Get pressure of each intersection. 
+        Pressure of an intersection equals to number of vehicles that in in_lanes minus number of vehicles that in out_lanes.
+        
+        :param: None
+        :return pressures: pressure of each intersection
+        '''
         vehicles = self.eng.get_lane_vehicle_count()
         pressures = {}
         for i in self.intersections:
@@ -406,6 +506,13 @@ class World(object):
     #     return in_lines, out_lines
 
     def get_vehicle_lane(self):
+        '''
+        get_vehicle_lane
+        Get current lane id of each vehicle that is running.
+
+        :param: None
+        :return vehicle_lane: current lane id of each vehicle that is running
+        '''
         # get the current lane of each vehicle. {vehicle_id: lane_id}
         vehicle_lane = {}
         lane_vehicles = self.eng.get_lane_vehicles()
@@ -415,6 +522,14 @@ class World(object):
         return vehicle_lane
 
     def get_vehicle_waiting_time(self):
+        '''
+        get_vehicle_waiting_time
+        Get waiting time of vehicles according to vehicle's speed. 
+        If a vehicle's speed less than 0.1m/s, then its waiting time would be added 1s.
+        
+        :param: None
+        :return vehicle_waiting_time: waiting time of vehicles
+        '''
         # the waiting time of vehicle since last halt.
         vehicles = self.eng.get_vehicles(include_waiting=False)
         vehicle_speed = self.eng.get_vehicle_speed()
@@ -428,6 +543,13 @@ class World(object):
         return self.vehicle_waiting_time
 
     def get_lane_waiting_time_count(self):
+        '''
+        get_lane_waiting_time_count
+        Get waiting time of vehicles in each lane.
+        
+        :param: None
+        :return lane_waiting_time: waiting time of vehicles in each lane
+        '''
         # the sum of waiting times of vehicles on the lane since their last halt.
         lane_waiting_time = {}
         lane_vehicles = self.eng.get_lane_vehicles()
@@ -439,6 +561,14 @@ class World(object):
         return lane_waiting_time
 
     def get_lane_delay(self):
+        '''
+        get_lane_delay
+        Get approximate delay of each lane. 
+        Approximate delay of each lane equals to (1 - lane_avg_speed)/lane_speed_limit.
+        
+        :param: None
+        :return lane_delay: approximate delay of each lane
+        '''
         # the delay of each lane: 1 - lane_avg_speed/speed_limit
         lane_vehicles = self.eng.get_lane_vehicles()
         lane_delay = {}
@@ -460,6 +590,13 @@ class World(object):
         return lane_delay
 
     def get_vehicle_trajectory(self):
+        '''
+        get_vehicle_trajectory
+        Get trajectory of vehicles that have entered in roadnet, including vehicle_id, enter time, leave time or current time.
+        
+        :param: None
+        :return vehicle_trajectory: trajectory of vehicles that have entered in roadnet
+        '''
         # lane_id and time spent on the corresponding lane that each vehicle went through
         vehicle_lane = self.get_vehicle_lane() # get vehicles on tne roads except turning
         vehicles = self.eng.get_vehicles(include_waiting=False)
@@ -477,10 +614,25 @@ class World(object):
         return self.vehicle_trajectory
 
     def get_history_vehicles(self):
+        '''
+        get_history_vehicles
+        Get vehicles that have entered in roadnet.
+        
+        :param: None
+        :return history_vehicles: information of vehicles that have entered in roadnet.
+        '''
         self.history_vehicles.update(self.eng.get_vehicles())
         return self.history_vehicles
 
     def _get_roadnet(self, cityflow_config):
+        '''
+        _get_roadnet
+        Read information from roadnet file in the config file.
+        
+        :param cityflow_config: config file of a roadnet
+        :return roadnet: information of a roadnet
+        '''
+
         """
         read information from roadnet file in the config file
         generate roadnet dictionary based on provide configuration file
@@ -529,6 +681,13 @@ class World(object):
         return roadnet
 
     def subscribe(self, fns):
+        '''
+        subscribe
+        Subscribe information you want to get when training the model.
+        
+        :param fns: information name you want to get
+        :return: None
+        '''
         if isinstance(fns, str):
             fns = [fns]
         for fn in fns:
@@ -539,6 +698,14 @@ class World(object):
                 raise Exception("info function %s not exists" % fn)
 
     def step(self, actions=None):
+        '''
+        step
+        Take relative actions and update information, 
+        including global information, measurements and trajectory, etc.
+        
+        :param actions: actions list to be executed at all intersections at the next step
+        :return: None
+        '''
         #  update previous measurement
         self.dic_lane_vehicle_previous_step = self.dic_lane_vehicle_current_step
 
@@ -552,6 +719,13 @@ class World(object):
         self.vehicle_trajectory = self.get_vehicle_trajectory()
 
     def reset(self):
+        '''
+        reset
+        reset information, including waiting_time, trajectory, etc.
+       
+        :param: None
+        :return: None
+        '''
         self.eng.reset()
         for I in self.intersections:
             I.reset()
@@ -560,26 +734,72 @@ class World(object):
         self.reset_vehicle_info()
 
     def _update_infos(self):
+        '''
+        _update_infos
+        Update global information after reset or each step.
+        
+        :param: None
+        :return: None
+        '''
         self.info = {}
         for fn in self.fns:
             self.info[fn] = self.info_functions[fn]()
 
     def get_info(self, info):
-        return self.info[info]
+        '''
+        get_info
+        Get specific information.
+        
+        :param info: the name of the specific information
+        :return _info: specific information
+        '''
+        _info = self.info[info]
+        return _info
 
     def get_average_travel_time(self):
+        '''
+        get_average_travel_time
+        Get average travel time of all vehicles.
+        
+        :param: None
+        :return tvg_time: average travel time of all vehicles
+        '''
         tvg_time = self.eng.get_average_travel_time()
         return tvg_time
 
     def get_lane_queue_length(self):
-        return self.eng.get_lane_waiting_vehicle_count()
+        '''
+        get_lane_queue_length
+        Get queue length of all lanes in the traffic network.
+        
+        :param: None
+        :return lane_q_length: queue length of all lanes
+        '''
+        lane_q_length = self.eng.get_lane_waiting_vehicle_count()
+        return lane_q_length
 
     def get_road_length(self, road):
+        '''
+        get_road_length
+        Calculate the length of a road.
+        
+        :param road: information about a road
+        :return road_length: length of a specific road
+        '''
         point_x = road['points'][0]['x'] - road['points'][1]['x']
         point_y = road['points'][0]['y'] - road['points'][1]['y']
-        return math.sqrt((point_x**2)+(point_y**2))
+        road_length = math.sqrt((point_x**2)+(point_y**2))
+        return road_length
     
     def get_real_delay(self):
+        '''
+        get_real_delay
+        Calculate average real delay. 
+        Real delay of a vehicle is defined as the time a vehicle has traveled within the environment minus the expected travel time.
+        
+        :param: None
+        :return avg_delay: average real delay of all vehicles
+        '''
         self.vehicle_trajectory = self.get_vehicle_trajectory()
         for v in self.vehicle_trajectory:
             # get road level routes of vehicle

@@ -2,19 +2,17 @@
 
 
 class IntersectionPhaseGenerator():
-    """
-    Generate State or Reward based on statistics of intersection vehicles.
+    '''
+    Generate state or reward based on statistics of intersection phases.
 
-    Parameters
-    ----------
-    world : World object
-    I : Intersection object
-    fns : list of statistics to get, "phase" is needed for result "cur_phase"
-    targets : list of results to return, currently support "cur_phase": current phase of the intersection (not before yellow phase)
+    :param world: World object
+    :param I: Intersection object
+    :param fns: list of statistics to get, "phase" is needed for result "cur_phase"
+    :param targets: list of results to return, currently support "cur_phase": current phase of the intersection (not before yellow phase)
              See section 4.2 of the intelliLight paper[Hua Wei et al, KDD'18] for more detailed description on these targets.
-    negative : boolean, whether return negative values (mostly for Reward)
-    time_interval: use to calculate
-    """
+    :param negative: boolean, whether return negative values (mostly for Reward)
+    :param time_interval: use to calculate
+    '''
 
     def __init__(self, world, I, fns=("phase"),
                  targets=("cur_phase"), negative=False):
@@ -33,6 +31,13 @@ class IntersectionPhaseGenerator():
 
 
     def generate(self):
+        '''
+        generate
+        Generate current phase based on current simulation state.
+        
+        :param: None
+        :return ret: result based on current phase
+        '''
         ret = [self.I.current_phase]
 
         if self.negative:

@@ -4,26 +4,22 @@ from world import world_cityflow, world_sumo #, world_openengine
 
 
 class LaneVehicleGenerator(BaseGenerator):
-    """
-    Generate State or Reward based on statistics of lane vehicles.
+    '''
+    Generate state or reward based on statistics of lane vehicles.
 
-    Parameters
-    ----------
-    world : World object
-    I : Intersection object
-    fns : list of statistics to get, currently support "lane_count", "lane_waiting_count" , "lane_waiting_time_count", "lane_delay" and "pressure"
-        "lane_count": get number of running vehicles on each lane.
-        "lane_waiting_count": get number of waiting vehicles(speed less than 0.1m/s) on each lane.
-        "lane_waiting_time_count": get the sum of waiting time of vehicles on the lane since their last action.
+    :param world: World object
+    :param I: Intersection object
+    :param fns: list of statistics to get, currently support "lane_count", "lane_waiting_count" , "lane_waiting_time_count", "lane_delay" and "pressure". 
+        "lane_count": get number of running vehicles on each lane. 
+        "lane_waiting_count": get number of waiting vehicles(speed less than 0.1m/s) on each lane. 
+        "lane_waiting_time_count": get the sum of waiting time of vehicles on the lane since their last action. 
         "lane_delay": the delay of each lane: 1 - lane_avg_speed/speed_limit.
-
-    in_only : boolean, whether to compute incoming lanes only
-    average : None or str
-        None means no averaging
-        "road" means take average of lanes on each road
-        "all" means take average of all lanes
-    negative : boolean, whether return negative values (mostly for Reward)
-    """
+    :param in_only: boolean, whether to compute incoming lanes only. 
+    :param average: None or str, None means no averaging, 
+        "road" means take average of lanes on each road, 
+        "all" means take average of all lanes.
+    :param negative: boolean, whether return negative values (mostly for Reward).
+    '''
     def __init__(self, world, I, fns, in_only=False, average=None, negative=False):
         self.world = world
         self.I = I
@@ -133,6 +129,13 @@ class LaneVehicleGenerator(BaseGenerator):
         self.negative = negative
 
     def generate(self):
+        '''
+        generate
+        Generate state or reward based on current simulation state.
+        
+        :param: None
+        :return ret: state or reward
+        '''
         results = [self.world.get_info(fn) for fn in self.fns]
 
         #need modification here
