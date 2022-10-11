@@ -8,6 +8,9 @@ from common.registry import Registry
 
 @Registry.register_trainer("base")
 class BaseTrainer(ABC):
+    '''
+    Register BaseTrainer for the whole training and testing process.
+    '''
     def __init__(
         self,
         logger,
@@ -38,10 +41,24 @@ class BaseTrainer(ABC):
         self.create()
 
     def load(self):
+        '''
+        load
+        Set random seed.
+
+        :param: None
+        :return: None
+        '''
         self.load_seed_from_config()
         # self.load_logger()
     
     def load_seed_from_config(self):
+        '''
+        load_seed_from_config
+        Set random seed from self.seed.
+
+        :param: None
+        :return: None
+        '''
         # https://pytorch.org/docs/stable/notes/randomness.html
         if self.seed is None:
             return
@@ -54,6 +71,13 @@ class BaseTrainer(ABC):
         torch.backends.cudnn.benchmark = False
 
     def load_logger(self, logger):
+        '''
+        load_logger
+        Load logger.
+
+        :param: None
+        :return: None
+        '''
         # TODO: implement logger classes
         self.logger = logger
         if not self.is_debug:
@@ -66,6 +90,13 @@ class BaseTrainer(ABC):
             assert logger_name, "Specify logger name"
 
     def create(self):
+        '''
+        create
+        Create world, agents, metric and environment before training process.
+
+        :param: None
+        :return: None
+        '''
         self.create_world()
         self.create_agents()
         self.create_metric()

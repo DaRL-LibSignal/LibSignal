@@ -688,11 +688,7 @@
       ],
       "roadLinks": [
         {
-<<<<<<< HEAD
-          "type": "go_straight",
-=======
           "type": "turn_right",
->>>>>>> f758c4757d1bcd25b2ec95295c125f8b773e0a1f
           "startRoad": "319261593#15",
           "endRoad": "8197886#0",
           "direction": 0,

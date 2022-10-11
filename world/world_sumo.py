@@ -420,16 +420,16 @@ class World(object):
         self.id2idx = {i: idx for idx,i in enumerate(self.id2intersection)}
         # TODO: to see if its necessary to test .intersections or .observe here
         # TODO: to see if pass observation and its shape by generator
-        self.all_roads = []
-        self.all_lanes = []
-        for itsec in self.intersections:
-            for road in itsec.road_lane_mapping.keys():
-                if itsec.road_lane_mapping[road] and road not in self.all_roads:
-                    # append road name into all_roads if road exists
-                    self.all_roads.append(road)
-                    for lane in itsec.road_lane_mapping[road]:
-                        if lane not in self.all_lanes:
-                            self.all_lanes.append(lane)
+        self.all_roads = [x for x in self.eng.edge.getIDList()]
+        self.all_lanes = [ x for x in self.eng.lane.getIDList()]
+        # for itsec in self.intersections:
+        #     for road in itsec.road_lane_mapping.keys():
+        #         if itsec.road_lane_mapping[road] and road not in self.all_roads:
+        #             # append road name into all_roads if road exists
+        #             self.all_roads.append(road)
+                    # for lane in itsec.road_lane_mapping[road]:
+                    #     if lane not in self.all_lanes:
+                    #         self.all_lanes.append(lane)
 
         # restart eng
         self.run = 0

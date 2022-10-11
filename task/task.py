@@ -4,6 +4,9 @@ from common.registry import Registry
 
 @Registry.register_task('base')
 class BaseTask:
+    '''
+    Register BaseTask, currently support TSC task.
+    '''
     def __init__(self, trainer):
         self.trainer = trainer
 
@@ -24,7 +27,17 @@ class BaseTask:
 
 @Registry.register_task("tsc")
 class TSCTask(BaseTask):
+    '''
+    Register Traffic Signal Control task.
+    '''
     def run(self):
+        '''
+        run
+        Run the whole task, including training and testing.
+
+        :param: None
+        :return: None
+        '''
         try:
             if Registry.mapping['model_mapping']['setting'].param['train_model']:
                 self.trainer.train()

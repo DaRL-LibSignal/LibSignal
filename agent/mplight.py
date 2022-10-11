@@ -338,9 +338,9 @@ class MPLightAgent(RLAgent):
             # TODO debug
             # batch_valid = [self.valid_acts.get(agent_id) for agent_id in ob.keys()]
             # batch_reverse = [self.reverse_valid.get(agent_id) for agent_id in ob.keys()]
-            dic = {0:'360082',1:'360086',2:'GS_cluster_2415878664_254486231_359566_359576'}
-            batch_valid = [self.valid_acts.get(dic[i]) for i in range(ob.shape[0])]
-            batch_reverse = [self.reverse_valid.get(dic[i]) for i in range(ob.shape[0])]
+            dic = {index: key for index, key in enumerate(self.ob_order.keys())}
+            batch_valid = [self.valid_acts.get(dic[i]) if dic[i] in self.valid_acts.keys() else self.valid_acts.get('GS_'+dic[i]) for i in range(ob.shape[0])]
+            batch_reverse = [self.reverse_valid.get(dic[i]) if dic[i] in self.reverse_valid.keys() else self.reverse_valid.get('GS_'+dic[i])  for i in range(ob.shape[0])]
         batch_acts = self.agents_iner.act(batch_obs,
                                 valid_acts=batch_valid,
                                 reverse_valid=batch_reverse, test=test)

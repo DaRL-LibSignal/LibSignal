@@ -171,6 +171,13 @@ SUMO_PROGRAM = True
 
 
 def get_direction_fron_connection(connection):
+    '''
+    get_direction_fron_connection
+    Generate direction map from connection.
+
+    :param connection: key of direction map
+    :return result: value of the map[connection]
+    '''
     _map = {
         Connection.LINKDIR_STRAIGHT: "go_straight",
         Connection.LINKDIR_TURN: "turn_u",
@@ -179,10 +186,18 @@ def get_direction_fron_connection(connection):
         Connection.LINKDIR_PARTLEFT: "turn_left",
         Connection.LINKDIR_PARTRIGHT: "turn_right",
     }
-    return _map[connection.getDirection()]
+    result = _map[connection.getDirection()]
+    return result
 
 
 def process_edge(edge):
+    '''
+    process_edge
+    Generate edge information of CityFlow.
+
+    :param edge: original edge information from SUMO roadnet
+    :return edge: edge information
+    '''
     lanes = []
     if TRUE_CORRECTION_lane:
         for inx, lane in enumerate(reversed(edge.getLanes())):
@@ -241,6 +256,13 @@ def point_tuple_to_dict(point_tuple):
 
 
 def _is_node_virtual(node,tls_dict):
+    '''
+    _is_node_virtual
+    Judge whether the node is virtual(controlled without agents).
+
+    :param tls_dict: dictionary of tls
+    :return: boolean
+    '''
     n = node
     edges = [edge for edge in n.getIncoming() + n.getOutgoing()]
     ids = list(set([e.getFromNode().getID()
@@ -268,7 +290,7 @@ def group_connections_by_start_end(connections):
 
 def calc_edge_compass_angle(edge):
     north_ray = sympy.Ray((0, 0), (0, 1))
-    # 反向算进入edge，直观。
+    # calculate reversely enter edge.
     edge_ray = sympy.Ray(*edge.getShape()[:2][::-1])
     angle = north_ray.closing_angle(edge_ray)
     angle = (angle + 2 * sympy.pi) % (2 * sympy.pi)
@@ -281,7 +303,7 @@ def calc_edge_compass_angle(edge):
 
 def calc_edge_compass_angle_no_modify(edge):
     north_ray = sympy.Ray((0, 0), (0, 1))
-    # 要算所有edge，所以不要反向。
+    # do not reverse because of counting all edges.
     edge_ray = sympy.Ray(*edge.getShape()[:2])
     angle = north_ray.closing_angle(edge_ray)
     angle = (angle + 2 * sympy.pi) % (2 * sympy.pi)
@@ -293,6 +315,13 @@ def calc_edge_compass_angle_no_modify(edge):
 
 
 def process_intersection_simple_phase(intersection):
+    '''
+    process_intersection_simple_phase
+    Generate phase in CityFlow.
+
+    :param intersection: original intersection information
+    :return intersection: intersection information with phase information
+    '''
     if intersection['virtual']:
         return intersection
 
@@ -309,29 +338,29 @@ def process_intersection_simple_phase(intersection):
     return intersection
 
 
-def _cal_angle_pair(cluster):
-    centroids = cluster['centroids']
-    centroids = [x[0] for x in centroids]
-    if len(centroids) == 4:
-        pairs = [(centroids[0], centroids[2]), (centroids[1], centroids[3])]
-    elif len(centroids) == 3:
-        r1 = centroids[1] - centroids[0]
-        r2 = centroids[2] - centroids[0]
-        r3 = centroids[2] - centroids[1]
-        near180_1 = abs(180 - r1)
-        near180_2 = abs(180 - r2)
-        near180_3 = abs(180 - r3)
-        lista = [
-            ([(centroids[0], centroids[1]), (centroids[2],)], near180_1),
-            ([(centroids[0], centroids[2]), (centroids[1],)], near180_2),
-            ([(centroids[0],), (centroids[1], centroids[2]), ], near180_3),
-        ]
-        pairs = min(lista, key=lambda item: item[1])[0]
-    elif len(centroids) == 2:
-        pairs = [(centroids[0], centroids[1]), ]
-    elif len(centroids) == 1:
-        pairs = [(centroids[0],), ]
-    return pairs
+# def _cal_angle_pair(cluster):
+#     centroids = cluster['centroids']
+#     centroids = [x[0] for x in centroids]
+#     if len(centroids) == 4:
+#         pairs = [(centroids[0], centroids[2]), (centroids[1], centroids[3])]
+#     elif len(centroids) == 3:
+#         r1 = centroids[1] - centroids[0]
+#         r2 = centroids[2] - centroids[0]
+#         r3 = centroids[2] - centroids[1]
+#         near180_1 = abs(180 - r1)
+#         near180_2 = abs(180 - r2)
+#         near180_3 = abs(180 - r3)
+#         lista = [
+#             ([(centroids[0], centroids[1]), (centroids[2],)], near180_1),
+#             ([(centroids[0], centroids[2]), (centroids[1],)], near180_2),
+#             ([(centroids[0],), (centroids[1], centroids[2]), ], near180_3),
+#         ]
+#         pairs = min(lista, key=lambda item: item[1])[0]
+#     elif len(centroids) == 2:
+#         pairs = [(centroids[0], centroids[1]), ]
+#     elif len(centroids) == 1:
+#         pairs = [(centroids[0],), ]
+#     return pairs
 
 
 def find_edges_by_angle(all_edges, angle):
@@ -387,6 +416,13 @@ def filter_roadlinks_by_startedge(roadLinks, lane_id):
 
 
 def fill_empty_phase(current_phase, count):
+    '''
+    fill_empty_phase
+    Generate empty phase after a valid phase.
+
+    :param current_phase: valid phase
+    :return current_phase: phase including valid phase and empty phase
+    '''
     need_fill_count = count - len(current_phase)
     for x in range(need_fill_count):
         empty_phase_dict = {
@@ -402,6 +438,15 @@ node_outgoing_dict = {}
 
 
 def node_to_intersection(node, tls_dict, edge_dict):
+    '''
+    node_to_intersection
+    Convert node to intersection.
+
+    :param node: node information
+    :param tls_dict: dictionary of tls
+    :param edge_dict: dictionary of edge
+    :return intersection: intersection information
+    '''
     node_type = node.getType()
     node_coord = node.getCoord()
     intersection = {
@@ -541,7 +586,15 @@ def node_to_intersection(node, tls_dict, edge_dict):
 
 
 def get_final_intersections(net, tls_dict, edge_dict):
+    '''
+    get_final_intersections
+    Generate intersection information.
 
+    :param net: network information
+    :param tls_dict: dictionary of tls
+    :param edge_dict: dictionary of edge
+    :return final_intersections: intersection information
+    '''
     final_intersections = []
     net_nodes = net.getNodes()
     net_nodes_sorted = sorted(net_nodes, key=lambda n: n.getID())
@@ -559,6 +612,13 @@ def get_final_intersections(net, tls_dict, edge_dict):
     return final_intersections
 
 def get_final_roads(net):
+    '''
+    get_final_roads
+    Generate roads information.
+
+    :param net: network information
+    :return final_roads: roads information
+    '''
     edges = net.getEdges()
     final_roads = []
     for edge in edges:
@@ -605,6 +665,13 @@ def get_final_roads(net):
 
 
 def sumo2cityflow_flow(args):
+    '''
+    sumo2cityflow_flow
+    Convert traffic flow file from  SUMO to CityFlow. Generate flow.json.
+
+    :param args: parameters related to converting
+    :return: None
+    '''
     # parent dir of current dir
     f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
     sumofile = os.path.join(f_cwd, 'data/raw_data', args.or_sumotraffic)
@@ -680,6 +747,13 @@ def sumo2cityflow_flow(args):
 
 
 def sumo2cityflow_net(args):
+    '''
+    sumo2cityflow_net
+    Convert roadnetwork config file from SUMO to CityFlow. Generate roadnet.json.
+
+    :param args: parameters related to converting
+    :return: None
+    '''
     # parent dir of current dir
     f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
     sumofile = os.path.join(f_cwd, 'data/raw_data', args.or_sumonet)
@@ -715,6 +789,14 @@ def sumo2cityflow_net(args):
 
 
 def cityflow2sumo_flow(args):
+    '''
+    cityflow2sumo_flow
+    Convert traffic flow file from CityFlow to SUMO. 
+    Generate rou.xml.
+
+    :param args: parameters related to converting
+    :return: None
+    '''
     # parent dir of current dir
     f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
     sumofile = os.path.join(f_cwd, 'data/raw_data', args.sumotraffic)
@@ -761,7 +843,6 @@ def cityflow2sumo_flow(args):
     print("SUMO flow file generated successfully!")
 
 def get_start_idx(lists):
-    ''''''
     new_lists = {}
     for key, value in lists.items():
         k,v = list(value.keys())[0],list(value.values())[0]
@@ -771,9 +852,12 @@ def get_start_idx(lists):
 
 def cmp_turn_direction(x,y):
     '''
-    Used for sort 4 types of turn direction operations: turn-r,turn-s,turn-l,(optional)turn-u
-    False: less,
-    True: greater
+    cmp_turn_direction
+    Used for sort 4 types of turn direction operations: turn-r, turn-s, turn-l, (optional)turn-u.
+    
+    :param x: x axis of start road and end road
+    :param y: y axis of start road and end road
+    :return: -1: less, 1: greater
     '''
     if x['type'] =='turn_left' and y['type'] =='turn_left': # one of them is turn-u
         # judge which is turn-l, which is turn-u
@@ -796,8 +880,13 @@ def cmp_turn_direction(x,y):
 
 def judg_turn_u(x, data):
     '''
-    In Cityflow, turn_u is allowed but present as turn_left.
+    judg_turn_u
+    Judge whether this action is 'turn_u'. 
+    In Cityflow, turn_u is allowed but present as turn_left. 
     So, judging whether turn_left belongs to turn_u is necessary for generating tlLogic in SUMO.
+
+    :param data: action information
+    :return: boolean, True for 'turn_u', False for not.
     '''
     start_info = []
     end_info = []
@@ -818,7 +907,13 @@ def judg_turn_u(x, data):
     return False
 
 def sort_roads(roadnet):
-    '''sort roads according to NSWE'''
+    '''
+    sort_roads
+    Sort roads according to 'NSWE'.
+
+    :param roadnet: roadnetwork information
+    :return ordered: ordered roads
+    '''
     intersections = {}
     directions = {}
     for road in roadnet["roads"]:
@@ -839,15 +934,30 @@ def sort_roads(roadnet):
     return ordered
 
 def _get_direction(road):
+    '''
+    _get_direction
+    Get direction of the road.
+
+    :param road: road location
+    :return result: float number that can convert to road direction 
+    '''
     # x = road["points"][1]["x"] - road["points"][0]["x"]
     # y = road["points"][1]["y"] - road["points"][0]["y"]
     x = road["points"][-2]["x"] - road["points"][-1]["x"]
     y = road["points"][-2]["y"] - road["points"][-1]["y"]
     tmp = atan2(x, y)
-    return tmp if tmp >= 0 else (tmp + 2 * pi)
+    result = tmp if tmp >= 0 else (tmp + 2 * pi)
+    return result
 
 def cityflow2sumo_net(args):
-    """generate net.xml according to nod.xml, edg.xml,con.xml,tll.xml"""
+    '''
+    cityflow2sumo_net
+    Convert roadnetwork config file from CityFlow to SUMO. 
+    Generate net.xml according to nod.xml, edg.xml,con.xml,tll.xml.
+
+    :param args: parameters related to converting
+    :return: None
+    '''
     # parent dir of current dir
     f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
     sumofile = os.path.join(f_cwd, 'data/raw_data', args.sumonet)
@@ -1040,11 +1150,17 @@ def cityflow2sumo_net(args):
 # duarouter -n /home/lxl/TSCtest/LibSignalSpare_new/data/raw_data/cologne1/cologne1.net.xml -f /home/lxl/TSCtest/LibSignalSpare_new/data/raw_data/cologne1/cologne1_flows.xml -o /home/lxl/TSCtest/LibSignalSpare_new/data/raw_data/cologne1/cologne1_1_rou.xml
 
 def get_phase2lane(direction, typ, num_phase):
-    """
-    return the idx of phase_idx related to roadlink_idx.
+    '''
+    get_phase2lane
+    Return the idx of phase_idx related to roadlink_idx. 
     In SUMO, the phase are ordered by clockwise, from N_r_s_l to W_r_s_l, totally 12 dims or 8dims.
-    TODO maybe inregular eg:16
-    """
+    
+    :param direction: 0: W, 1: S, 2: E, 3: N
+    :param typ: type name of action, including 'turn_right', 'go_straight' and 'turn_left'
+    :param num_phase: total number of phases
+    :return: int, order of the lane
+    '''
+    # TODO maybe inregular eg:16
     # N
     if direction == 3:
         if typ == 'turn_right':
@@ -1079,9 +1195,15 @@ def get_phase2lane(direction, typ, num_phase):
             return 11 if num_phase == 12 else 7
 
 def get_filename(netfile, typ='', need_path=True):
-    """
-    typ: net,nod,edg,tll,rou,sumocfg
-    """
+    '''
+    get_filename
+    Generate filename of SUMO.
+
+    :param netfile: original filename
+    :param typ: net, nod, edg, tll, rou and sumocfg
+    :param need_path: whether to add path of current file.
+    :return file_res: specific file name
+    '''
     filepath, filename_all = os.path.split(netfile)
     filename = filename_all.split('.')
     if typ !='sumocfg':
@@ -1094,7 +1216,13 @@ def get_filename(netfile, typ='', need_path=True):
     return file_res
 
 def cityflow2sumo_cfg(args):
-    """generate sumo cfg file"""
+    '''
+    cityflow2sumo_cfg
+    Generate SUMO cfg file.
+
+    :param args: parameters related to converting
+    :return: None
+    '''
     # parent dir of current dir
     f_cwd = os.path.abspath(os.path.dirname(os.getcwd()) + os.path.sep + ".")
     sumofile = os.path.join(f_cwd, 'data/raw_data', args.sumonet)

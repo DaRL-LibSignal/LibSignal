@@ -69,16 +69,3 @@ class RLAgent(BaseAgent):
         raise NotImplementedError
     """
 
-class State(object):
-    # todo: implement as abstract class
-
-    D_QUEUE_LENGTH = (8,)
-    D_NUM_OF_VEHICLES = (8,)
-    D_WAITING_TIME = (8,)
-    D_MAP_FEATURE = (150,150,1,)
-    D_CUR_PHASE = (1,)
-    D_NEXT_PHASE = (1,)
-    D_TIME_THIS_PHASE = (1,)
-    D_IF_TERMINAL = (1,)
-    D_HISTORICAL_TRAFFIC = (6,)
-
