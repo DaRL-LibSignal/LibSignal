@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from common.metric import Metric
+from common.metrics import Metrics
 from environment import TSCEnv
 from common.registry import Registry
 from trainer.base_trainer import BaseTrainer
@@ -68,10 +68,10 @@ class TSCTrainer(BaseTrainer):
         self.world = Registry.mapping['world_mapping'][Registry.mapping['command_mapping']['setting'].param['world']](
             self.path, Registry.mapping['command_mapping']['setting'].param['thread_num'],interface=Registry.mapping['command_mapping']['setting'].param['interface'])
 
-    def create_metric(self):
+    def create_metrics(self):
         '''
-        create_metric
-        Create metric to evaluate model performance, currently support reward, queue length, delay(approximate or real) and throughput.
+        create_metrics
+        Create metrics to evaluate model performance, currently support reward, queue length, delay(approximate or real) and throughput.
 
         :param: None
         :return: None
@@ -82,7 +82,7 @@ class TSCTrainer(BaseTrainer):
         else:
             lane_metrics = ['rewards', 'queue']
             world_metrics = ['delay', 'real avg travel time', 'throughput']
-        self.metric = Metric(lane_metrics, world_metrics, self.world, self.agents)
+        self.metric = Metrics(lane_metrics, world_metrics, self.world, self.agents)
 
     def create_agents(self):
         '''

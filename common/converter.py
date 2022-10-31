@@ -87,19 +87,8 @@ else:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--typ", type=str,
-                        default='c2s', help='CityFlow2SUMO or SUMO2CityFlow')
+                        default='s2c', choices=['c2s','s2c'], help='CityFlow2SUMO or SUMO2CityFlow')
     # sumo2cityflow
-    # parser.add_argument("--or_sumonet", type=str,
-    #                     default='grid4x4/grid4x4.net.xml')
-    # parser.add_argument("--cityflownet", type=str,
-    #                     default='grid4x4/mygrid4x4_roadnet_red.json')
-    # parser.add_argument("--or_sumoflow", type=str,
-    #                     default='grid4x4/grid4x4.rou.xml')
-    # parser.add_argument("--cityflowflow", type=str,
-    #                     default='grid4x4/mygrid4x4_flow.json')
-    # parser.add_argument("--sumocfg", type=str,
-    #                     default='grid4x4/grid4x4.sumocfg')
-
     # parser.add_argument("--or_sumonet", type=str,
     #                     default='grid4x4/grid4x4.net.xml')
     # parser.add_argument("--cityflownet", type=str,
@@ -112,25 +101,36 @@ def parse_args():
     #                     default='grid4x4/grid4x4.sumocfg')
 
     # parser.add_argument("--or_sumonet", type=str,
-    #                     default='ingolstadt21/ingolstadt21.net.xml')
+    #                     default='cologne1/cologne1.net.xml')
     # parser.add_argument("--cityflownet", type=str,
-    #                     default='ingolstadt21/ingolstadt21_roadnet_red.json')
-    # parser.add_argument("--or_sumoflow", type=str,
-    #                     default='ingolstadt21/ingolstadt21.rou.xml')
-    # parser.add_argument("--cityflowflow", type=str,
-    #                     default='ingolstadt21/ingolstadt21_flow.json')
+    #                     default='cologne1/cologne1_roadnet_red.json')
+    # parser.add_argument("--or_sumotraffic", type=str,
+    #                     default='cologne1/cologne1.rou.xml')
+    # parser.add_argument("--cityflowtraffic", type=str,
+    #                     default='cologne1/cologne1_flow.json')
     # parser.add_argument("--sumocfg", type=str,
-    #                     default='ingolstadt21/ingolstadt21.sumocfg')
+    #                     default='cologne1/cologne1.sumocfg')
+
+    parser.add_argument("--or_sumonet", type=str,
+                        default='cologne3/cologne3.net.xml')
+    parser.add_argument("--cityflownet", type=str,
+                        default='cologne3/cologne3_roadnet_red.json')
+    parser.add_argument("--or_sumotraffic", type=str,
+                        default='cologne3/cologne3.rou.xml')
+    parser.add_argument("--cityflowtraffic", type=str,
+                        default='cologne3/cologne3_flow.json')
+    parser.add_argument("--sumocfg", type=str,
+                        default='cologne3/cologne3.sumocfg')
 
     # cityflow2sumo
-    parser.add_argument("--or_cityflownet", type=str,
-                        default='hangzhou_1x1_qc-yn_18041608_1h/roadnet.json')
-    parser.add_argument("--sumonet", type=str,
-                        default='hangzhou_1x1_qc-yn_18041608_1h/hangzhou_1x1_qc-yn_18041608_1h.net.xml')
-    parser.add_argument("--or_cityflowtraffic", type=str,
-                        default='hangzhou_1x1_qc-yn_18041608_1h/flow.json')
-    parser.add_argument("--sumotraffic", type=str,
-                        default='hangzhou_1x1_qc-yn_18041608_1h/hangzhou_1x1_qc-yn_18041608_1h.rou.xml')
+    # parser.add_argument("--or_cityflownet", type=str,
+    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/roadnet.json')
+    # parser.add_argument("--sumonet", type=str,
+    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.net.xml')
+    # parser.add_argument("--or_cityflowtraffic", type=str,
+    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/flow.json')
+    # parser.add_argument("--sumotraffic", type=str,
+    #                     default='hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.rou.xml')
 
 
 
@@ -138,28 +138,10 @@ def parse_args():
     #                     default='hangzhou_4x4_gudang_18041610_1h/roadnet_4X4.json')
     # parser.add_argument("--sumonet", type=str,
     #                     default='hangzhou_4x4_gudang_18041610_1h/hangzhou_4x4_gudang_18041610_1h.net.xml')
-    # parser.add_argument("--or_cityflowflow", type=str,
+    # parser.add_argument("--or_cityflowtraffic", type=str,
     #                     default='hangzhou_4x4_gudang_18041610_1h/hangzhou_4x4_gudang_18041610_1h.json')
-    # parser.add_argument("--sumoflow", type=str,
+    # parser.add_argument("--sumotraffic", type=str,
     #                     default='hangzhou_4x4_gudang_18041610_1h/hangzhou_4x4_gudang_18041610_1h.rou.xml')
-
-    # parser.add_argument("--or_cityflownet", type=str,
-    #                     default='atlanta_1x5/roadnet_atlanta.json')
-    # parser.add_argument("--sumonet", type=str,
-    #                     default='atlanta_1x5/atlanta_1x5.net.xml')
-    # parser.add_argument("--or_cityflowflow", type=str,
-    #                     default='atlanta_1x5/atlanta.json')
-    # parser.add_argument("--sumoflow", type=str,
-    #                     default='atlanta_1x5/atlanta_1x5.rou.xml')
-
-    # parser.add_argument("--or_cityflownet", type=str,
-    #                     default='manhattan_28x7/roadnet_28_7.json')
-    # parser.add_argument("--sumonet", type=str,
-    #                     default='manhattan_28x7/manhattan_28x7.net.xml')
-    # parser.add_argument("--or_cityflowflow", type=str,
-    #                     default='manhattan_28x7/anon_28_7_newyork_real_triple.json')
-    # parser.add_argument("--sumoflow", type=str,
-    #                     default='manhattan_28x7/manhattan_28x7.rou.xml')
 
     return parser.parse_args()
 
@@ -1054,7 +1036,7 @@ def cityflow2sumo_net(args):
                     abs(end_num_lanelinks-lanelink['endLaneIndex'])))
                 root_con.appendChild(con)
         if not inter['virtual']:
-            # tll.xml,in cityflow setting, only conside G and r phase
+            # tll.xml,in cityflow setting, conside G, r and y phase
             tll = doc_node.createElement('tlLogic')
             tll.setAttribute('id', inter['id'])
             tll.setAttribute('type', 'static')
@@ -1064,8 +1046,10 @@ def cityflow2sumo_net(args):
             for idx,light in enumerate(inter['trafficLight']['lightphases']):
                 state = ['r'] * phase_num_all
                 if idx != 0 and light['availableRoadLinks'] is not None: # idx=0 means yellow phase
+                    # take the situation about there being red light for all lanes except turning right lanes into account
+                    single_phase = ['y'] if light['time'] <= 5 else ['G']
                     for act_roadlink in light['availableRoadLinks']:
-                        state[phase_dic[act_roadlink][0]:sum(phase_dic[act_roadlink])] = ['G']*phase_dic[act_roadlink][1]
+                        state[phase_dic[act_roadlink][0]:sum(phase_dic[act_roadlink])] = single_phase*phase_dic[act_roadlink][1]
                     # add yellow phase behind green phase
                     phase = doc_node.createElement('phase')
                     phase.setAttribute('duration', str(light['time']))
@@ -1083,30 +1067,8 @@ def cityflow2sumo_net(args):
                     # first should set yellow phase, then can add this yellow phase when adding a green phase
                     assert idx == 0
                     for act_roadlink in light['availableRoadLinks']:
-                        yellow_state[phase_dic[act_roadlink][0]:sum(phase_dic[act_roadlink])] = ['G']*phase_dic[act_roadlink][1]
-                #     # add yellow phase behind green phase
-                #     phase = doc_node.createElement('phase')
-                #     phase.setAttribute('duration', str(light['time']))
-                #     phase.setAttribute('state', ''.join(state))
-                #     tll.appendChild(phase)
-                #     root_tll.appendChild(tll)
-                #     # add yellow phase behind green phase
-                #     phase_y = doc_node.createElement('phase')
-                #     phase_y.setAttribute('duration', '5')
-                #     phase_y.setAttribute('state', ''.join(yellow_state))
-                #     tll.appendChild(phase_y)
-                #     root_tll.appendChild(tll)
-                # if light['time'] == 5:
-                #     # first should set yellow phase, then can add this yellow phase when adding a green phase
-                #     assert idx == 0
-                #     for act_roadlink in light['availableRoadLinks']:
-                #             act_p = dic_phase[inter['trafficLight']['roadLinkIndices'][act_roadlink]]
-                #             if num_phase == 12:
-                #                 yellow_state[act_p*3:act_p*3+3] = ['G']*3
-                #             elif num_phase == 8:
-                #                 yellow_state[act_p*2:act_p*2+2] = ['G']*2
-                
-                
+                        yellow_state[phase_dic[act_roadlink][0]:sum(phase_dic[act_roadlink])] = ['s']*phase_dic[act_roadlink][1]
+                      
     fp_node = open(sumo_node, 'w')
     doc_node.writexml(fp_node, addindent='\t', newl='\n', encoding="utf-8")
     fp_node.close()
@@ -1143,10 +1105,13 @@ def cityflow2sumo_net(args):
                       newl='\n', encoding="utf-8")
     fp_edge.close()
     print("SUMO edge file generated successfully!")
-    os.system(
-        f"netconvert --node-files={sumo_node} --edge-files={sumo_edge} \
-            --connection-files={sumo_con} --tllogic-files={sumo_tll} --output-file={sumofile}")
-    print("SUMO net file generated successfully!")
+    res = os.system(
+    f"netconvert --node-files={sumo_node} --edge-files={sumo_edge} \
+        --connection-files={sumo_con} --tllogic-files={sumo_tll} --output-file={sumofile}")
+    if res == 0:
+        print("SUMO net file generated successfully!")
+    else:
+        raise Exception('command not found!')
 # duarouter -n /home/lxl/TSCtest/LibSignalSpare_new/data/raw_data/cologne1/cologne1.net.xml -f /home/lxl/TSCtest/LibSignalSpare_new/data/raw_data/cologne1/cologne1_flows.xml -o /home/lxl/TSCtest/LibSignalSpare_new/data/raw_data/cologne1/cologne1_1_rou.xml
 
 def get_phase2lane(direction, typ, num_phase):

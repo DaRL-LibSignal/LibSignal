@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-06-08 17:25:03 by Eclipse SUMO netconvert Version 1.13.0
+<!-- generated on 2022-10-19 18:38:30 by Eclipse SUMO netconvert Version 1.13.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <node-files value="/home/leo/LibSignalSpare/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.nod.xml"/>
-        <edge-files value="/home/leo/LibSignalSpare/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.edg.xml"/>
-        <connection-files value="/home/leo/LibSignalSpare/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.con.xml"/>
-        <tllogic-files value="/home/leo/LibSignalSpare/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.tll.xml"/>
+        <node-files value="/home/lxl/LibSignal/main_cp/LibSignal/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.nod.xml"/>
+        <edge-files value="/home/lxl/LibSignal/main_cp/LibSignal/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.edg.xml"/>
+        <connection-files value="/home/lxl/LibSignal/main_cp/LibSignal/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.con.xml"/>
+        <tllogic-files value="/home/lxl/LibSignal/main_cp/LibSignal/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.tll.xml"/>
     </input>
 
     <output>
-        <output-file value="/home/leo/LibSignalSpare/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.net.xml"/>
+        <output-file value="/home/lxl/LibSignal/main_cp/LibSignal/data/raw_data/hangzhou_1x1_bc-tyc_18041610_1h/hangzhou_1x1_bc-tyc_18041610_1h.net.xml"/>
     </output>
 
     <report>
@@ -128,7 +128,7 @@
     <junction id="intersection_1_0" type="priority" x="300.00" y="0.00" incLanes="road_1_1_3_0 road_1_1_3_1" intLanes=":intersection_1_0_0_0" shape="300.00,0.00 293.60,0.00 300.00,0.00">
         <request index="0" response="0" foes="0" cont="0"/>
     </junction>
-    <junction id="intersection_1_1" type="traffic_light" x="300.00" y="300.00" incLanes="road_1_2_3_0 road_1_2_3_1 road_2_1_2_0 road_2_1_2_1 road_1_0_1_0 road_1_0_1_1 road_0_1_0_0 road_0_1_0_1" intLanes=":intersection_1_1_0_0 :intersection_1_1_0_1 :intersection_1_1_2_0 :intersection_1_1_2_1 :intersection_1_1_4_0 :intersection_1_1_4_1 :intersection_1_1_6_0 :intersection_1_1_6_1 :intersection_1_1_8_0 :intersection_1_1_8_1 :intersection_1_1_10_0 :intersection_1_1_10_1 :intersection_1_1_12_0 :intersection_1_1_12_1 :intersection_1_1_14_0 :intersection_1_1_14_1" shape="293.60,310.40 306.40,310.40 306.84,308.18 307.40,307.40 308.18,306.84 309.18,306.51 310.40,306.40 310.40,293.60 308.18,293.16 307.40,292.60 306.84,291.82 306.51,290.82 306.40,289.60 293.60,289.60 293.16,291.82 292.60,292.60 291.82,293.16 290.82,293.49 289.60,293.60 289.60,306.40 291.82,306.84 292.60,307.40 293.16,308.18 293.49,309.18">
+    <junction id="intersection_1_1" type="traffic_light_right_on_red" x="300.00" y="300.00" incLanes="road_1_2_3_0 road_1_2_3_1 road_2_1_2_0 road_2_1_2_1 road_1_0_1_0 road_1_0_1_1 road_0_1_0_0 road_0_1_0_1" intLanes=":intersection_1_1_0_0 :intersection_1_1_0_1 :intersection_1_1_2_0 :intersection_1_1_2_1 :intersection_1_1_4_0 :intersection_1_1_4_1 :intersection_1_1_6_0 :intersection_1_1_6_1 :intersection_1_1_8_0 :intersection_1_1_8_1 :intersection_1_1_10_0 :intersection_1_1_10_1 :intersection_1_1_12_0 :intersection_1_1_12_1 :intersection_1_1_14_0 :intersection_1_1_14_1" shape="293.60,310.40 306.40,310.40 306.84,308.18 307.40,307.40 308.18,306.84 309.18,306.51 310.40,306.40 310.40,293.60 308.18,293.16 307.40,292.60 306.84,291.82 306.51,290.82 306.40,289.60 293.60,289.60 293.16,291.82 292.60,292.60 291.82,293.16 290.82,293.49 289.60,293.60 289.60,306.40 291.82,306.84 292.60,307.40 293.16,308.18 293.49,309.18">
         <request index="0"  response="0000000000000000" foes="1111110011110000" cont="0"/>
         <request index="1"  response="0000000000000000" foes="1111110011110000" cont="0"/>
         <request index="2"  response="0000001100000000" foes="1111011111110000" cont="0"/>

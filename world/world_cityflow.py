@@ -7,26 +7,15 @@ import numpy as np
 from math import atan2, pi
 import math
 
-
-# TODO: THIS IS Y/X  But we keep it right now
-def _get_direction(road, out=True):
-    if out:
-        x = road["points"][1]["x"] - road["points"][0]["x"]
-        y = road["points"][1]["y"] - road["points"][0]["y"]
-    else:
-        x = road["points"][-2]["x"] - road["points"][-1]["x"]
-        y = road["points"][-2]["y"] - road["points"][-1]["y"]
-    tmp = atan2(x, y)
-    return tmp if tmp >= 0 else (tmp + 2 * pi)
-
-
 class Intersection(object):
     '''
     Intersection Class is mainly used for describing crossing information and defining acting methods.
     '''
     def __init__(self, intersection, world):
         self.id = intersection["id"]
-        self.eng = world.eng
+        self.world = world
+        self.eng = self.world.eng
+
 
         # incoming and outgoing roads of each intersection, clock-wise order from North
         self.roads = []
@@ -35,16 +24,16 @@ class Intersection(object):
         self.out_roads = None
         self.in_roads = None
 
-        map_name = Registry.mapping['world_mapping']['setting'].param['network']
-        self.lane_order_cf = None
-        self.lane_order_sumo = None
-        if 'signal_config' in Registry.mapping['world_mapping']['setting'].param.keys():
-            if 'N' in Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'].keys():
-                self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order']
-                self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order']
-            else:
-                self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'][self.id]
-                self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id]
+        # map_name = Registry.mapping['world_mapping']['setting'].param['network']
+        # self.lane_order_cf = None
+        # self.lane_order_sumo = None
+        # if 'signal_config' in Registry.mapping['world_mapping']['setting'].param.keys():
+        #     if 'N' in Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'].keys():
+        #         self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order']
+        #         self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order']
+        #     else:
+        #         self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'][self.id]
+        #         self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id]
 
         # links and phase information of each intersection
         self.current_phase = 0
@@ -112,19 +101,19 @@ class Intersection(object):
         '''
         self.roads.append(road)
         self.outs.append(out)
-        self.directions.append(_get_direction(road, out))
+        self.directions.append(self._get_direction(road, out))
 
-    def sort_roads(self, RIGHT):
+    def sort_roads(self):
         '''
         sort_roads
         Sort roads information by arranging an order.
         
-        :param RIGHT: decide whether to sort from right side, 
-        currently always set to true due to CityFlow's mechanism.
         :return: None
         '''
+        # self.world.RIGHT: decide whether to sort from right side, 
+        # currently always set to true due to CityFlow's mechanism.
         order = sorted(range(len(self.roads)),
-                       key=lambda i: (self.directions[i], self.outs[i] if RIGHT else not self.outs[i]))
+                       key=lambda i: (self.directions[i], self.outs[i] if self.world.RIGHT else not self.outs[i]))
         self.roads = [self.roads[i] for i in order]
         self.directions = [self.directions[i] for i in order]
         self.outs = [self.outs[i] for i in order]
@@ -209,6 +198,17 @@ class Intersection(object):
         self.action_before_yellow = None
         self.action_executed = None
 
+    # TODO: THIS IS Y/X  But we keep it right now
+    def _get_direction(self, road, out=True):
+        if out:
+            x = road["points"][1]["x"] - road["points"][0]["x"]
+            y = road["points"][1]["y"] - road["points"][0]["y"]
+        else:
+            x = road["points"][-2]["x"] - road["points"][-1]["x"]
+            y = road["points"][-2]["y"] - road["points"][-1]["y"]
+        tmp = atan2(x, y)
+        return tmp if tmp >= 0 else (tmp + 2 * pi)
+
 
 @Registry.register_world('cityflow')
 class World(object):
@@ -286,7 +286,7 @@ class World(object):
                 self.id2intersection[iid].insert_road(road, False)
 
         for i in self.intersections:
-            i.sort_roads(self.RIGHT)
+            i.sort_roads()
 
         print("roads parsed.")
 

@@ -246,40 +246,12 @@ class MPLightAgent(RLAgent):
                 else:
                     name = self.ob_generator[i][1].I.id
                 for i in range(12):
+                    # padding to 12 dims
                     if i in self.ob_order[name].keys():
                         tt.append(tmp[self.ob_order[name][i]])
                     else:
                         tt.append(0.)
-                x_obs.append(np.array(tt))  
-
-                # if tmp.shape[-1] == 5:
-                #     dic = {0:0,1:1,4:2,6:3,7:4}
-                #     tt = []
-                #     for i in range(12):
-                #         if i in dic.keys():
-                #             tt.append(tmp[dic[i]])
-                #         else:
-                #             tt.append(0.)
-                #     x_obs.append(np.array(tt))       
-                # elif tmp.shape[-1] == 6:
-                #     dic = {0:0,1:1,4:2,6:3,7:4,10:5}
-                #     tt = []
-                #     for i in range(12):
-                #         if i in dic.keys():
-                #             tt.append(tmp[dic[i]])
-                #         else:
-                #             tt.append(0.)
-                #     x_obs.append(np.array(tt))     
-                # else: # 8
-                #     dic = {0:0,1:1,3:2,4:3,6:4,7:5,9:6,10:7}
-                #     tt = []
-                #     for i in range(12):
-                #         if i in dic.keys():
-                #             tt.append(tmp[dic[i]])
-                #         else:
-                #             tt.append(0.)
-                #     x_obs.append(np.array(tt))     
-            
+                x_obs.append(np.array(tt))     
             else:
                 x_obs.append(self.ob_generator[i][1].generate())
             
@@ -681,7 +653,7 @@ class FRAP(nn.Module):
         phase_demands = []
         for i in range(num_movements):
             phase = phase_embeds[:, i]  # size 4
-            demand = states[:, i:i+self.demand_shape]
+            demand = states[:, i:i+self.demand_shape] # order by NESW_RTL
             demand = torch.sigmoid(self.d(demand))    # size 4
             phase_demand = torch.cat((phase, demand), -1)
             phase_demand_embed = F.relu(self.lane_embedding(phase_demand))

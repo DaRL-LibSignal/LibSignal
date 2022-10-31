@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <tlLogics version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/tllogic_file.xsd">
 	<tlLogic id="intersection_1_1" offset="0" programID="0" type="static">
-		<phase duration="5" state="rrrrrrrrrrrrrrrrrrrrrrrr"/>
-		<phase duration="30" state="rrrrGGrrrrrrGGrrrrrrrrrr"/>
-		<phase duration="30" state="GGrrrrrrGGrrrrrrrrrrrrrr"/>
-		<phase duration="30" state="rrrrrrGGrrrrrrGGrrrrrrrr"/>
-		<phase duration="30" state="rrGGrrrrrrGGrrrrrrrrrrrr"/>
-		<phase duration="30" state="rrrrrrrrrrrrGGGGrrrrrrrr"/>
-		<phase duration="30" state="rrrrGGGGrrrrrrrrrrrrrrrr"/>
-		<phase duration="30" state="rrrrrrrrGGGGrrrrrrrrrrrr"/>
-		<phase duration="30" state="GGGGrrrrrrrrrrrrrrrrrrrr"/>
+		<phase duration="30" state="rrrrGGrrrrrrGGrr"/>
+		<phase duration="5" state="rrrrrrrrrrrrrrrr"/>
+		<phase duration="30" state="GGrrrrrrGGrrrrrr"/>
+		<phase duration="5" state="rrrrrrrrrrrrrrrr"/>
+		<phase duration="30" state="rrrrrrGGrrrrrrGG"/>
+		<phase duration="5" state="rrrrrrrrrrrrrrrr"/>
+		<phase duration="30" state="rrGGrrrrrrGGrrrr"/>
+		<phase duration="5" state="rrrrrrrrrrrrrrrr"/>
+		<phase duration="30" state="rrrrrrrrrrrrGGGG"/>
+		<phase duration="5" state="rrrrrrrrrrrrrrrr"/>
+		<phase duration="30" state="rrrrGGGGrrrrrrrr"/>
+		<phase duration="5" state="rrrrrrrrrrrrrrrr"/>
+		<phase duration="30" state="rrrrrrrrGGGGrrrr"/>
+		<phase duration="5" state="rrrrrrrrrrrrrrrr"/>
+		<phase duration="30" state="GGGGrrrrrrrrrrrr"/>
+		<phase duration="5" state="rrrrrrrrrrrrrrrr"/>
 	</tlLogic>
 </tlLogics>

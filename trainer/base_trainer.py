@@ -99,7 +99,7 @@ class BaseTrainer(ABC):
         '''
         self.create_world()
         self.create_agents()
-        self.create_metric()
+        self.create_metrics()
         self.create_env()
 
     @abstractmethod
@@ -111,7 +111,7 @@ class BaseTrainer(ABC):
         """Derived classes should implement this function."""
 
     @abstractmethod
-    def create_metric(self):
+    def create_metrics(self):
         """Derived classes should implement this function."""
 
     def create_env(self):

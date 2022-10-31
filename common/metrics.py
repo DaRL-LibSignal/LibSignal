@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Metric(object):
+class Metrics(object):
     '''
     Register Metric for evaluating model performance. Currently support reward, queue length, delay(approximate or real), throughput and travel time. 
     - Average travel time (travel time): The average time that each vehicle spent on traveling within 

@@ -22,50 +22,6 @@ import sumolib
 import libsumo
 import traci
 
-# TODO: change it in the future. Accoring to _get_direction
-DIRECTION_RANK = {'N': 0, 'W': 1, 'S': 2, 'E': 3}
-# interface_flag # 1:libsumo, 0: traci
-
-
-# TODO: revert x and y
-def _get_direction(road, out=True):
-    if out:
-        x = road[1][0] - road[0][0]
-        y = road[1][1] - road[0][1]
-    else:
-        x = road[-2][0] - road[-1][0]
-        y = road[-2][1] - road[-1][1]
-    tmp = atan2(x, y)
-    return tmp if tmp >= 0 else (tmp + 2 * pi)
-    # x = road[1][0] - road[0][0]
-    # y = road[1][1] - road[0][1]
-    # tmp = atan2(x, y)
-    # return tmp if tmp >= 0 else (tmp + 2 * pi)
-
-
-def create_yellows(phases, yellow_length, interface_flag):
-    new_phases = copy.copy(phases)
-    yellow_dict = {}    # current phase + next phase keyed to corresponding yellow phase index
-    # Automatically create yellow phases, traci will report missing phases as it assumes execution by index order
-    for i in range(0, len(phases)):
-        for j in range(0, len(phases)):
-            if i != j:
-                need_yellow, yellow_str = False, ''
-                for sig_idx in range(len(phases[i].state)):
-                    if (phases[i].state[sig_idx] == 'G' or phases[i].state[sig_idx] == 'g') and (phases[j].state[sig_idx] == 'r' or phases[j].state[sig_idx] == 's'):
-                        need_yellow = True
-                        yellow_str += 'r'
-                    else:
-                        yellow_str += phases[i].state[sig_idx]
-                if need_yellow:  # If a yellow is required
-                    if interface_flag:
-                        new_phases.append(libsumo.trafficlight.Phase(yellow_length, yellow_str))
-                    else:
-                        new_phases.append(traci.trafficlight.Phase(yellow_length, yellow_str))
-                    yellow_dict[str(i) + '_' + str(j)] = len(new_phases) - 1  # The index of the yellow phase in SUMO
-    return new_phases, yellow_dict
-
-
 class Intersection(object):
     '''
     Intersection Class is mainly used for describing crossing information and defining acting methods.
@@ -83,20 +39,20 @@ class Intersection(object):
         self.road_lane_mapping = {}
         self.interface_flag = world.interface_flag
 
-        map_name = Registry.mapping['world_mapping']['setting'].param['network']
-        self.lane_order_cf = None
-        self.lane_order_sumo = None
-        if 'signal_config' in Registry.mapping['world_mapping']['setting'].param.keys():
-            if 'N' in Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'].keys():
-                self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order']
-                self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order']
-            else:
-                if self.id in Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'].keys():
-                    self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'][self.id]
-                    self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id]
-                else:
-                    self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'][self.id[3:]] # exclude 'GS_'
-                    self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id[3:]]
+        # map_name = Registry.mapping['world_mapping']['setting'].param['network']
+        # self.lane_order_cf = None
+        # self.lane_order_sumo = None
+        # if 'signal_config' in Registry.mapping['world_mapping']['setting'].param.keys():
+        #     if 'N' in Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'].keys():
+        #         self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order']
+        #         self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order']
+        #     else:
+        #         if self.id in Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'].keys():
+        #             self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'][self.id]
+        #             self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id]
+        #         else:
+        #             self.lane_order_cf = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['cf_order'][self.id[3:]] # exclude 'GS_'
+        #             self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id[3:]]
 
         # links and phase information of each intersection
         self.current_phase = 0
@@ -116,7 +72,7 @@ class Intersection(object):
                 self.roads.append(link[0][:-2])
                 self.outs.append(False)
                 road = self.eng.lane.getShape(link[0])
-                self.directions.append(_get_direction(road, False))
+                self.directions.append(self._get_direction(road, False))
             elif link[0][:-2] in self.road_lane_mapping.keys() and link[0] not in self.road_lane_mapping[link[0][:-2]]:
                 self.road_lane_mapping[link[0][:-2]].append(link[0])
             if link[1][:-2] not in self.road_lane_mapping.keys():
@@ -125,7 +81,7 @@ class Intersection(object):
                 self.roads.append(link[1][:-2])
                 self.outs.append(True)
                 road = self.eng.lane.getShape(link[1])
-                self.directions.append(_get_direction(road, True))
+                self.directions.append(self._get_direction(road, True))
             elif link[1][:-2] in self.road_lane_mapping.keys() and link[1] not in self.road_lane_mapping[link[1][:-2]]:
                 self.road_lane_mapping[link[1][:-2]].append(link[1])
 
@@ -153,7 +109,7 @@ class Intersection(object):
             self.phase_available_startlanes.append(tmp_startane)
             self.phase_available_lanelinks.append(tmp_lanelinks)
 
-        self.full_phases, self.yellow_dict = create_yellows(self.green_phases, self.yellow_phase_time, self.interface_flag)
+        self.full_phases, self.yellow_dict = self.create_yellows(self.green_phases, self.yellow_phase_time, self.interface_flag)
         programs = self.eng.trafficlight.getAllProgramLogics(self.id)
         logic = programs[0]
         logic.type = 0
@@ -178,7 +134,6 @@ class Intersection(object):
         order = sorted(range(len(self.roads)),
                        key=lambda i: (self.directions[i],
                                       self.outs[i] if self.world.RIGHT else not self.outs[i]))
-        # TODO: check order [2,1,0] if self.RIGHT
         self.roads = [self.roads[i] for i in order]
         self.directions = [self.directions[i] for i in order]
         self.outs = [self.outs[i] for i in order]
@@ -356,6 +311,42 @@ class Intersection(object):
                     detectable.append(v)
         return detectable
 
+    # TODO: revert x and y
+    def _get_direction(self, road, out=True):
+        if out:
+            x = road[1][0] - road[0][0]
+            y = road[1][1] - road[0][1]
+        else:
+            x = road[-2][0] - road[-1][0]
+            y = road[-2][1] - road[-1][1]
+        tmp = atan2(x, y)
+        return tmp if tmp >= 0 else (tmp + 2 * pi)
+
+    def create_yellows(self, phases, yellow_length, interface_flag):
+        # interface_flag: 1:libsumo, 0: traci
+        new_phases = copy.copy(phases)
+        yellow_dict = {}    # current phase + next phase keyed to corresponding yellow phase index
+        # Automatically create yellow phases, traci will report missing phases as it assumes execution by index order
+        for i in range(0, len(phases)):
+            for j in range(0, len(phases)):
+                if i != j:
+                    need_yellow, yellow_str = False, ''
+                    for sig_idx in range(len(phases[i].state)):
+                        if (phases[i].state[sig_idx] == 'G' or phases[i].state[sig_idx] == 'g') and (phases[j].state[sig_idx] == 'r' or phases[j].state[sig_idx] == 's'):
+                            need_yellow = True
+                            yellow_str += 'r'
+                        else:
+                            yellow_str += phases[i].state[sig_idx]
+                    if need_yellow:  # If a yellow is required
+                        if interface_flag:
+                            new_phases.append(libsumo.trafficlight.Phase(yellow_length, yellow_str))
+                        else:
+                            new_phases.append(traci.trafficlight.Phase(yellow_length, yellow_str))
+                        yellow_dict[str(i) + '_' + str(j)] = len(new_phases) - 1  # The index of the yellow phase in SUMO
+        return new_phases, yellow_dict
+
+
+
 
 @Registry.register_world('sumo')
 class World(object):
@@ -499,7 +490,7 @@ class World(object):
             self.step_sim()
         for ts in valid_phases:
             green_phases = []
-            for phase in valid_phases[ts]:    # Convert to SUMO phase type
+            for phase in valid_phases[ts]:     # Convert to SUMO phase type
                 if 'y' not in phase:
                     if phase.count('r') + phase.count('s') != len(phase):
                         green_phases.append(self.eng.trafficlight.Phase(self.step_length, phase))
