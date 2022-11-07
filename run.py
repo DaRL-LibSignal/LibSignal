@@ -26,7 +26,7 @@ parser.add_argument('-a', '--agent', type=str, default="dqn", help="agent type o
 parser.add_argument('-w', '--world', type=str, default="cityflow", choices=['cityflow','sumo'], help="simulator type")
 parser.add_argument('-n', '--network', type=str, default="cityflow1x1", help="network name")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
-# python run.py -a dqn -w cityflow -n cityflow_cologne3
+
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.ngpu
 

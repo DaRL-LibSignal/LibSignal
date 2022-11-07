@@ -55,7 +55,6 @@ class MPLightAgent(RLAgent):
         self.ob_order = None
         if 'lane_order' in self.dic_traffic_env_conf.param['signal_config'][map_name].keys():
             self.ob_order = self.dic_traffic_env_conf.param['signal_config'][map_name]['lane_order']
-        self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
         self.model = None
         self.optimizer = None
         self.num_phases = len(self.phase_pairs)
