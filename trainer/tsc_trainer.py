@@ -40,8 +40,7 @@ class TSCTrainer(BaseTrainer):
         self.replay_file_dir = None
         if self.save_replay:
             if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
-                self.replay_file_dir = os.path.join(Registry.mapping['world_mapping']['setting'].param['dir'],
-                    os.path.dirname(Registry.mapping['world_mapping']['setting'].param['roadnetLogFile']))
+                self.replay_file_dir = os.path.dirname(Registry.mapping['world_mapping']['setting'].param['roadnetLogFile'])
         
         # TODO: support other dataset in the future
         self.dataset = Registry.mapping['dataset_mapping'][Registry.mapping['command_mapping']['setting'].param['dataset']](
@@ -134,13 +133,12 @@ class TSCTrainer(BaseTrainer):
             for a in self.agents:
                 a.reset()
             if self.save_replay and e % self.save_rate == 0:
-                # self.env.eng.set_save_replay(True)
+                self.env.eng.set_save_replay(True)
                 if not os.path.exists(self.replay_file_dir):
                     os.makedirs(self.replay_file_dir)
-                # self.env.eng.set_replay_file(self.replay_file_dir + f"/episode_{e}.txt")  # TODO: replay here
+                self.env.eng.set_replay_file(os.path.join(self.replay_file_dir, f"episode_{e}.txt"))
             else:
-                pass
-                # self.env.eng.set_save_replay(False)
+                self.env.eng.set_save_replay(False)
             episode_loss = []
             i = 0
             while i < self.steps:
