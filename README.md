@@ -173,6 +173,6 @@ Supporing parameters:
 |----------------------------|---------------|------------|------------|
 | **MPLight implementation** | July-18-2022  | developed  | √          |
 | **Libsumo integration**    | August-8-2022 | developed | √          |
-| **Delay calculation**      | August-8-2022 | developed |  ✗          |
+| **Delay calculation**      | August-8-2022 | developed |  √          |
 | **CoLight adaptation for heterogenous network** | September-1-2022 | deploping |  |
 

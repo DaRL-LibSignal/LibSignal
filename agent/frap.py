@@ -77,7 +77,13 @@ class FRAP_DQNAgent(RLAgent):
         if all_valid_acts is None:
             self.valid_acts = None
         else:
-            self.inter_name = self.inter_id if self.inter_id in all_valid_acts.keys() else 'GS_'+ self.inter_id
+            if self.inter_id in all_valid_acts.keys():
+                self.inter_name = self.inter_id
+            else:
+                if 'GS_' in self.inter_id:
+                    self.inter_name = self.inter_id[3:]
+                else:
+                    self.inter_name = 'GS_' + self.inter_id
             self.valid_acts = all_valid_acts[self.inter_name]
 
         self.model = self._build_model()
