@@ -60,17 +60,6 @@ class FRAP_DQNAgent(RLAgent):
                                                      negative=False)
 
         map_name = self.dic_traffic_env_conf.param['network']
-        self.phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
-        self.comp_mask = self.relation()
-        self.num_phases = len(self.phase_pairs)
-        self.num_actions = len(self.phase_pairs)
-        self.ob_order = None
-        if 'lane_order' in self.dic_traffic_env_conf.param['signal_config'][map_name].keys():
-            self.ob_order = self.dic_traffic_env_conf.param['signal_config'][map_name]['lane_order']
-        # if self.phase:
-        #     if self.one_hot:
-        #         if self.ob_generator.ob_length == 8:
-        #             self.dic_phase_expansion = self.dic_traffic_env_conf.param["phase_expansion_8"]
 
         # set valid action
         all_valid_acts = self.dic_traffic_env_conf.param['signal_config'][map_name]['valid_acts']
@@ -85,6 +74,22 @@ class FRAP_DQNAgent(RLAgent):
                 else:
                     self.inter_name = 'GS_' + self.inter_id
             self.valid_acts = all_valid_acts[self.inter_name]
+        
+        self.ob_order = None
+        if 'lane_order' in self.dic_traffic_env_conf.param['signal_config'][map_name].keys():
+            self.ob_order = self.dic_traffic_env_conf.param['signal_config'][map_name]['lane_order'][self.inter_name]
+        
+        # set phase_pairs
+        self.phase_pairs = []
+        all_phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
+        for idx in self.valid_acts:
+            self.phase_pairs.append([self.ob_order[x] for x in all_phase_pairs[idx]])
+        
+
+        self.comp_mask = self.relation()
+        self.num_phases = len(self.phase_pairs)
+        self.num_actions = len(self.phase_pairs)
+        
 
         self.model = self._build_model()
         self.target_model = self._build_model()
@@ -166,28 +171,16 @@ class FRAP_DQNAgent(RLAgent):
         tmp = self.ob_generator.generate()
         if self.ob_order != None:
             tt = []
-            if self.id[:3] == 'GS_':
-                name = self.id[3:]
-            else:
-                name = self.id
             for i in range(12):
                 # padding to 12 dims
-                if i in self.ob_order[name].keys():
-                    tt.append(tmp[self.ob_order[name][i]])
+                if i in self.ob_order.keys():
+                    tt.append(tmp[self.ob_order[i]])
                 else:
                     tt.append(0.)
             x_obs.append(np.array(tt))     
         else:
             x_obs.append(tmp)
-            
-        if self.ob_order != None:
-            x_obs = np.array(x_obs, dtype=np.float32)
         return x_obs
-
-        # x_obs = []
-        # x_obs.append(self.ob_generator.generate())
-        # x_obs = np.array(x_obs, dtype=np.float32)
-        # return x_obs #(1,12)
 
     def get_reward(self):
         '''
@@ -231,7 +224,6 @@ class FRAP_DQNAgent(RLAgent):
                 return self.sample()
         if self.phase:
             if self.one_hot:
-                # feature_p = utils.idx2onehot(phase, self.action_space.n,self.dic_phase_expansion)
                 feature_p = utils.idx2onehot(phase, self.action_space.n)
                 feature = np.concatenate([feature_p, ob], axis=1)
             else:
@@ -239,22 +231,9 @@ class FRAP_DQNAgent(RLAgent):
         else:
             feature = ob
         observation = torch.tensor(feature, dtype=torch.float32)
-        actions = self.model(observation, train=True) #1, 8
+        actions = self.model(observation, train=False)
         actions = actions.clone().detach().numpy()
-        if self.valid_acts is None:
-            res = np.argmax(actions, axis=1)
-        else: # select the valid action that has the max values
-            max_val, max_idx = None, None
-            for idx in self.valid_acts:
-                batch_item_qval = actions[-1][idx]
-                if max_val is None:
-                    max_val = batch_item_qval
-                    max_idx = idx
-                elif batch_item_qval > max_val:
-                    max_val = batch_item_qval
-                    max_idx = idx
-            res = np.array(self.valid_acts[max_idx]).reshape(-1)
-        return res
+        return np.argmax(actions, axis=1)
 
     def sample(self):
         '''
@@ -462,14 +441,6 @@ class FRAP(nn.Module):
             phase_demand_embed = F.relu(self.lane_embedding(phase_demand))
             phase_demands.append(phase_demand_embed)
         phase_demands = torch.stack(phase_demands, 1)
-        # phase_demands_old = torch.stack(phase_demands, 1)
-        # # turn direction from NESW to ESWN
-        # if num_movements == 8:
-        #     phase_demands = torch.cat([phase_demands_old[:,2:,:],phase_demands_old[:,:2,:]],1)
-        # elif num_movements == 12:
-        #     phase_demands = torch.cat([phase_demands_old[:,3:,:],phase_demands_old[:,:3,:]],1)
-        # phase_demands = torch.stack(phase_demands, 1)
-
 
         pairs = []
         for pair in self.phase_pairs:

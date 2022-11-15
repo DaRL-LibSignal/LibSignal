@@ -58,10 +58,10 @@ world:
       # key of lane_ordr: order in world(as well as observation order)
       # value of lane_order: increasing order
       lane_order: {
-        # NT,NL,ET,ST,SL
-        '360082': {1: 0, 2: 1, 4: 2, 7: 3, 8: 4},
-        # NT,NL,ET,ST,SL,WT
-        '360086': {1: 0, 2: 1, 4: 2, 7: 3, 8: 4, 10: 5},
+        # NT,NL,ET,EL,ST,SL
+        '360082': {1: 0, 2: 1, 4: 2, 5: 2, 7: 3, 8: 4},
+        # NT,NL,ET,EL,ST,SL,WT,WL
+        '360086': {1: 0, 2: 1, 4: 2, 5: 2, 7: 3, 8: 4, 10: 5, 11: 5},
         # NT,NL,ET,EL,ST,SL,WT,WL
         'cluster_2415878664_254486231_359566_359576': {1: 0, 2: 1, 4: 2, 5: 3, 7: 4, 8: 5, 10: 6, 11: 7}
       }

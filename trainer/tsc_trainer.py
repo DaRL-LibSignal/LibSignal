@@ -132,13 +132,14 @@ class TSCTrainer(BaseTrainer):
 
             for a in self.agents:
                 a.reset()
-            if self.save_replay and e % self.save_rate == 0:
-                self.env.eng.set_save_replay(True)
-                if not os.path.exists(self.replay_file_dir):
-                    os.makedirs(self.replay_file_dir)
-                self.env.eng.set_replay_file(os.path.join(self.replay_file_dir, f"episode_{e}.txt"))
-            else:
-                self.env.eng.set_save_replay(False)
+            if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
+                if self.save_replay and e % self.save_rate == 0:
+                    self.env.eng.set_save_replay(True)
+                    if not os.path.exists(self.replay_file_dir):
+                        os.makedirs(self.replay_file_dir)
+                    self.env.eng.set_replay_file(os.path.join(self.replay_file_dir, f"episode_{e}.txt"))
+                else:
+                    self.env.eng.set_save_replay(False)
             episode_loss = []
             i = 0
             while i < self.steps:
