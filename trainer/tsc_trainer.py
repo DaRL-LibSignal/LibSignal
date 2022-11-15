@@ -34,13 +34,8 @@ class TSCTrainer(BaseTrainer):
         self.update_model_rate = Registry.mapping['trainer_mapping']['setting'].param['update_model_rate']
         self.update_target_rate = Registry.mapping['trainer_mapping']['setting'].param['update_target_rate']
         self.test_when_train = Registry.mapping['trainer_mapping']['setting'].param['test_when_train']
-        self.save_replay = Registry.mapping['world_mapping']['setting'].param['saveReplay']
         # replay file is only valid in cityflow now. 
         # TODO: support SUMO and Openengine later
-        self.replay_file_dir = None
-        if self.save_replay:
-            if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
-                self.replay_file_dir = os.path.dirname(Registry.mapping['world_mapping']['setting'].param['roadnetLogFile'])
         
         # TODO: support other dataset in the future
         self.dataset = Registry.mapping['dataset_mapping'][Registry.mapping['command_mapping']['setting'].param['dataset']](
@@ -135,8 +130,6 @@ class TSCTrainer(BaseTrainer):
             if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
                 if self.save_replay and e % self.save_rate == 0:
                     self.env.eng.set_save_replay(True)
-                    if not os.path.exists(self.replay_file_dir):
-                        os.makedirs(self.replay_file_dir)
                     self.env.eng.set_replay_file(os.path.join(self.replay_file_dir, f"episode_{e}.txt"))
                 else:
                     self.env.eng.set_save_replay(False)
@@ -251,6 +244,12 @@ class TSCTrainer(BaseTrainer):
         :param drop_load: decide whether to load pretrained model's parameters
         :return self.metric: including queue length, throughput, delay and travel time
         '''
+        if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
+            if self.save_replay:
+                self.env.eng.set_save_replay(True)
+                self.env.eng.set_replay_file(os.path.join(self.replay_file_dir, f"final.txt"))
+            else:
+                self.env.eng.set_save_replay(False)
         self.metric.clear()
         if not drop_load:
             [ag.load_model(self.episodes) for ag in self.agents]

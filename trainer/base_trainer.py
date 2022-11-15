@@ -19,6 +19,13 @@ class BaseTrainer(ABC):
         name="base"
     ):
         self.path = os.path.join('configs/sim', Registry.mapping['command_mapping']['setting'].param['network'] + '.cfg')
+        self.save_replay = Registry.mapping['world_mapping']['setting'].param['saveReplay']
+        if self.save_replay:
+            if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
+                self.dir = Registry.mapping['world_mapping']['setting'].param['dir']
+                self.replay_file_dir = os.path.dirname(Registry.mapping['world_mapping']['setting'].param['roadnetLogFile'])
+                if not os.path.exists(os.path.join(self.dir, self.replay_file_dir)):
+                    os.makedirs(os.path.join(self.dir, self.replay_file_dir))
         self.seed = Registry.mapping['command_mapping']['setting'].param['seed']
         self.logger = logger
         #self.debug = args['debug']
