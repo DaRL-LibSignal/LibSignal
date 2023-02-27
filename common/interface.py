@@ -18,7 +18,7 @@ class Command_Setting_Interface(Interface):
         Command_Setting_Interface.param = config['command']
 
 
-@Registry.register_world('setting')
+@Registry.register_world('graph_setting')
 class Graph_World_Interface(Interface):
     """
     convert world roadnet into graph structure

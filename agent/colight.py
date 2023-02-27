@@ -30,7 +30,7 @@ class CoLightAgent(RLAgent):
         """
         #  general setting of world and model structure
         # TODO: different phases matching
-        self.buffer_size = Registry.mapping['trainer_mapping']['trainer_setting'].param['buffer_size']
+        self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
         self.graph = Registry.mapping['world_mapping']['graph_setting'].graph
@@ -40,9 +40,9 @@ class CoLightAgent(RLAgent):
         self.edge_idx = torch.tensor(self.graph['sparse_adj'].T, dtype=torch.long)  # source -> target
 
         #  model parameters
-        self.phase = Registry.mapping['world_mapping']['traffic_setting'].param['phase']
-        self.one_hot = Registry.mapping['world_mapping']['traffic_setting'].param['one_hot']
-        self.model_dict = Registry.mapping['model_mapping']['model_setting'].param
+        self.phase = Registry.mapping['model_mapping']['setting'].param['phase']
+        self.one_hot = Registry.mapping['model_mapping']['setting'].param['one_hot']
+        self.model_dict = Registry.mapping['model_mapping']['setting'].param
 
         #  get generator for CoLightAgent
         observation_generators = []
@@ -112,17 +112,17 @@ class CoLightAgent(RLAgent):
         else:
             self.ob_length = self.ob_generator[0][1].ob_length
 
-        self.get_attention = Registry.mapping['logger_mapping']['logger_setting'].param['get_attention']
+        self.get_attention = Registry.mapping['logger_mapping']['setting'].param['attention']
         # train parameters
         self.rank = rank
-        self.gamma = Registry.mapping['model_mapping']['model_setting'].param['gamma']
-        self.grad_clip = Registry.mapping['model_mapping']['model_setting'].param['grad_clip']
-        self.epsilon = Registry.mapping['model_mapping']['model_setting'].param['epsilon']
-        self.epsilon_decay = Registry.mapping['model_mapping']['model_setting'].param['epsilon_decay']
-        self.epsilon_min = Registry.mapping['model_mapping']['model_setting'].param['epsilon_min']
-        self.learning_rate = Registry.mapping['model_mapping']['model_setting'].param['learning_rate']
-        self.vehicle_max = Registry.mapping['model_mapping']['model_setting'].param['vehicle_max']
-        self.batch_size = Registry.mapping['model_mapping']['model_setting'].param['batch_size']
+        self.gamma = Registry.mapping['model_mapping']['setting'].param['gamma']
+        self.grad_clip = Registry.mapping['model_mapping']['setting'].param['grad_clip']
+        self.epsilon = Registry.mapping['model_mapping']['setting'].param['epsilon']
+        self.epsilon_decay = Registry.mapping['model_mapping']['setting'].param['epsilon_decay']
+        self.epsilon_min = Registry.mapping['model_mapping']['setting'].param['epsilon_min']
+        self.learning_rate = Registry.mapping['model_mapping']['setting'].param['learning_rate']
+        self.vehicle_max = Registry.mapping['model_mapping']['setting'].param['vehicle_max']
+        self.batch_size = Registry.mapping['model_mapping']['setting'].param['batch_size']
 
         self.model = self._build_model()
         self.target_model = self._build_model()
@@ -271,7 +271,7 @@ class CoLightAgent(RLAgent):
         model = ColightNet(self.ob_length, self.action_space.n, **self.model_dict)
         return model
 
-    def remember(self, last_obs, last_phase, actions, rewards, obs, cur_phase, key):
+    def remember(self, last_obs, last_phase, actions, actions_prob, rewards, obs, cur_phase, done, key):
         self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
 
     def _batchwise(self, samples):
@@ -328,7 +328,7 @@ class CoLightAgent(RLAgent):
         self.target_model.load_state_dict(weights)
 
     def load_model(self, e):
-        model_name = os.path.join(Registry.mapping['logger_mapping']['output_path'].path,
+        model_name = os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                   'model', f'{e}_{self.rank}.pt')
         self.model = self._build_model()
         self.model.load_state_dict(torch.load(model_name))
@@ -336,7 +336,7 @@ class CoLightAgent(RLAgent):
         self.target_model.load_state_dict(torch.load(model_name))
 
     def save_model(self, e):
-        path = os.path.join(Registry.mapping['logger_mapping']['output_path'].path, 'model')
+        path = os.path.join(Registry.mapping['logger_mapping']['path'].path, 'model')
         if not os.path.exists(path):
             os.makedirs(path)
         model_name = os.path.join(path, f'{e}_{self.rank}.pt')
