@@ -63,8 +63,8 @@ class Intersection(object):
         self.yellow_phase_time = min([i.duration for i in self.eng.trafficlight.getAllProgramLogics(self.id)[0].phases])
         self.map_name = world.map  # TODO: try to add it to Registry later
 
-        self.lane_links = world.eng.trafficlight.getControlledLinks(self.id)
-        for link in self.lane_links:
+        self.lanelinks = world.eng.trafficlight.getControlledLinks(self.id)
+        for link in self.lanelinks:
             link = link[0]
             if link[0][:-2] not in self.road_lane_mapping.keys():
                 self.road_lane_mapping.update({link[0][:-2]: []})  # assume less than 9 lanes in each road
@@ -451,6 +451,7 @@ class World(object):
             "time": self.get_current_time,
             "vehicle_distance": None,
             "pressure": self.get_pressure,
+            "lane_pressure": self.get_lane_pressure,
             "lane_waiting_time_count": self.get_lane_waiting_time_count,
             "lane_delay": self.get_lane_delay,
             "real_delay": self.get_real_delay,
@@ -466,6 +467,9 @@ class World(object):
         self.vehicle_trajectory = {}
         self.vehicle_maxspeed = {}
         self.real_delay = {}
+
+        # get in_lanes and out_lanes
+        self.in_lanes, self.out_lanes = self.get_in_out_lanes()
 
     def generate_valid_phase(self):
         '''
@@ -682,7 +686,41 @@ class World(object):
                     pressure -= lane_vehicles[k]
             pressures[i.id] = pressure
         return pressures
-        # pass
+        
+    def get_in_out_lanes(self):
+        in_lanes = []
+        out_lanes = []
+        for i in self.intersections:
+            for road in i.in_roads:
+                for lane in i.road_lane_mapping[road]:
+                    in_lanes.append(lane)
+            for road in i.out_roads:
+                for lane in i.road_lane_mapping[road]:
+                    out_lanes.append(lane)
+        # add in_lanes of virtual intersections which can be regarded as out_lanes of non-virtual intersections.
+        for lane in self.all_lanes:
+            if lane not in out_lanes:
+                out_lanes.append(lane)
+        return in_lanes, out_lanes
+
+    def get_lane_pressure(self):
+        '''
+        get_lane_pressure
+        Get pressure of each lane in an intersection. 
+        Pressure of each lane equals to number of vehicles that in the in_lane minus number of vehicles that in out_lane.
+        
+        :param: None
+        :return pressures: pressure of each lane
+        '''
+        lvc = self.get_lane_vehicle_count()
+        pressures = {}
+        pressures = {x:0 for x in self.in_lanes}
+        for inter_obj in self.intersections:
+            for lanelink in inter_obj.lanelinks:
+                start, end = lanelink[0][0], lanelink[0][1]
+                pressures[start] += lvc[start]
+                pressures[start] -= lvc[end]
+        return pressures
 
     def get_lane_waiting_time_count(self):
         '''

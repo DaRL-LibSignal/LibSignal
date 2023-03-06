@@ -299,6 +299,7 @@ class World(object):
             "time": self.eng.get_current_time,
             "vehicle_distance": self.eng.get_vehicle_distance,
             "pressure": self.get_pressure,
+            "lane_pressure": self.get_lane_pressure,
             "lane_waiting_time_count": self.get_lane_waiting_time_count,
             "lane_delay": self.get_lane_delay,
             "real_delay": self.get_real_delay,
@@ -316,8 +317,8 @@ class World(object):
         self.history_vehicles = set()
         self.real_delay= {}
 
-        # # get in_lines and out_lanes
-        # self.list_entering_lanes, self.list_exiting_lanes = self.get_in_out_lanes()
+        # # get in_lanes and out_lanes
+        self.in_lanes, self.out_lanes = self.get_in_out_lanes()
 
         # record lanes' vehicles to calculate arrive_leave_time
         self.dic_lane_vehicle_previous_step = {key: None for key in self.all_lanes}
@@ -481,29 +482,45 @@ class World(object):
                     pressure -= vehicles[lane]
             pressures[i.id] = pressure
         return pressures
+    
+    def get_in_out_lanes(self):
+        in_lanes = []
+        out_lanes = []
+        for i in self.intersections:
+            for road in i.in_roads:
+                from_zero = (road["startIntersection"] == i.id) if self.RIGHT else (
+                        road["endIntersection"] == i.id)
+                for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
+                    in_lanes.append(road["id"] + "_" + str(n))
+            for road in i.out_roads:
+                from_zero = (road["endIntersection"] == i.id) if self.RIGHT else (
+                        road["startIntersection"] == i.id)
+                for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
+                    out_lanes.append(road["id"] + "_" + str(n))
+        # add in_lanes of virtual intersections which can be regarded as out_lanes of non-virtual intersections.
+        for lane in self.all_lanes:
+            if lane not in out_lanes:
+                out_lanes.append(lane)
+        return in_lanes, out_lanes
 
-    # return [self.dic_lane_waiting_vehicle_count_current_step[lane] for lane in self.list_entering_lanes] + \
-    # [-self.dic_lane_waiting_vehicle_count_current_step[lane] for lane in self.list_exiting_lanes]
-
-    # def get_in_out_lanes(self):
-    #     in_lines = []
-    #     out_lines = []
-    #     for i in self.intersections:
-    #         for road in i.in_roads:
-    #             from_zero = (road["startIntersection"] == i.id) if self.RIGHT else (
-    #                     road["endIntersection"] == i.id)
-    #             for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
-    #                 in_lines.append(road["id"] + "_" + str(n))
-    #         for road in i.out_roads:
-    #             from_zero = (road["endIntersection"] == i.id) if self.RIGHT else (
-    #                     road["startIntersection"] == i.id)
-    #             for n in range(len(road["lanes"]))[::(1 if from_zero else -1)]:
-    #                 out_lines.append(road["id"] + "_" + str(n))
-    #     # add in_lanes of virtual intersections which can be regarded as out_lanes of non-virtual intersections.
-    #     for lane in self.all_lanes:
-    #         if lane not in out_lines:
-    #             out_lines.append(lane)
-    #     return in_lines, out_lines
+    def get_lane_pressure(self):
+        '''
+        get_lane_pressure
+        Get pressure of each lane in an intersection. 
+        Pressure of each lane equals to number of vehicles that in the in_lane minus number of vehicles that in out_lane.
+        
+        :param: None
+        :return pressures: pressure of each lane
+        '''
+        lvc = self.eng.get_lane_vehicle_count()
+        pressures = {}
+        pressures = {x:0 for x in self.in_lanes}
+        for inter_obj in self.intersections:
+            pressure = []
+            for start, end in inter_obj.lanelinks:
+                pressures[start] += lvc[start]
+                pressures[start] -= lvc[end]
+        return pressures
 
     def get_vehicle_lane(self):
         '''

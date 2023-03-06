@@ -252,7 +252,7 @@ class MPLightAgent(RLAgent):
                         tt.append(0.)
                 x_obs.append(np.array(tt))     
             else:
-                x_obs.append(self.ob_generator[i][1].generate())
+                x_obs.append(tmp)
             
         if self.ob_order != None:
             x_obs = np.array(x_obs, dtype=np.float32)
