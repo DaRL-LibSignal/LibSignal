@@ -82,9 +82,11 @@ class FRAP_DQNAgent(RLAgent):
         # set phase_pairs
         self.phase_pairs = []
         all_phase_pairs = self.dic_traffic_env_conf.param['signal_config'][map_name]['phase_pairs']
-        for idx in self.valid_acts:
-            self.phase_pairs.append([self.ob_order[x] for x in all_phase_pairs[idx]])
-        
+        if self.valid_acts:
+            for idx in self.valid_acts:
+                self.phase_pairs.append([self.ob_order[x] for x in all_phase_pairs[idx]])
+        else:
+            self.phase_pairs = all_phase_pairs
 
         self.comp_mask = self.relation()
         self.num_phases = len(self.phase_pairs)
@@ -348,7 +350,7 @@ class FRAP_DQNAgent(RLAgent):
         :return: None
         '''
         model_name = os.path.join(
-            Registry.mapping['logger_mapping']['output_path'].path, 'model', f'{e}_{self.rank}.pt')
+            Registry.mapping['logger_mapping']['path'].path, 'model', f'{e}_{self.rank}.pt')
         self.model = FRAP(self.dic_agent_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
         self.model.load_state_dict(torch.load(model_name))
         self.target_model = FRAP(self.dic_agent_conf, self.dic_phase_expansion, self.num_actions, self.phase_pairs, self.comp_mask)
