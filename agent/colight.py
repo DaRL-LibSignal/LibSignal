@@ -381,12 +381,15 @@ class ColightNet(nn.Module):
     def forward(self, x, edge_index, train=True):
         h = self.embedding_MLP.forward(x, train)
         # TODO: implement att
-        for mdl in self.module_list:
-            h = mdl.forward(h, edge_index, train)
+
         if train:
+            for mdl in self.module_list:
+                h = mdl.forward(h, edge_index, train)
             h = self.output_layer(h)
         else:
             with torch.no_grad():
+                for mdl in self.module_list:
+                    h = mdl.forward(h, edge_index, train)
                 h = self.output_layer(h)
         return h
 
