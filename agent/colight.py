@@ -205,7 +205,7 @@ class CoLightAgent(RLAgent):
         rewards = []  # sub_agents
         for i in range(len(self.reward_generator)):
             rewards.append(self.reward_generator[i][1].generate())
-        rewards = np.squeeze(np.array(rewards)) * 12
+        rewards = np.squeeze(np.array(rewards, dtype=np.float32)) * 12
         return rewards
 
     def get_phase(self):
@@ -225,7 +225,7 @@ class CoLightAgent(RLAgent):
         queue = []
         for i in range(len(self.queue)):
             queue.append((self.queue[i][1].generate()))
-        tmp_queue = np.squeeze(np.array(queue))
+        tmp_queue = np.squeeze(np.array(queue, dtype=np.float32))
         queue = np.sum(tmp_queue, axis=1 if len(tmp_queue.shape)==2 else 0)
         return queue
 
@@ -233,7 +233,7 @@ class CoLightAgent(RLAgent):
         delay = []
         for i in range(len(self.delay)):
             delay.append((self.delay[i][1].generate()))
-        delay = np.squeeze(np.array(delay))
+        delay = np.squeeze(np.array(delay, dtype=np.float32))
         return delay # [intersections,]
 
     def get_action(self, ob, phase, test=False):
@@ -496,7 +496,7 @@ class MultiHeadAttModel(MessagePassing):
         out = torch.mul(hidden_neighbor_repr, alpha_i_expand).mean(0)
 
         # TODO: attention ouput in the future
-        self.att_list.append(alpha_i)  # [64, 16]
+        # self.att_list.append(alpha_i)  # [64, 16]
         return out
 
     def get_att(self):
