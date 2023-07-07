@@ -19,7 +19,7 @@ import re
 import copy
 
 import sumolib
-import libsumo
+# import libsumo
 import traci
 
 class Intersection(object):
