@@ -5,7 +5,6 @@ from environment import TSCEnv
 from common.registry import Registry
 from trainer.base_trainer import BaseTrainer
 
-
 @Registry.register_trainer("tsc")
 class TSCTrainer(BaseTrainer):
     '''

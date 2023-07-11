@@ -1,9 +1,10 @@
 includes:
-  - configs/tsc/base.yml
+  - configs/tsc/rl.yml
 
 
 model:
   name: colight
+  attention: False
   graphic: True
   vehicle_max: 1
   learning_rate: 0.001

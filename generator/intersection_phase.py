@@ -38,12 +38,8 @@ class IntersectionPhaseGenerator():
         :param: None
         :return ret: result based on current phase
         '''
-        ret = [self.I.current_phase]
-
-        if self.negative:
-            ret = ret * (-1)
-
-        return ret
+        
+        return self.I.current_phase
 
 
 if __name__ == "__main__":

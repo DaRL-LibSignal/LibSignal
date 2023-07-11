@@ -158,7 +158,7 @@ class Intersection(object):
                 #     self._change_phase(self.phases[self.action_before_yellow], interval,'add')
                 # else:
                 #     self._change_phase(self.phases[self.action_before_yellow], interval)
-                self.current_phase = self.action_before_yellow
+                # self.current_phase = self.action_before_yellow
                 self.action_executed = self.action_before_yellow
             else:
                 self.current_phase_time += interval
@@ -174,6 +174,7 @@ class Intersection(object):
                     else:
                         self._change_phase(self.yellow_phase_id[0], interval)
                     self.action_before_yellow = action
+                    self.current_phase = action
                 else:
                     self._change_phase(self.phases[action], interval)
                     self.current_phase = action

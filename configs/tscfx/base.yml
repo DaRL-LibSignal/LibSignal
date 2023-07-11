@@ -57,7 +57,6 @@ logger:
   data_dir: "dataset/"
   save_model: True
   save_rate: 5
-  attention: False
 
 
 

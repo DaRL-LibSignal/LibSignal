@@ -9,14 +9,11 @@ class LaneVehicleGenerator(BaseGenerator):
 
     :param world: World object
     :param I: Intersection object
-    :param fns: list of statistics to get, currently support "lane_count", "lane_waiting_count" , "lane_waiting_time_count", "lane_delay", "lane_pressure" and "pressure". 
+    :param fns: list of statistics to get, currently support "lane_count", "lane_waiting_count" , "lane_waiting_time_count", "lane_delay" and "pressure". 
         "lane_count": get number of running vehicles on each lane. 
         "lane_waiting_count": get number of waiting vehicles(speed less than 0.1m/s) on each lane. 
         "lane_waiting_time_count": get the sum of waiting time of vehicles on the lane since their last action. 
         "lane_delay": the delay of each lane: 1 - lane_avg_speed/speed_limit.
-        "lane_pressure": the number of vehicles that in the in_lane minus number of vehicles that in out_lane.
-        "pressure": difference of vehicle density between the in-coming lane and the out-going lane.
-
     :param in_only: boolean, whether to compute incoming lanes only. 
     :param average: None or str, None means no averaging, 
         "road" means take average of lanes on each road, 
@@ -89,7 +86,8 @@ class LaneVehicleGenerator(BaseGenerator):
 
 
             
-
+        self.directions = []
+        self.roads = []
         # ---------------------------------------------------------------------------------------------------------------
         # TODO: register it in Registry
         if isinstance(world, world_sumo.World):
@@ -104,6 +102,8 @@ class LaneVehicleGenerator(BaseGenerator):
             for road in roads:
                 from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
                 self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
+                self.roads.extend(road['id'] for _ in range(len(road["lanes"])))
+                self.directions.extend(self.I._get_direction(road, False) for _ in range(len(road["lanes"])))
         # ---------------------------------------------------------------------------------------------------------------
         
         # elif isinstance(world, world_openengine.World):

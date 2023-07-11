@@ -1,0 +1,20 @@
+includes:
+  - configs/tscfx/base.yml
+
+model:
+  name: rlfx
+  train_model: True
+  one_hot: True
+  phase: True
+  duration_space: 11 # from 0 to 50
+  duration_spaces: [11,11,11,6,11,11,11,6,11,11,11,6,11,11,6,6]
+  duration_min: 10
+  duration_unit: 5
+  duration_units: [5, 5, 5, 10, 5, 5, 5, 10, 5, 5, 5, 10, 5, 5, 5, 10]
+
+
+trainer:
+  thread: 4
+  ngpu: -1
+  action_interval: 5
+  episodes: 200
