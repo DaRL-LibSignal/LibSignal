@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from common.metrics import Metrics
-from environment import TSCEnv
+from environment import TSCEnv, TSCMAEnv
 from common.registry import Registry
 from trainer.base_trainer import BaseTrainer
 from trainer.trainer_utils import *
@@ -113,7 +113,7 @@ class TSCFXTrainer(BaseTrainer):
         :return: None
         '''
         # TODO: finalized list or non list
-        self.env = TSCEnv(self.world, self.agents, self.metric)
+        self.env = TSCMAEnv(self.world, self.agents, self.metric)
 
     def train(self):
         tscfx_train(self)

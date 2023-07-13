@@ -45,6 +45,7 @@ class DQNAgent(RLAgent):
                                                      in_only=True, average='all', negative=True)
         self.action_space = gym.spaces.Discrete(len(self.world.id2intersection[inter_id].phases))
 
+        
         if self.phase:
             if self.one_hot:
                 self.ob_length = self.ob_generator.ob_length + len(self.world.id2intersection[inter_id].phases)
@@ -52,6 +53,8 @@ class DQNAgent(RLAgent):
                 self.ob_length = self.ob_generator.ob_length + 1
         else:
             self.ob_length = self.ob_generator.ob_length
+        
+
 
         self.gamma = Registry.mapping['model_mapping']['setting'].param['gamma']
         self.grad_clip = Registry.mapping['model_mapping']['setting'].param['grad_clip']

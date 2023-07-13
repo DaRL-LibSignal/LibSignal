@@ -1,5 +1,5 @@
 includes:
-  - configs/tsc/base.yml
+  - configs/tscfx/base.yml
 
 model:
   name: rl

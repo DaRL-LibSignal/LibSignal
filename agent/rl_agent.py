@@ -11,10 +11,13 @@ class RLAgent(BaseAgent):
     '''
     RLAgent Class is mainly used for creating a rl-based agent and base methods.
     '''
-    def __init__(self, world, intersection_ids):
+    def __init__(self, world, rank):
         super().__init__(world)
-        self.id = intersection_ids
+        self.rank = rank
+        self.id = self.world.intersection_ids[self.rank]
         self.inter_obj = self.world.id2intersection[self.id]
+
+
         self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
         self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj,
                                                  ["lane_count"], in_only=True, average=None)
@@ -29,6 +32,29 @@ class RLAgent(BaseAgent):
         self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_delay"], in_only=True, average="all",
                                                      negative=False)
+        
+    def reset(self):
+        '''
+        reset
+        Reset information, including ob_generator, phase_generator, queue, delay, etc.
+
+        :param: None
+        :return: None
+        '''
+        self.inter_obj = self.world.id2intersection[self.id]
+
+        self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj, ['lane_count'], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, self.inter_obj, ["phase"],
+                                                          targets=["cur_phase"], negative=False)
+        self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj, ["lane_waiting_count"],
+                                                     in_only=True, average='all', negative=True)
+        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_waiting_count"], in_only=True,
+                                                     negative=False)
+        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
+                                                     ["lane_delay"], in_only=True, average="all",
+                                                     negative=False)
+
     def get_ob(self):
         '''
         get_ob

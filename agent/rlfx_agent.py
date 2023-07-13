@@ -17,9 +17,8 @@ class RLFXAgent(BaseAgent):
         super().__init__(world)
 
         self.rank = rank
-        inter_id = self.world.intersection_ids[self.rank]
-        inter_obj = self.world.id2intersection[inter_id]
-        self.inter_obj = inter_obj
+        self.id = self.world.intersection_ids[self.rank]
+        self.inter_obj = self.world.id2intersection[self.id]
 
         self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
         # duration action space, decided by predefined value stored in dictionary
@@ -74,18 +73,17 @@ class RLFXAgent(BaseAgent):
         :param: None
         :return: None
         '''
-        inter_id = self.world.intersection_ids[self.rank]
-        inter_obj = self.world.id2intersection[inter_id]
+        self.inter_obj = self.world.id2intersection[self.id]
 
-        self.ob_generator = LaneVehicleGenerator(self.world, inter_obj, ['lane_count'], in_only=True, average=None)
-        self.phase_generator = IntersectionPhaseGenerator(self.world, inter_obj, ["phase"],
+        self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj, ['lane_count'], in_only=True, average=None)
+        self.phase_generator = IntersectionPhaseGenerator(self.world, self.inter_obj, ["phase"],
                                                           targets=["cur_phase"], negative=False)
-        self.reward_generator = LaneVehicleGenerator(self.world, inter_obj, ["lane_waiting_count"],
+        self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj, ["lane_waiting_count"],
                                                      in_only=True, average='all', negative=True)
-        self.queue = LaneVehicleGenerator(self.world, inter_obj,
+        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_waiting_count"], in_only=True,
                                                      negative=False)
-        self.delay = LaneVehicleGenerator(self.world, inter_obj,
+        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_delay"], in_only=True, average="all",
                                                      negative=False)
         self.duration_residual = 0

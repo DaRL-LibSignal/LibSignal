@@ -412,7 +412,7 @@ class World(object):
         # creating all intersections
         self.id2intersection = dict()
         self.intersections = []
-        for ts in self.eng.trafficlight.getIDList():
+        for ts in self.intersection_ids:
             self.id2intersection[ts] = Intersection(ts, self, self.green_phases[ts])  # this IntSec has different phases
             self.intersections.append(self.id2intersection[ts])
         self.id2idx = {i: idx for idx,i in enumerate(self.id2intersection)}
@@ -528,7 +528,7 @@ class World(object):
         # TODO: support interval != 1
         if action is not None:
             for i, intersection in enumerate(self.intersections):
-                intersection.pseudo_step(action[i])
+                intersection.step(action[i])
             self.step_sim()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)

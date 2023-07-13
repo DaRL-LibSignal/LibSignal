@@ -1,11 +1,12 @@
 includes:
-  - configs/tsc/base.yml
+  - configs/tscfx/rl.yml
 
 
 model:
-  name: maddpg_v2
+  name: maddpg_marl
+  one_hot: True
+  phase: True
   local_q_learn: False
-  graphic: False
   vehicle_max: 1
   alpha: 0.01
   beta: 0.01
@@ -53,8 +54,6 @@ logger:
 
 
 traffic:
-  one_hot: False
-  phase: False
   thread_num: 4
   ACTION_PATTERN: "set"
   MIN_ACTION_TIME: 10
