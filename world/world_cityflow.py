@@ -120,7 +120,7 @@ class Intersection(object):
         self.out_roads = [self.roads[i] for i, x in enumerate(self.outs) if x]
         self.in_roads = [self.roads[i] for i, x in enumerate(self.outs) if not x]
 
-    def _change_phase(self, phase, interval, typ='init'):
+    def _change_phase(self, phase):
         '''
         _change_phase
         Change current phase and calculate time duration of current phase.
@@ -134,12 +134,32 @@ class Intersection(object):
         '''
         self.eng.set_tl_phase(self.id, phase)
         self._current_phase = phase
-        if typ == 'add':
-            self.current_phase_time += interval
-        else:
-            self.current_phase_time = interval
 
-    def step(self, action, interval):
+    def pseudo_step(self, action):
+        if self._current_phase in self.yellow_phase_id:
+            if self.current_phase_time == self.yellow_phase_time:
+                self._change_phase(self.phases[self.current_phase])
+                # if self.if_sumo:
+                #     self._change_phase(self.phases[self.action_before_yellow], interval,'add')
+                # else:
+                #     self._change_phase(self.phases[self.action_before_yellow], interval)
+        else:
+            if action != self.current_phase:
+                if self.yellow_phase_time > 0:
+                    # yellow(red) phase is arranged behind each green light
+                    if self.if_sumo:
+                        assert (self._current_phase+1)%len(self.all_phases) in self.yellow_phase_id
+                        self._change_phase((self._current_phase+1)%len(self.all_phases))
+                    else:
+                        self._change_phase(self.yellow_phase_id[0])
+                else:
+                    self._change_phase(self.phases[action])
+                self.action_executed = self.current_phase
+                self.current_phase_time = 0
+                self.current_phase = action
+        assert type(self.current_phase) == int, "Type error"
+
+    def step(self, interval):
         '''
         step
         Take relative actions according to interval.
@@ -148,37 +168,11 @@ class Intersection(object):
         :param interval: the non-acting time slice
         :return: None
         '''
-        # if current phase is yellow, then continue to finish the yellow phase
-        # recall self._current_phase means true phase id (including yellows)
-        # self.current_phase means phase id in self.phases (excluding yellow)
-        if self._current_phase in self.yellow_phase_id:
-            if self.current_phase_time == self.yellow_phase_time:
-                self._change_phase(self.phases[self.action_before_yellow], interval,'add')
-                # if self.if_sumo:
-                #     self._change_phase(self.phases[self.action_before_yellow], interval,'add')
-                # else:
-                #     self._change_phase(self.phases[self.action_before_yellow], interval)
-                # self.current_phase = self.action_before_yellow
-                self.action_executed = self.action_before_yellow
-            else:
-                self.current_phase_time += interval
-        else:
-            if action == self.current_phase:
-                self.current_phase_time += interval
-            else:
-                if self.yellow_phase_time > 0:
-                    # yellow(red) phase is arranged behind each green light
-                    if self.if_sumo:
-                        assert (self._current_phase+1)%len(self.all_phases) in self.yellow_phase_id
-                        self._change_phase((self._current_phase+1)%len(self.all_phases), interval)
-                    else:
-                        self._change_phase(self.yellow_phase_id[0], interval)
-                    self.action_before_yellow = action
-                    self.current_phase = action
-                else:
-                    self._change_phase(self.phases[action], interval)
-                    self.current_phase = action
-                    self.action_executed = action
+        # if self._current_phase not in self.yellow_phase_id and \
+        #       action != self.current_phase and self.yellow_phase_time > 0 and self.if_sumo:
+        #             # yellow(red) phase is arranged behind each green light
+        #     assert (self._current_phase+1)%len(self.all_phases) in self.yellow_phase_id
+        self.current_phase_time += interval
 
     def reset(self):
         '''
@@ -728,13 +722,27 @@ class World(object):
         self.dic_lane_vehicle_previous_step = self.dic_lane_vehicle_current_step
 
         if actions is not None:
+            # This means we are in gym environment, control all agents at once and then step engine
             for i, action in enumerate(actions):
-                self.intersections[i].step(action, self.interval)
+                iter_obj = self.intersections[i]
+                action = int(action)
+                iter_obj.pseudo_step(action)
+                # add time directly here, since info will only be accessible after all engine steped
+                iter_obj.step(self.interval)
+        else:
+            # This means we are in pettingzoo environment, control the last agent and then step engine
+            for i in range(len(self.intersections)):
+                iter_obj = self.intersections[i]
+                # add time directly here, since info will only be accessible after all engine steped
+                iter_obj.step(self.interval)
         self.eng.next_step()
         self._update_infos()
         # update current measurement
         self.update_current_measurements()
         self.vehicle_trajectory = self.get_vehicle_trajectory()
+
+    def pseudo_step(self, agent_id, action):
+        self.id2intersection[agent_id].pseudo_step(action)
 
     def reset(self):
         '''
@@ -845,9 +853,6 @@ class World(object):
         avg_delay = avg_delay / count
         return avg_delay
         
-
-
-
 
 if __name__ == "__main__":
     world = World("/mnt/d/Cityflow/tools/generator/configs.json", thread_num=1)

@@ -20,9 +20,6 @@ class MADDPGMARLAgent(RLAgent):
 
         self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
-        self.world = world
-        self.rank = rank
-        self.agents = None
 
         self.phase = Registry.mapping['model_mapping']['setting'].param['phase']
         self.one_hot = Registry.mapping['model_mapping']['setting'].param['one_hot']

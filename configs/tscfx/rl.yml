@@ -1,8 +1,0 @@
-includes:
-  - configs/tscfx/base.yml
-
-model:
-  name: rl
-  train_model: True
-  one_hot: True
-  phase: True

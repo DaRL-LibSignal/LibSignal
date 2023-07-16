@@ -7,22 +7,19 @@ import sys
 from math import atan2, pi
 import xml.etree.cElementTree as ET
 
-# if 'SUMO_HOME' in os.environ:
-#     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
-#     sys.path.append(tools)
-# else:
-#     sys.exit('No SUMO in environment path')
+if 'SUMO_HOME' in os.environ:
+    tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
+    sys.path.append(tools)
+else:
+    sys.exit('No SUMO in environment path')
 from common.registry import Registry
 
 import json
 import re
 import copy
-import sys
-sys.path.append("/opt/homebrew/Cellar/sumo/1.15.0/share/sumo/tools")
-
 
 import sumolib
-import libsumo
+# import libsumo
 import traci
 
 class Intersection(object):
@@ -66,10 +63,8 @@ class Intersection(object):
         self.yellow_phase_time = min([i.duration for i in self.eng.trafficlight.getAllProgramLogics(self.id)[0].phases])
         self.map_name = world.map  # TODO: try to add it to Registry later
 
-
-
-        self.lane_links = world.eng.trafficlight.getControlledLinks(self.id)
-        for link in self.lane_links:
+        self.lanelinks = world.eng.trafficlight.getControlledLinks(self.id)
+        for link in self.lanelinks:
             link = link[0]
             if link[0][:-2] not in self.road_lane_mapping.keys():
                 self.road_lane_mapping.update({link[0][:-2]: []})  # assume less than 9 lanes in each road
@@ -243,6 +238,7 @@ class Intersection(object):
             else:
                 self._change_phase(action)
 
+    def step(self):
         self.current_phase_time += 1
 
     def observe(self, step_length, distance):
@@ -367,19 +363,17 @@ class World(object):
             raise Exception('NOT IMPORTED YET')
         with open(sumo_config) as f:
             sumo_dict = json.load(f)
-        if sumo_dict['gui'] == True:
-            sumo_cmd = [sumolib.checkBinary('sumo-gui'), '--quit-on-end']
+        if sumo_dict['gui'] == "True":
+            sumo_cmd = [sumolib.checkBinary('sumo-gui')]
         else:
             sumo_cmd = [sumolib.checkBinary('sumo')]
         if not sumo_dict.get('combined_file'):
             sumo_cmd += ['-n', os.path.join(sumo_dict['dir'], sumo_dict['roadnetFile']),
                          '-r', os.path.join(sumo_dict['dir'], sumo_dict['flowFile']),
-                         '--no-warnings', str(sumo_dict['no_warning'])] #'--full-output', '/test/out.xml'
+                         '--no-warnings', str(sumo_dict['no_warning'])]
         else:
             sumo_cmd += ['-c', os.path.join(sumo_dict['dir'], sumo_dict['combined_file']),
                          '--no-warnings', str(sumo_dict['no_warning'])]
-
-
         self.net = os.path.join(sumo_dict['dir'], sumo_dict['roadnetFile'])
         self.route = os.path.join(sumo_dict['dir'], sumo_dict['flowFile'])
         self.sumo_cmd = sumo_cmd
@@ -403,7 +397,7 @@ class World(object):
         self.interval = sumo_dict['interval']
         self.step_ratio = 1  # TODO: register in Registry later
         self.step_length = 1  # should be 1 in our setting
-        self.max_distance = 1000 # TODO: set in registry
+        self.max_distance = 200 # TODO: set in registry
         # get all intersections (dict here)
         self.intersection_ids = self.eng.trafficlight.getIDList()
         # prepare phase information for each intersections
@@ -412,7 +406,7 @@ class World(object):
         # creating all intersections
         self.id2intersection = dict()
         self.intersections = []
-        for ts in self.intersection_ids:
+        for ts in self.eng.trafficlight.getIDList():
             self.id2intersection[ts] = Intersection(ts, self, self.green_phases[ts])  # this IntSec has different phases
             self.intersections.append(self.id2intersection[ts])
         self.id2idx = {i: idx for idx,i in enumerate(self.id2intersection)}
@@ -436,14 +430,14 @@ class World(object):
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
         if self.interface_flag:
-            if not self.connection_name:
+            if not self.connection_name: 
                 libsumo.switch(self.connection_name)  # TODO: make sure what's this step doing
             libsumo.close()
         else:
-            if not self.connection_name:
+            if not self.connection_name: 
                 traci.switch(self.connection_name)  # TODO: make sure what's this step doing
             traci.close()
-        self.connection_name = self.map + '-' + self.connection_name
+        # self.connection_name = self.map + '-' + self.connection_name
         if not os.path.exists(os.path.join(Registry.mapping['logger_mapping']['path'].path,
                                            self.connection_name)):
             os.mkdir(os.path.join(Registry.mapping['logger_mapping']['path'].path, self.connection_name))
@@ -458,6 +452,7 @@ class World(object):
             "time": self.get_current_time,
             "vehicle_distance": None,
             "pressure": self.get_pressure,
+            "lane_pressure": self.get_lane_pressure,
             "lane_waiting_time_count": self.get_lane_waiting_time_count,
             "lane_delay": self.get_lane_delay,
             "real_delay": self.get_real_delay,
@@ -473,7 +468,9 @@ class World(object):
         self.vehicle_trajectory = {}
         self.vehicle_maxspeed = {}
         self.real_delay = {}
-        self.vehicle_blocked = ()
+
+        # get in_lanes and out_lanes
+        self.in_lanes, self.out_lanes = self.get_in_out_lanes()
 
     def generate_valid_phase(self):
         '''
@@ -528,7 +525,7 @@ class World(object):
         # TODO: support interval != 1
         if action is not None:
             for i, intersection in enumerate(self.intersections):
-                intersection.step(action[i])
+                intersection.pseudo_step(action[i])
             self.step_sim()
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
@@ -536,16 +533,12 @@ class World(object):
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
             self.inside_vehicles.update({v: self.get_current_time()})
-            self.vehicle_blocked.update({v: self.eng.vehicle.getDepartDelay(v)})
         exiting_v = self.eng.simulation.getArrivedIDList()
         for v in exiting_v:
-            # self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
-            self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v] + self.vehicle_blocked[v]})
-
+            self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
         self._update_infos()
         self.vehicle_trajectory, self.vehicle_maxspeed = self.get_vehicle_trajectory()
         self.run += 1
-
 
     def reset(self):
         '''
@@ -558,7 +551,6 @@ class World(object):
         if self.run != 0:
             # TODO: test why need switch in original code
             if self.interface_flag:
-                pass
                 libsumo.close()
             else:
                 traci.close()
@@ -568,13 +560,11 @@ class World(object):
         # TODO: check when to close traci
         if self.interface_flag:
             libsumo.start(self.sumo_cmd)
-            # # TODO: set trip info output
+            # TODO: set trip info output
             self.eng = libsumo
         else:
             traci.start(self.sumo_cmd, label=self.connection_name)
             self.eng = traci.getConnection(self.connection_name)
-        
-        
         self.id2intersection = dict()
         self.intersections = []
         for ts in self.eng.trafficlight.getIDList():
@@ -592,7 +582,6 @@ class World(object):
         self.vehicle_trajectory = {}
         self.vehicle_maxspeed = {}
         self.real_delay= {}
-        self.vehicle_blocked = {}
 
     def get_current_time(self):
         '''
@@ -698,7 +687,41 @@ class World(object):
                     pressure -= lane_vehicles[k]
             pressures[i.id] = pressure
         return pressures
-        # pass
+        
+    def get_in_out_lanes(self):
+        in_lanes = []
+        out_lanes = []
+        for i in self.intersections:
+            for road in i.in_roads:
+                for lane in i.road_lane_mapping[road]:
+                    in_lanes.append(lane)
+            for road in i.out_roads:
+                for lane in i.road_lane_mapping[road]:
+                    out_lanes.append(lane)
+        # add in_lanes of virtual intersections which can be regarded as out_lanes of non-virtual intersections.
+        for lane in self.all_lanes:
+            if lane not in out_lanes:
+                out_lanes.append(lane)
+        return in_lanes, out_lanes
+
+    def get_lane_pressure(self):
+        '''
+        get_lane_pressure
+        Get pressure of each lane in an intersection. 
+        Pressure of each lane equals to number of vehicles that in the in_lane minus number of vehicles that in out_lane.
+        
+        :param: None
+        :return pressures: pressure of each lane
+        '''
+        lvc = self.get_lane_vehicle_count()
+        pressures = {}
+        pressures = {x:0 for x in self.in_lanes}
+        for inter_obj in self.intersections:
+            for lanelink in inter_obj.lanelinks:
+                start, end = lanelink[0][0], lanelink[0][1]
+                pressures[start] += lvc[start]
+                pressures[start] -= lvc[end]
+        return pressures
 
     def get_lane_waiting_time_count(self):
         '''
@@ -749,36 +772,8 @@ class World(object):
         :param: None
         :return tvg_time: average travel time of all vehicles
         '''
-        result = 0
-        count = 0
-        # finished ones
-        for v in self.vehicles.keys():
-            count += 1
-            result += self.vehicles[v]
-        # in roadnet vehicles
-        cur_time = self.eng.simulation.getTime()
-        for i in self.eng.vehicle.getIDList():
-            count += 1
-            result += (cur_time - self.eng.vehicle.getDeparture(i) + self.eng.vehicle.getDepartDelay(i)) 
-        # delayed in buffer
-        for j in self.eng.simulation.getPendingVehicles():
-            count += 1
-            result += self.eng.vehicle.getDepartDelay(j)
-        if count == 0:
-            return 0
-        else:
-            return result/count
-
-
-        # self.eng.vehicle.getDepartDelay(1)
+        tvg_time = self.get_vehicles()
         return tvg_time
-
-    def get_average_travel_time_total(self):
-        '''delay added'''
-        self.eng.simulation.getaRRIVEDidList()
-        print(1)
-        return 1
-
 
     def get_lane_vehicles(self):
         '''

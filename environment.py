@@ -75,8 +75,10 @@ class TSCMAEnv(pettingzoo.AECEnv):
     Parameters
     ----------
     world: World object
-    agents: list of agents, corresponding to each intersection in world.intersections
-    metric: Metric object, used to calculate evaluation metric
+    The logic is
+    1. agent can get its uptodate info at any time (only phase is relavent in our TSC problem)
+        calling functions
+    2. info is the information returned from env at last time step, and each agent can update its own info at each step
     """
 
     metadata = {"render.modes": ["rgb_array"], "name": "MARL_env mode"}
@@ -92,9 +94,10 @@ class TSCMAEnv(pettingzoo.AECEnv):
 
         # TODO: multiagent mode need to clearly defined where those obs, rewards comes from
         self.world = world
+        self.metric = metric
         self.eng = self.world.eng
         # TODO: change from list of obj to list of name
-
+        agents = [ag for ag in agents.values()]
         agents.sort(key=lambda x: x.rank)
         self.agent_objs = agents
         self.possible_agents = [a.id for a in self.agent_objs]
@@ -111,9 +114,9 @@ class TSCMAEnv(pettingzoo.AECEnv):
         self.metric = metric
 
         self.rewards = {agent: 0 for agent in self.agents}
-        self._cumulative_rewards = {agent: 0 for agent in self.agents}
+        # self._cumulative_rewards = {agent: 0 for agent in self.agents}
         self.infos = {agent: {} for agent in self.agents}
-        self.state = {agent: None for agent in self.agents}
+        # self.state = None
         self.observations = {agent: None for agent in self.agents}
 
     def action_space(self, agent_id):
@@ -137,6 +140,28 @@ class TSCMAEnv(pettingzoo.AECEnv):
     
     # lru_cache can reduce this fixed info retrival. but it will cause trouble to gc
 
+    def last(self):
+        agent = self.agent_selection
+        assert agent
+        obs = self.agent_objs[self._agent_selector._current_agent].get_ob()
+        phase = self.agent_objs[self._agent_selector._current_agent].get_phase()
+        reward = self.agent_objs[self._agent_selector._current_agent].get_reward()
+        self.observations[agent] = obs
+        self.rewards[agent] = reward
+        # update info if the agent what to share its current decision
+        # For example: self.infos[agent][observations] = agent.get_obs()
+        done = False
+        return (
+            obs,
+            phase,
+            # self._cumulative_rewards[agent],
+            # self.terminations[agent],
+            # self.truncations[agent],
+            reward,
+            done,
+            self.infos[agent],
+        )
+
     def step(self, action):
         """
         :param actions: keep action for each agent
@@ -144,35 +169,28 @@ class TSCMAEnv(pettingzoo.AECEnv):
         # TODO: add step by step update later for heiarhical RL
         # self.agents order == self.agent_obj.rank order == self.word.intersections order == input action order
 
+        # TODO: terminate and trucation 
         agent = self.agent_selection
-        
 
 
-
-        if not len(self.agents) == 1:
-            obs = [agent.get_ob() for agent in self.agents]
-            # obs = np.expand_dims(np.array(obs),axis=1)
-            rewards = [agent.get_reward() for agent in self.agents]
-            # rewards = np.expand_dims(np.array(rewards),axis=1)
-        else:
-            obs = [self.agents[0].get_ob()]
-            rewards = [self.agents[0].get_reward()]
-        dones = [False] * self.n_agents
-        # infos = {"metric": self.metric.update()}
-        infos = {}
-
-        return obs, rewards, dones, infos
+        self.world.pseudo_step(agent, action)
+        if self._agent_selector.is_last():
+            self.world.step()
+            self.info = {agent: {} for agent in self.agents}
+            # state is the ground truth returned from env only
+            # self.state = {agent: {} for agent in self.agents}
+            # self.metric.
+        # else:
+            # self._clear_rewards()
+        self.agent_selection = self._agent_selector.next()
 
     def reset(self):
         self.rewards = {agent: 0 for agent in self.agents}
-        self._cumulative_rewards = {agent: 0 for agent in self.agents}
+        # self._cumulative_rewards = {agent: 0 for agent in self.agents}
         self.infos = {agent: {} for agent in self.agents}
-        self.state = {agent: None for agent in self.agents}
+        # self.state = {agent: None for agent in self.agents}
         self.observations = {agent: None for agent in self.agents}
         self.world.reset()
-
-        if not len(self.agents) == 1:
-            obs = [agent.get_ob() for agent in self.agents]  # [agent, sub_agent==1, feature]
-            # obs = np.expand_dims(np.array(obs),axis=1)
-        return obs
-    
+        for ag in self.agent_objs:
+            ag.reset()
+        self.metric.clear()

@@ -1,1 +1,1 @@
-from .task import BaseTask, TSCTask
+from .task import BaseTask, TSCTask, TSCMATask
