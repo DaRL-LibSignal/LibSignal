@@ -19,7 +19,7 @@ import re
 import copy
 
 import sumolib
-# import libsumo
+import libsumo
 import traci
 
 class Intersection(object):
@@ -345,8 +345,6 @@ class Intersection(object):
                             new_phases.append(traci.trafficlight.Phase(yellow_length, yellow_str))
                         yellow_dict[str(i) + '_' + str(j)] = len(new_phases) - 1  # The index of the yellow phase in SUMO
         return new_phases, yellow_dict
-
-
 
 
 @Registry.register_world('sumo')

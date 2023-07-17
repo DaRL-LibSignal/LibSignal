@@ -337,9 +337,9 @@ def tsc_ma_train(trainer):
     :return: None
     '''
     total_decision_num = 0
-    flag = False
     for e in range(trainer.episodes):
         # TODO: check this reset agent
+        flag = False
         trainer.env.reset()
         if Registry.mapping['command_mapping']['setting'].param['world'] == 'cityflow':
             if trainer.save_replay and e % trainer.save_rate == 0:
@@ -354,14 +354,6 @@ def tsc_ma_train(trainer):
         acc_rewards = {agent_id: 0 for agent_id in trainer.agents}
         dones = {agent_id: None for agent_id in trainer.agents}
         episode_loss = {agent_id: [] for agent_id in trainer.agents}
-
-        # for agent_id in trainer.env.agents:
-        #     last_ob, last_phase, reward, done, _ = trainer.env.last()
-        #     last_obs[agent_id] = last_ob
-        #     last_phases[agent_id] = last_phase
-        #     acc_rewards[agent_id] = reward
-        #     dones[agent_id] = done
-        # initial info updated by agents
         while i < trainer.steps:
             if i % trainer.action_interval == 0:
                 # Clear last round actions
@@ -423,7 +415,7 @@ def tsc_ma_train(trainer):
                     _, _, reward, done, _ = trainer.env.last()
                     acc_rewards[agent_id] += reward
                     dones[agent_id] = done
-                    trainer.env.step(actions[agent_id])
+                    trainer.env.step(f_actions[agent_id])
                     if flag:
                         i += 1
                         flag = False
@@ -431,8 +423,10 @@ def tsc_ma_train(trainer):
                 if all(dones.values()) == True:
                     break
 
-        
-        mean_loss = np.mean(np.array([loss_v for loss_v in episode_loss.values()]))
+        if all([loss_v for loss_v in episode_loss.values()]):
+            mean_loss = np.mean(np.array([loss_v for loss_v in episode_loss.values()]))
+        else:
+            mean_loss = 0
     
         trainer.writeLog("TRAIN", e, trainer.metric.real_average_travel_time(),\
             mean_loss, trainer.metric.rewards(), trainer.metric.queue(), trainer.metric.delay(), trainer.metric.throughput())

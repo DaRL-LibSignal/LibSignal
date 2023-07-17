@@ -104,6 +104,7 @@ class TSCMAEnv(pettingzoo.AECEnv):
         self.agents = self.possible_agents[:]
         self._agent_selector = agent_selector(self.agents)
         self.agent_selection = self._agent_selector.reset()
+        # STRANGE: ORDER _current_agent starts from 1 not 0 as in python list
 
         # TODO: change subagent into agent -> compatibe to MARL Env
         # assign action_spaces for each agent
@@ -143,14 +144,16 @@ class TSCMAEnv(pettingzoo.AECEnv):
     def last(self):
         agent = self.agent_selection
         assert agent
-        obs = self.agent_objs[self._agent_selector._current_agent].get_ob()
-        phase = self.agent_objs[self._agent_selector._current_agent].get_phase()
-        reward = self.agent_objs[self._agent_selector._current_agent].get_reward()
+        obs = self.agent_objs[self._agent_selector._current_agent-1].get_ob()
+        phase = self.agent_objs[self._agent_selector._current_agent-1].get_phase()
+        reward = self.agent_objs[self._agent_selector._current_agent-1].get_reward()
         self.observations[agent] = obs
         self.rewards[agent] = reward
         # update info if the agent what to share its current decision
         # For example: self.infos[agent][observations] = agent.get_obs()
         done = False
+        # print(agent)
+        # print(self.agent_objs[self._agent_selector._current_agent-1].id)
         return (
             obs,
             phase,
@@ -193,4 +196,5 @@ class TSCMAEnv(pettingzoo.AECEnv):
         self.world.reset()
         for ag in self.agent_objs:
             ag.reset()
+        self.agent_selection = self._agent_selector.reset()
         self.metric.clear()
