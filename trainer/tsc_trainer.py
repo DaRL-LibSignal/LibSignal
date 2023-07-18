@@ -5,6 +5,7 @@ from environment import TSCEnv
 from common.registry import Registry
 from trainer.base_trainer import BaseTrainer
 
+
 @Registry.register_trainer("tsc")
 class TSCTrainer(BaseTrainer):
     '''
@@ -252,7 +253,7 @@ class TSCTrainer(BaseTrainer):
         self.metric.clear()
         if not drop_load:
             [ag.load_model(self.episodes) for ag in self.agents]
-        attention_mat_list = []
+
         obs = self.env.reset()
         for a in self.agents:
             a.reset()
