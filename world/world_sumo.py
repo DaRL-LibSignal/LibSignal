@@ -58,15 +58,13 @@ class Intersection(object):
         #             self.lane_order_sumo = Registry.mapping['world_mapping']['setting'].param['signal_config'][map_name]['sumo_order'][self.id[3:]]
 
         # links and phase information of each intersection
-        self.current_phase = 0
-        self.virtual_phase = 0  # see yellow phase as the same phase after changing
-        self.next_phase = 0
+        self._current_phase = 0
+        self.action_executed =0
         self.current_phase_time = 0
+        self.current_phase = 0
 
         self.yellow_phase_time = min([i.duration for i in self.eng.trafficlight.getAllProgramLogics(self.id)[0].phases])
         self.map_name = world.map  # TODO: try to add it to Registry later
-
-
 
         self.lane_links = world.eng.trafficlight.getControlledLinks(self.id)
         for link in self.lane_links:
@@ -96,7 +94,6 @@ class Intersection(object):
                 self.lanes.append(lane)
 
         self.green_phases = phases
-        self.phases = [i for i in range(len(phases))]
         self.phase_available_startlanes = []
         self.startlanes = []
         self.phase_available_lanelinks = []
@@ -113,8 +110,11 @@ class Intersection(object):
                         self.startlanes.append(links[0])
             self.phase_available_startlanes.append(tmp_startane)
             self.phase_available_lanelinks.append(tmp_lanelinks)
-
         self.full_phases, self.yellow_dict = self.create_yellows(self.green_phases, self.yellow_phase_time, self.interface_flag)
+
+        self.phases = [i for i in range(len(phases))]
+        self.yellow_phase_id = [y_id for y_id in self.yellow_dict.values()]
+
         programs = self.eng.trafficlight.getAllProgramLogics(self.id)
         logic = programs[0]
         logic.type = 0
@@ -153,33 +153,22 @@ class Intersection(object):
         :param: None
         :return: None
         '''
+        self._current_phase = 0
+        self.action_executed =0
         self.current_phase_time = 0
-        self.virtual_phase = 0
-        self.next_phase = 0
+        self.current_phase = 0
+
         self.waiting_times = dict()
         self.full_observation = None
         self.last_step_vehicles = None
-        self.current_phase = self.get_current_phase()
         # eng is set in world
         programs = self.eng.trafficlight.getAllProgramLogics(self.id)
         logic = programs[0]
         logic.type = 0
         logic.phases = self.full_phases
         self.eng.trafficlight.setProgramLogic(self.id, logic)
-
-    def get_current_phase(self):
-        '''
-        get_current_phase
-        Get current phase of current intersection.
-        
-        :param: None
-        :return cur_phase: current phase of current intersection
-        '''
-        cur_phase = self.eng.trafficlight.getPhase(self.id)
-        return cur_phase
-
-    # TODO: change cityflow phase generator into phase property
-    def prep_phase(self, new_phase):
+            
+    def _prep_phase(self, phase):
         '''
         prep_phase
         Prepare change phase of current intersection
@@ -187,24 +176,14 @@ class Intersection(object):
         :param new_phase: phase that will be executed in the later
         :return: None
         '''
-        if self.get_current_phase() == new_phase:
-            self.next_phase = self.get_current_phase()
-            if self.interface_flag:
-                self.eng.trafficlight.setPhase(self.id, int(self.next_phase))
-            else:
-                self.eng.trafficlight.setPhase(self.id, self.next_phase)
-            self.current_phase = self.get_current_phase()
+        y_key = str(self.current_phase) + '_' + str(phase)
+        if y_key in self.yellow_dict:
+            y_id = self.yellow_dict[y_key]
+            return y_id
         else:
-            self.next_phase = new_phase
-            # find yellow phase between cur and next phases
-            y_key = str(self.get_current_phase()) + '_' + str(new_phase)
-            if y_key in self.yellow_dict:
-                y_id = self.yellow_dict[y_key]
-                if self.interface_flag:
-                    self.eng.trafficlight.setPhase(self.id, int(y_id))  # phase turns into yellow here
-                else:
-                    self.eng.trafficlight.setPhase(self.id, y_id)  # phase turns into yellow here
-                self.current_phase = self.get_current_phase()
+
+            raise NotImplementedError('Yellow phase is not prepared')
+        return
 
     def _change_phase(self, phase):
         '''
@@ -218,7 +197,7 @@ class Intersection(object):
             self.eng.trafficlight.setPhase(self.id, int(phase))
         else:
             self.eng.trafficlight.setPhase(self.id, phase)
-        self.current_phase = self.get_current_phase()
+        self._current_phase = phase
 
     def pseudo_step(self, action):
         '''
@@ -230,20 +209,41 @@ class Intersection(object):
         '''
         # TODO: check if change state, yellow phase must less than minimum of action time
         # test yellow finished first
-        self.virtual_phase = action
-        if self.current_phase_time == self.yellow_phase_time:
-            self._change_phase(action)
-        else:
-            if action != self.get_current_phase() and self.current_phase_time > self.yellow_phase_time:
-                self.current_phase_time = 0
-            if self.current_phase_time == 0:
-                self.prep_phase(action)
-            elif self.current_phase_time < self.yellow_phase_time:
-                self._change_phase(self.current_phase)
-            else:
-                self._change_phase(action)
 
-        self.current_phase_time += 1
+        if self._current_phase in self.yellow_phase_id:
+            if self.current_phase_time == self.yellow_phase_time:
+                # This is Green phase starting point
+                self._change_phase(self.phases[self.current_phase])
+            elif self.current_phase_time < self.yellow_phase_time:
+                self._change_phase(self._current_phase)
+            else:
+                raise ValueError('WRONG IMPLEMENTATION')
+        else:
+            # changing phase from one green phase to another greening phase
+            if action != self.current_phase:
+                if self.yellow_phase_time > 0:
+                    yellow_id = self._prep_phase(action)
+                    self._change_phase(yellow_id)
+                else:
+                    self._change_phase(self.phases[self.current_phase])
+                self.action_executed = self.current_phase
+                self.current_phase_time = 0
+                self.current_phase = action
+            else:
+                self._change_phase(self.phases[self.current_phase])
+
+        assert type(self.current_phase) == int, "Type error"
+
+    def step(self, interval):
+        '''
+        step
+        Take relative actions according to interval.
+        :param action: the changes to take
+        :param interval: the non-acting time slice
+        :return: None
+        '''
+        self.current_phase_time += interval
+
 
     def observe(self, step_length, distance):
         '''
@@ -349,8 +349,6 @@ class Intersection(object):
                             new_phases.append(traci.trafficlight.Phase(yellow_length, yellow_str))
                         yellow_dict[str(i) + '_' + str(j)] = len(new_phases) - 1  # The index of the yellow phase in SUMO
         return new_phases, yellow_dict
-
-
 
 
 @Registry.register_world('sumo')
@@ -465,7 +463,7 @@ class World(object):
             "history_vehicles": None,
             "phase": self.get_cur_phase,
             "throughput": self.get_cur_throughput,
-            "average_travel_time": None
+            "average_travel_time": self.get_average_travel_time
         }
         self.fns = []
         self.info = {}
@@ -517,7 +515,10 @@ class World(object):
         for _ in range(self.step_ratio):
             self.eng.simulationStep()
 
-    def step(self, action=None):
+    def pseudo_step(self, agent_id, action):
+        self.id2intersection[agent_id].pseudo_step(action)
+
+    def step(self, actions=None):
         '''
         step
         Take relative actions and update information.
@@ -526,12 +527,25 @@ class World(object):
         :return: None
         '''
         # TODO: support interval != 1
-        if action is not None:
-            for i, intersection in enumerate(self.intersections):
-                intersection.pseudo_step(action[i])
-            self.step_sim()
+        if actions is not None:
+            for i, action in enumerate(actions):
+                inter_obj = self.intersections[i]
+                action = int(action)
+                inter_obj.pseudo_step(action)
+                # add time directly here, since info will only be accessible after all engine steped
+                # inter_obj.step(self.interval)
+
+        else:
+            # PettingZoo AEC envrionment
+            for i in range(len(self.intersections)):
+                inter_obj = self.intersections[i]
+                inter_obj.step(self.interval)
+                # inter_obj.observe(self.step_length, self.max_distance)
+        self.step_sim()
+        # Currently observation is taken after all agents executed in one simulator step. This could be modified by users
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
+
         # TODO: register vehicles here
         entering_v = self.eng.simulation.getDepartedIDList()
         for v in entering_v:
@@ -541,7 +555,8 @@ class World(object):
         for v in exiting_v:
             # self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v]})
             self.vehicles.update({v: self.get_current_time() - self.inside_vehicles[v] + self.vehicle_blocked[v]})
-
+            self.inside_vehicles.pop(v)
+            self.vehicle_blocked.pop(v)
         self._update_infos()
         self.vehicle_trajectory, self.vehicle_maxspeed = self.get_vehicle_trajectory()
         self.run += 1
@@ -573,8 +588,7 @@ class World(object):
         else:
             traci.start(self.sumo_cmd, label=self.connection_name)
             self.eng = traci.getConnection(self.connection_name)
-        
-        
+
         self.id2intersection = dict()
         self.intersections = []
         for ts in self.eng.trafficlight.getIDList():
@@ -609,7 +623,7 @@ class World(object):
         '''
         get_vehicles
         Get all vehicle ids.
-        
+
         :param: None
         :return: None
         '''
@@ -734,12 +748,12 @@ class World(object):
         Get current phase of each intersection.
 
         :param: None
-        :return result: current phase of each intersection
+        :return phases: current phase of each intersection
         '''
-        result = []
-        for intsec in self.intersections:
-            result.append(intsec.get_current_phase())
-        return result
+        phases = []
+        for i in self.intersections:
+            phases.append(i.current_phase)
+        return phases
 
     def get_average_travel_time(self):
         '''
@@ -768,10 +782,6 @@ class World(object):
             return 0
         else:
             return result/count
-
-
-        # self.eng.vehicle.getDepartDelay(1)
-        return tvg_time
 
     def get_average_travel_time_total(self):
         '''delay added'''

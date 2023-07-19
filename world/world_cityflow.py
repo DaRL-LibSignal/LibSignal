@@ -724,18 +724,18 @@ class World(object):
         if actions is not None:
             # This means we are in gym environment, control all agents at once and then step engine
             for i, action in enumerate(actions):
-                iter_obj = self.intersections[i]
+                inter_obj = self.intersections[i]
                 action = int(action)
-                iter_obj.pseudo_step(action)
+                inter_obj.pseudo_step(action)
                 # add time directly here, since info will only be accessible after all engine steped
-                iter_obj.step(self.interval)
+                inter_obj.step(self.interval)
         else:
             # This means we are in pettingzoo environment, control the last agent and then step engine
             for i in range(len(self.intersections)):
-                iter_obj = self.intersections[i]
+                inter_obj = self.intersections[i]
                 # add time directly here, since info will only be accessible after all engine steped
-                iter_obj.step(self.interval)
-        self.eng.next_step()
+                inter_obj.step(self.interval)
+        self.eng.next_step(self.interval)
         self._update_infos()
         # update current measurement
         self.update_current_measurements()
