@@ -180,10 +180,9 @@ class Intersection(object):
         if y_key in self.yellow_dict:
             y_id = self.yellow_dict[y_key]
             return y_id
-        else:
-
-            raise NotImplementedError('Yellow phase is not prepared')
-        return
+            # no yellow phase in between, directly step into next phase
+            # raise NotImplementedError('Yellow phase is not prepared')
+        return phase
 
     def _change_phase(self, phase):
         '''
@@ -532,6 +531,7 @@ class World(object):
                 inter_obj = self.intersections[i]
                 action = int(action)
                 inter_obj.pseudo_step(action)
+                inter_obj.step(self.interval)
                 # add time directly here, since info will only be accessible after all engine steped
                 # inter_obj.step(self.interval)
 

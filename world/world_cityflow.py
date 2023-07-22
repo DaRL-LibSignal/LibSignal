@@ -735,7 +735,7 @@ class World(object):
                 inter_obj = self.intersections[i]
                 # add time directly here, since info will only be accessible after all engine steped
                 inter_obj.step(self.interval)
-        self.eng.next_step(self.interval)
+        self.eng.next_step()
         self._update_infos()
         # update current measurement
         self.update_current_measurements()
