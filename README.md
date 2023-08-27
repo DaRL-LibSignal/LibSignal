@@ -1,18 +1,30 @@
 # Introduction
-This repo provides OpenAI Gym compatible environments for traffic light control scenario and a bunch of baseline methods. 
+This repo provides OpenAI Gym-compatible environments for traffic light control scenarios and a bunch of baseline methods. 
 
-Environments include single intersetion (single-agent) and multi intersections (multi-agents) with different road network and traffic flow settings.
+Environments include a single intersection (single-agent) and multi-intersections (multi-agents) with different road networks and traffic flow settings.
 
-Baselines include traditional Taffic Signal Control algorithms and reinforcement learning based methods.
+Baselines include traditional Traffic Signal Control algorithms and reinforcement learning-based methods.
 
 LibSignal is a cross-simulator environment that provides multiple traditional and Reinforcement Learning models in traffic control tasks. Currently, we support SUMO, CityFlow, and CBEine simulation environments. Conversion between SUMO and CityFlow is carefully calibrated.
 
 # Install
 
+## Docker image
+We configurated a ready-to-use Docker image of the LibSignal environment and it can be used as the interface to interact directly with the server side. 
+
+### How to use docker
+
+
+
+
+
 ## Source
 
-LibSingal provides installation from source code.
-Please execute the following command to install and configure  our environment.
+LibSingal provides installation from the source code.
+Please execute the following command to install and configure our environment.
+
+
+### Download our library from GitHub
 
 ```
 mkdir DaRL
@@ -20,14 +32,14 @@ cd DaRL
 git clone git@github.com:DaRL-LibSignal/LibSignal.git
 ```
 
-## Simulator environment configuration
+### Simulator environment configuration
 <br />
 Though CityFlow and SUMO are stable under Windows and Linux systems, we still recommend users work under the Linux system. Currently, CBEngine is stable under the Linux system.<br><br>
 
 ### CityFlow Environment
 <br />
 
-To install CityFlow simulator, please follow the instruction on [CityFlow Doc](https://cityflow.readthedocs.io/en/latest/install.html#)
+To install the CityFlow simulator, please follow the instructions on [CityFlow Doc](https://cityflow.readthedocs.io/en/latest/install.html#)
 
 
 ```
@@ -47,7 +59,7 @@ env = cityflow.Engine
 ### SUMO Environment
 <br />
 
-To install SUMO environment, please follow the instruction on [SUMO Doc](https://epics-sumo.sourceforge.io/sumo-install.html#)
+To install the SUMO environment, please follow the instructions on [SUMO Doc](https://epics-sumo.sourceforge.io/sumo-install.html#)
 
 ```
 sudo apt-get install cmake python g++ libxerces-c-dev libfox-1.6-dev libgdal-dev libproj-dev libgl2ps-dev swig
@@ -108,7 +120,7 @@ After running the code, the converted traffic network files, traffic flow files,
 ## Requirement
 <br />
 
-Our code is based on Python version 3.9 and Pytorch version 1.11.0. For example, if your CUDA version is 11.3 you can follow the instruction on [PyTorch](https://pytorch.org/get-started/locally/)
+Our code is based on Python version 3.9 and Pytorch version 1.11.0. For example, if your CUDA version is 11.3 you can follow the instructions on [PyTorch](https://pytorch.org/get-started/locally/)
 
 ```
 pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
@@ -135,7 +147,7 @@ Detailed instrcuctions can be found on page [Pytorch_geometric](https://pytorch-
 ```
 # Start
 
-## Run Model Pipline
+## Run Model Pipeline
 
 Our library has a uniform structure that empowers users to start their experiments with just one click. Users can start an experiment by setting arguments in the run.py file and start with their customized settings. The following part is the arguments provided to customize.
 
@@ -155,19 +167,19 @@ Supporing parameters:
 
 - <font color=red> world:  </font> simulator type
 
-- <font color=red> dataset:  </font> type of dataset in training process
+- <font color=red> dataset:  </font> type of dataset in the training process
 
-- <font color=red> path:  </font> path to configuration file
+- <font color=red> path:  </font> path to the configuration file
 
-- <font color=red> prefix:  </font> the number of predix in this running process
+- <font color=red> prefix:  </font> the number of prefix in this running process
 
-- <font color=red> seed:  </font> seed for pytorch backend
+- <font color=red> seed:  </font> seed for PyTorch backend
   </br></br>
 
 
 # Maintaining plan
 
-*<font size=4>To ensure the stability of our traffic signal testbed, we will first push new code onto **dev** branch, after validation, then merge it into the master branch. </font>*
+*<font size=4>To ensure the stability of our traffic signal testbed, we will first push new code onto **dev** branch, after validation, and then merge it into the master branch. </font>*
 
 | **UPdate index**           | **Date**      | **Status** | **Merged** |
 |----------------------------|---------------|------------|------------|
