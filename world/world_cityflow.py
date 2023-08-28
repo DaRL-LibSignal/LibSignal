@@ -845,9 +845,6 @@ class World(object):
         return avg_delay
         
 
-
-
-
 if __name__ == "__main__":
     world = World("/mnt/d/Cityflow/tools/generator/configs.json", thread_num=1)
     # print(len(world.intersections[0].startlanes))

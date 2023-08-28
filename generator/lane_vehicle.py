@@ -87,9 +87,8 @@ class LaneVehicleGenerator(BaseGenerator):
         #     else:
         #         raise Exception('NOT IMPLEMENTED YET')
 
-
-            
-
+        self.directions = []
+        self.roads = []
         # ---------------------------------------------------------------------------------------------------------------
         # TODO: register it in Registry
         if isinstance(world, world_sumo.World):
@@ -104,6 +103,9 @@ class LaneVehicleGenerator(BaseGenerator):
             for road in roads:
                 from_zero = (road["startIntersection"] == I.id) if self.world.RIGHT else (road["endIntersection"] == I.id)
                 self.lanes.append([road["id"] + "_" + str(i) for i in range(len(road["lanes"]))[::(1 if from_zero else -1)]])
+                self.roads.extend(road['id'] for _ in range(len(road["lanes"])))
+                self.directions.extend(self.I._get_direction(road, False) for _ in range(len(road["lanes"])))
+
         # ---------------------------------------------------------------------------------------------------------------
         
         # elif isinstance(world, world_openengine.World):

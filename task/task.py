@@ -24,9 +24,30 @@ class BaseTask:
                         f"Parameter {name} has no gradient. Consider removing it from the model."
                     )
 
-
 @Registry.register_task("tsc")
 class TSCTask(BaseTask):
+    '''
+    Register Traffic Signal Control task.
+    '''
+    def run(self):
+        '''
+        run
+        Run the whole task, including training and testing.
+
+        :param: None
+        :return: None
+        '''
+        try:
+            if Registry.mapping['model_mapping']['setting'].param['train_model']:
+                self.trainer.train()
+            if Registry.mapping['model_mapping']['setting'].param['test_model']:
+                self.trainer.test()
+        except RuntimeError as e:
+            self._process_error(e)
+            raise e
+
+@Registry.register_task("tscfx")
+class TSCFXTask(BaseTask):
     '''
     Register Traffic Signal Control task.
     '''

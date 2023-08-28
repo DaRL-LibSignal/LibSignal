@@ -1,14 +1,14 @@
 import os
 import numpy as np
 from common.metrics import Metrics
-from environment import TSCEnv
+from environment import TSCEnv, TSCMAEnv
 from common.registry import Registry
 from trainer.base_trainer import BaseTrainer
 from trainer.trainer_utils import *
 
 
-@Registry.register_trainer("tsc")
-class TSCTrainer(BaseTrainer):
+@Registry.register_trainer("tscfx")
+class TSCFXTrainer(BaseTrainer):
     '''
     Register TSCTrainer for traffic signal control tasks.
     '''
@@ -17,7 +17,7 @@ class TSCTrainer(BaseTrainer):
         logger,
         gpu=0,
         cpu=False,
-        name="tsc"
+        name="tscfx"
     ):
         super().__init__(
             logger=logger,
@@ -29,15 +29,19 @@ class TSCTrainer(BaseTrainer):
         self.steps = Registry.mapping['trainer_mapping']['setting'].param['steps']
         self.test_steps = Registry.mapping['trainer_mapping']['setting'].param['test_steps']
         self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
-        self.action_interval = Registry.mapping['trainer_mapping']['setting'].param['action_interval']
         self.save_rate = Registry.mapping['logger_mapping']['setting'].param['save_rate']
         self.learning_start = Registry.mapping['trainer_mapping']['setting'].param['learning_start']
         self.update_model_rate = Registry.mapping['trainer_mapping']['setting'].param['update_model_rate']
         self.update_target_rate = Registry.mapping['trainer_mapping']['setting'].param['update_target_rate']
         self.test_when_train = Registry.mapping['trainer_mapping']['setting'].param['test_when_train']
+        self.action_interval = Registry.mapping['trainer_mapping']['setting'].param['action_interval']
+        # test if action_interval is less than minumum of Greatest common divisor of all rlfx agents
+        max_act_interval = max_common_divisor([i.duration_unit for i in self.agents])
+        assert max_act_interval % self.action_interval == 0, 'Phase duration and Action interval not match, fix in configs/tsc/*.yml file'
+        
         # replay file is only valid in cityflow now. 
         # TODO: support SUMO and Openengine later
-        
+
         # TODO: support other dataset in the future
         self.dataset = Registry.mapping['dataset_mapping'][Registry.mapping['command_mapping']['setting'].param['dataset']](
             os.path.join(Registry.mapping['logger_mapping']['path'].path,
@@ -109,10 +113,10 @@ class TSCTrainer(BaseTrainer):
         :return: None
         '''
         # TODO: finalized list or non list
-        self.env = TSCEnv(self.world, self.agents, self.metric)
+        self.env = TSCMAEnv(self.world, self.agents, self.metric)
 
     def train(self):
-        tsc_train(self)
+        tscfx_train(self)
 
     def train_test(self, e):
         '''
@@ -122,7 +126,7 @@ class TSCTrainer(BaseTrainer):
         :param e: number of episode
         :return self.metric.real_average_travel_time: travel time of vehicles
         '''
-        tsc_train_test(self, e)
+        tscfx_train_test(self, e)
         return self.metric.real_average_travel_time()
 
     def test(self, drop_load=True):
@@ -133,9 +137,8 @@ class TSCTrainer(BaseTrainer):
         :param drop_load: decide whether to load pretrained model's parameters
         :return self.metric: including queue length, throughput, delay and travel time
         '''
-        tsc_test(self, drop_load)
+        tscfx_test(self, drop_load)
         return self.metric
-
 
     def writeLog(self, mode, step, travel_time, loss, cur_rwd, cur_queue, cur_delay, cur_throughput):
         '''
@@ -158,4 +161,3 @@ class TSCTrainer(BaseTrainer):
         log_handle = open(self.log_file, "a")
         log_handle.write(res + "\n")
         log_handle.close()
-

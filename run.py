@@ -20,7 +20,6 @@ parser.add_argument('--seed', type=int, default=None, help="seed for pytorch bac
 parser.add_argument('--debug', type=bool, default=True)
 parser.add_argument('--interface', type=str, default="libsumo", choices=['libsumo','traci'], help="interface type") # libsumo(fast) or traci(slow)
 parser.add_argument('--delay_type', type=str, default="apx", choices=['apx','real'], help="method of calculating delay") # apx(approximate) or real
-
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
 parser.add_argument('-a', '--agent', type=str, default="dqn", help="agent type of agents in RL environment")
 parser.add_argument('-w', '--world', type=str, default="cityflow", choices=['cityflow','sumo'], help="simulator type")
@@ -79,4 +78,3 @@ class Runner:
 if __name__ == '__main__':
     test = Runner(args)
     test.run()
-

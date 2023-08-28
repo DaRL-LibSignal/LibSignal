@@ -344,9 +344,7 @@ class Intersection(object):
                             new_phases.append(traci.trafficlight.Phase(yellow_length, yellow_str))
                         yellow_dict[str(i) + '_' + str(j)] = len(new_phases) - 1  # The index of the yellow phase in SUMO
         return new_phases, yellow_dict
-
-
-
+        
 
 @Registry.register_world('sumo')
 class World(object):
@@ -429,11 +427,11 @@ class World(object):
         for intsec in self.intersections:
             intsec.observe(self.step_length, self.max_distance)
         if self.interface_flag:
-            if not self.connection_name: 
+            if not self.connection_name:
                 libsumo.switch(self.connection_name)  # TODO: make sure what's this step doing
             libsumo.close()
         else:
-            if not self.connection_name: 
+            if not self.connection_name:
                 traci.switch(self.connection_name)  # TODO: make sure what's this step doing
             traci.close()
         # self.connection_name = self.map + '-' + self.connection_name
@@ -597,7 +595,6 @@ class World(object):
         '''
         get_vehicles
         Get all vehicle ids.
-        
         :param: None
         :return: None
         '''
@@ -771,8 +768,25 @@ class World(object):
         :param: None
         :return tvg_time: average travel time of all vehicles
         '''
-        tvg_time = self.get_vehicles()
-        return tvg_time
+        result = 0
+        count = 0
+        # finished ones
+        for v in self.vehicles.keys():
+            count += 1
+            result += self.vehicles[v]
+        # in roadnet vehicles
+        cur_time = self.eng.simulation.getTime()
+        for i in self.eng.vehicle.getIDList():
+            count += 1
+            result += (cur_time - self.eng.vehicle.getDeparture(i) + self.eng.vehicle.getDepartDelay(i)) 
+        # delayed in buffer
+        for j in self.eng.simulation.getPendingVehicles():
+            count += 1
+            result += self.eng.vehicle.getDepartDelay(j)
+        if count == 0:
+            return 0
+        else:
+            return result/count
 
     def get_lane_vehicles(self):
         '''
