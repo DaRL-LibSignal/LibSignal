@@ -77,7 +77,7 @@ def tsc_train(trainer):
             mean_loss = np.mean(np.array(episode_loss))
         else:
             mean_loss = 0
-
+        
         trainer.writeLog("TRAIN", e, trainer.metric.real_average_travel_time(),\
             mean_loss, trainer.metric.rewards(), trainer.metric.queue(), trainer.metric.delay(), trainer.metric.throughput())
         trainer.logger.info("step:{}/{}, q_loss:{}, rewards:{}, queue:{}, delay:{}, throughput:{}".format(i, trainer.steps,\
@@ -143,7 +143,6 @@ def tsc_test(trainer, drop_load=True):
     trainer.metric.clear()
     if not drop_load:
         [ag.load_model(trainer.episodes) for ag in trainer.agents]
-    attention_mat_list = []
     obs = trainer.env.reset()
     for a in trainer.agents:
         a.reset()
@@ -166,6 +165,7 @@ def tsc_test(trainer, drop_load=True):
     trainer.logger.info("Final Travel Time is %.4f, mean rewards: %.4f, queue: %.4f, delay: %.4f, throughput: %d" % (trainer.metric.real_average_travel_time(), \
         trainer.metric.rewards(), trainer.metric.queue(), trainer.metric.delay(), trainer.metric.throughput()))
     return trainer.metric
+
 
 def tscfx_train(trainer):
     '''
