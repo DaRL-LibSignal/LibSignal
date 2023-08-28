@@ -38,6 +38,7 @@ class IntersectionPhaseGenerator():
         :param: None
         :return ret: result based on current phase
         '''
+    
         return self.I.current_phase
 
 
