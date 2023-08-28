@@ -1,4 +1,4 @@
-gym==0.21.0
+gym
 lmdb==1.3.0
 mpmath==1.2.1
 numpy==1.21.5

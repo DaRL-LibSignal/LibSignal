@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from common.metrics import Metrics
-from environment import TSCEnv, TSCMAEnv
+from environment import TSCEnv
 from common.registry import Registry
 from trainer.base_trainer import BaseTrainer
 from trainer.trainer_utils import *

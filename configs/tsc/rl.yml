@@ -1,0 +1,16 @@
+includes:
+  - configs/tsc/base.yml
+
+model:
+  name: rl
+  train_model: True
+  one_hot: True
+  phase: True
+
+  learning_rate: 0.001
+  batch_size: 64
+  gamma: 0.95
+  epsilon: 0.5
+  epsilon_decay: 0.99
+  epsilon_min: 0.05
+  grad_clip: 5.0

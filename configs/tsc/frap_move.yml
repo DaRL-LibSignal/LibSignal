@@ -1,0 +1,18 @@
+includes:
+  - configs/tsc/rl.yml
+
+model:
+  name: frap_move
+  n_layers: 2
+  rotation: true
+  conflict_matrix: true
+  merge: multiply
+  d_dense: 20
+  epsilon: 0.1
+  epsilon_decay: 0.995
+  epsilon_min: 0.01
+  demand_shape: 1
+
+trainer: 
+  learning_start: 5000
+  # action_interval: 20
