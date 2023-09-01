@@ -8,9 +8,6 @@ def info_helper(line, position):
     result.append(processed[1])
     return result
 
-def info_updater(record, arrival):
-    record[k].append(v)
-
 def painter(files, subscribers):
     # subscriber order is 0: epoch, 1: average travel time, 
     # 2: q loss, 3: rewards, 4: queue, 5: delay, 6: throughput
