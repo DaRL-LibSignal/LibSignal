@@ -11,7 +11,7 @@ LibSignal is a cross-simulator environment that provides multiple traditional an
 
 ## Source
 
-LibSingal provides installation from source code.
+LibSignal provides installation from the source code.
 Please execute the following command to install and configure  our environment.
 
 ```
@@ -27,7 +27,7 @@ Though CityFlow and SUMO are stable under Windows and Linux systems, we still re
 ### CityFlow Environment
 <br />
 
-To install CityFlow simulator, please follow the instruction on [CityFlow Doc](https://cityflow.readthedocs.io/en/latest/install.html#)
+To install CityFlow simulator, please follow the instructions on [CityFlow Doc](https://cityflow.readthedocs.io/en/latest/install.html#)
 
 
 ```
@@ -47,7 +47,7 @@ env = cityflow.Engine
 ### SUMO Environment
 <br />
 
-To install SUMO environment, please follow the instruction on [SUMO Doc](https://epics-sumo.sourceforge.io/sumo-install.html#)
+To install SUMO environment, please follow the instructions on [SUMO Doc](https://epics-sumo.sourceforge.io/sumo-install.html#)
 
 ```
 sudo apt-get install cmake python g++ libxerces-c-dev libfox-1.6-dev libgdal-dev libproj-dev libgl2ps-dev swig
@@ -65,7 +65,7 @@ cd ~/DaRL/sumo/bin
 ./sumo
 ```
 
-To add SUMO and traci model into system PATH, execute code below:
+To add SUMO and traci model into the system PATH, execute the code below:
 ```
 export SUMO_HOME=~/DaRL/sumo
 export PYTHONPATH="$SUMO_HOME/tools:$PYTHONPATH"
@@ -108,7 +108,7 @@ After running the code, the converted traffic network files, traffic flow files,
 ## Requirement
 <br />
 
-Our code is based on Python version 3.9 and Pytorch version 1.11.0. For example, if your CUDA version is 11.3 you can follow the instruction on [PyTorch](https://pytorch.org/get-started/locally/)
+Our code is based on Python version 3.9 and Pytorch version 1.11.0. For example, if your CUDA version is 11.3 you can follow the instructions on [PyTorch](https://pytorch.org/get-started/locally/)
 
 ```
 pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
@@ -121,21 +121,21 @@ pip install -r requirements.txt
 
 We also support agents implemented based on other libraries
 ```
-# Colight Geometric implementation based on default environment mentioned in Requirment
+# Colight Geometric implementation based on default environment mentioned in Requirement
 
 pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu113.html
 
 # ppo_pfrl implementation
 pip install pfrl
 ```
-Detailed instrcuctions can be found on page [Pytorch_geometric](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html) and [PFRL](https://pfrl.readthedocs.io/en/latest/install.html). After installation, user should uncomment code in PATH ./agent/\_\_init\_\_.py 
+Detailed instructions can be found on page [Pytorch_geometric](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html) and [PFRL](https://pfrl.readthedocs.io/en/latest/install.html). After installation, user should uncomment code in PATH ./agent/\_\_init\_\_.py 
 ```
 # from .ppo_pfrl import IPPO_pfrl
 # from colight import CoLightAgent
 ```
 # Start
 
-## Run Model Pipline
+## Run Model Pipeline
 
 Our library has a uniform structure that empowers users to start their experiments with just one click. Users can start an experiment by setting arguments in the run.py file and start with their customized settings. The following part is the arguments provided to customize.
 
@@ -143,7 +143,7 @@ Our library has a uniform structure that empowers users to start their experimen
 python run.py
 ```
 
-Supporing parameters:
+Supporting parameters:
 
 - <font color=red> thread_num:  </font> number of threads for cityflow simulation
 
