@@ -492,9 +492,11 @@ There are contributors to this paper collection, we will continue to update it.
 If you find LibSignal useful for your research or development, please cite our [paper](xxxxxxx).
 
 ```
-xxxx
+@article{mei2022libsignal,
+  title={LibSignal: An Open Library for Traffic Signal Control},
+  author={Mei, Hao and Lei, Xiaoliang and Da, Longchao and Shi, Bin and Wei, Hua},
+  journal={arXiv preprint arXiv:2211.10649},
+  year={2022}
+}
 ```
 
-```
-xxxx
-```
