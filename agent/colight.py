@@ -22,99 +22,15 @@ from torch_geometric.utils import add_self_loops
 
 @Registry.register_model('colight')
 class CoLightAgent(RLAgent):
-    #  TODO: test multiprocessing effect on agents or need deep copy here
+    # TODO: test multiprocessing effect on agents or need deep copy here
+    # TODO: This is a homogeneous version, implement heterogenous version as FRAP_move later
     def __init__(self, world, rank):
-        super().__init__(world, world.intersection_ids[rank])
-        """
-        multi-agents in one model-> modify self.action_space, self.reward_generator, self.ob_generator here
-        """
+        super().__init__(world, rank)
         #  general setting of world and model structure
         # TODO: different phases matching
         self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 
-        self.graph = Registry.mapping['world_mapping']['graph_setting'].graph
-        self.world = world
-        self.sub_agents = len(self.world.intersections)
-        # TODO: support dynamic graph later
-        self.edge_idx = torch.tensor(self.graph['sparse_adj'].T, dtype=torch.long)  # source -> target
-
-        #  model parameters
-        self.phase = Registry.mapping['model_mapping']['setting'].param['phase']
-        self.one_hot = Registry.mapping['model_mapping']['setting'].param['one_hot']
-        self.model_dict = Registry.mapping['model_mapping']['setting'].param
-
-        #  get generator for CoLightAgent
-        observation_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, inter, ['lane_count'], in_only=True, average=None)
-            observation_generators.append((node_idx, tmp_generator))
-        sorted(observation_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.ob_generator = observation_generators
-
-        #  get reward generator for CoLightAgent
-        rewarding_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"],
-                                                 in_only=True, average='all', negative=True)
-            rewarding_generators.append((node_idx, tmp_generator))
-        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.reward_generator = rewarding_generators
-
-        #  get queue generator for CoLightAgent
-        queues = []
-        for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"], 
-                                                 in_only=True, negative=False)
-            queues.append((node_idx, tmp_generator))
-        # now generator's order is according to its index in graph
-        sorted(queues, key=lambda x: x[0])
-        self.queue = queues
-
-        #  get delay generator for CoLightAgent
-        delays = []
-        for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_delay"], 
-                                                 in_only=True, average="all", negative=False)
-            delays.append((node_idx, tmp_generator))
-        # now generator's order is according to its index in graph
-        sorted(delays, key=lambda x: x[0])
-        self.delay = delays
-
-        #  phase generator
-        phasing_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = IntersectionPhaseGenerator(self.world, inter, ['phase'],
-                                                       targets=['cur_phase'], negative=False)
-            phasing_generators.append((node_idx, tmp_generator))
-        sorted(phasing_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.phase_generator = phasing_generators
-
-        # TODO: add irregular control of signals in the future
-        self.action_space = gym.spaces.Discrete(len(self.world.intersections[0].phases))
-
-        if self.phase:
-            # TODO: irregular ob and phase in the future
-            if self.one_hot:
-                self.ob_length = self.ob_generator[0][1].ob_length + len(self.world.intersections[0].phases)
-            else:
-                self.ob_length = self.ob_generator[0][1].ob_length + 1
-        else:
-            self.ob_length = self.ob_generator[0][1].ob_length
-
-        self.get_attention = Registry.mapping['logger_mapping']['setting'].param['attention']
-        # train parameters
-        self.rank = rank
         self.gamma = Registry.mapping['model_mapping']['setting'].param['gamma']
         self.grad_clip = Registry.mapping['model_mapping']['setting'].param['grad_clip']
         self.epsilon = Registry.mapping['model_mapping']['setting'].param['epsilon']
@@ -124,6 +40,13 @@ class CoLightAgent(RLAgent):
         self.vehicle_max = Registry.mapping['model_mapping']['setting'].param['vehicle_max']
         self.batch_size = Registry.mapping['model_mapping']['setting'].param['batch_size']
 
+        self.sub_agents = len(self.world.intersections)
+        self.get_attention = Registry.mapping['model_mapping']['setting'].param['attention']
+        self.graph = Registry.mapping['world_mapping']['graph_setting'].graph
+
+        self.edge_idx = torch.tensor(self.graph['sparse_adj'].T, dtype=torch.long)  # source -> target
+        self.model_dict = Registry.mapping['model_mapping']['setting'].param['model_dict']
+
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_network()
@@ -131,90 +54,51 @@ class CoLightAgent(RLAgent):
         self.optimizer = optim.RMSprop(self.model.parameters(),
                                        lr=self.learning_rate,
                                        alpha=0.9, centered=False, eps=1e-7)
+        assert all([hasattr(self, generator) for generator in ['ob_generator', 'phase_generator',\
+            'reward_generator', 'queue', 'delay']]), 'missing generators'
 
-    def reset(self):
-        observation_generators = []
+    def _create_generators(self):
+        # CoLight has list of generators [#_agents, #_states]
+        super()._create_generators()
+        self.ob_generator = []
+        self.reward_generator = []
+        self.queue = []
+        self.delay = []
+        self.phase_generator = []
+        # world.intersections order are the same as graph['node_id2idx]
         for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, inter, ['lane_count'], in_only=True, average=None)
-            observation_generators.append((node_idx, tmp_generator))
-        sorted(observation_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.ob_generator = observation_generators
+            self.ob_generator.append(
+            [
+                LaneVehicleGenerator(self.world, inter, ['lane_count'], in_only=True, average=None)
+            ])
+            self.reward_generator.append(LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"],
+                                                in_only=True, average='all', negative=True))
+            self.queue.append(LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"], 
+                                                in_only=True, average="all", negative=False))
+            self.delay.append(LaneVehicleGenerator(self.world, inter, ["lane_delay"], 
+                                                in_only=True, average="all", negative=False))
+            self.phase_generator.append(IntersectionPhaseGenerator(self.world, inter, ['phase'],
+                                                    targets=['cur_phase'], negative=False))
 
-        #  get reward generator for CoLightAgent
-        rewarding_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"],
-                                                 in_only=True, average='all', negative=True)
-            rewarding_generators.append((node_idx, tmp_generator))
-        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.reward_generator = rewarding_generators
-
-        #  phase generator
-        phasing_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = IntersectionPhaseGenerator(self.world, inter, ['phase'],
-                                                       targets=['cur_phase'], negative=False)
-            phasing_generators.append((node_idx, tmp_generator))
-        sorted(phasing_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.phase_generator = phasing_generators
-
-        # queue metric
-        queues = []
-        for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"], 
-                                                 in_only=True, negative=False)
-            queues.append((node_idx, tmp_generator))
-        # now generator's order is according to its index in graph
-        sorted(queues, key=lambda x: x[0])
-        self.queue = queues
-
-        # delay metric
-        delays = []
-        for inter in self.world.intersections:
-            node_id = inter.id if 'GS_' not in inter.id else inter.id[3:]
-            node_idx = self.graph['node_id2idx'][node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, inter, ["lane_delay"], 
-                                                 in_only=True, average="all", negative=False)
-            delays.append((node_idx, tmp_generator))
-        # now generator's order is according to its index in graph
-        sorted(delays, key=lambda x: x[0])
-        self.delay = delays
+    def __repr__(self):
+        return self.model.__repr__()
 
     def get_ob(self):
         x_obs = []  # sub_agents * lane_nums,
-        for i in range(len(self.ob_generator)):
-            x_obs.append((self.ob_generator[i][1].generate()) / self.vehicle_max)
-        # construct edge information.
-        length = set([len(i) for i in x_obs])
-        if len(length) == 1: # each intersections may has  different lane nums
-            x_obs = np.array(x_obs, dtype=np.float32)
-        else:
-            x_obs = [np.expand_dims(x,axis=0) for x in x_obs]
+        for ob_gs in self.ob_generator:
+            x_obs.append(np.array([ob_g.generate() for ob_g in ob_gs],
+                                   dtype=np.float32).flatten())
+        x_obs = np.array(x_obs, dtype=np.float32)
         return x_obs
 
     def get_reward(self):
-        # TODO: test output
-        rewards = []  # sub_agents
-        for i in range(len(self.reward_generator)):
-            rewards.append(self.reward_generator[i][1].generate())
-        rewards = np.squeeze(np.array(rewards, dtype=np.float32)) * 12
+        rewards = np.squeeze(np.array([rw_g.generate() for rw_g in self.reward_generator],
+                                       dtype=np.float32))
         return rewards
 
     def get_phase(self):
-        # TODO: test phase output onehot/int
-        phase = []  # sub_agents
-        for i in range(len(self.phase_generator)):
-            phase.append((self.phase_generator[i][1].generate()))
-        phase = (np.concatenate(phase)).astype(np.int8)
-        # phase = np.concatenate(phase, dtype=np.int8)
+        phase = np.array([phs_g.generate() for phs_g in self.phase_generator],
+                                       dtype=np.int8)
         return phase
 
     def get_queue(self):
@@ -222,18 +106,13 @@ class CoLightAgent(RLAgent):
         get delay of intersection
         return: value(one intersection) or [intersections,](multiple intersections)
         """
-        queue = []
-        for i in range(len(self.queue)):
-            queue.append((self.queue[i][1].generate()))
-        tmp_queue = np.squeeze(np.array(queue, dtype=np.float32))
-        queue = np.sum(tmp_queue, axis=1 if len(tmp_queue.shape)==2 else 0)
+        queue = np.squeeze(np.array([q_g.generate() for q_g in self.queue],
+                                       dtype=np.float32))
         return queue
 
     def get_delay(self):
-        delay = []
-        for i in range(len(self.delay)):
-            delay.append((self.delay[i][1].generate()))
-        delay = np.squeeze(np.array(delay, dtype=np.float32))
+        delay = np.squeeze(np.array([d_g.generate() for d_g in self.delay],
+                                       dtype=np.float32))
         return delay # [intersections,]
 
     def get_action(self, ob, phase, test=False):
@@ -251,7 +130,6 @@ class CoLightAgent(RLAgent):
         observation = torch.tensor(ob, dtype=torch.float32)
         edge = self.edge_idx
         dp = Data(x=observation, edge_index=edge)
-        # TODO: not phase not used
 
         if self.get_attention:
             # TODO: collect attention matrix later
@@ -275,8 +153,7 @@ class CoLightAgent(RLAgent):
         self.replay_buffer.append((key, (last_obs, last_phase, actions, rewards, obs, cur_phase)))
 
     def _batchwise(self, samples):
-        # load onto tensor
-
+        # Default: phase is not used in this method
         batch_list = []
         batch_list_p = []
         actions = []
@@ -297,11 +174,7 @@ class CoLightAgent(RLAgent):
         actions = torch.tensor(np.array(actions), dtype=torch.long)
         if self.sub_agents > 1:
             rewards = rewards.view(rewards.shape[0] * rewards.shape[1])
-            actions = actions.view(actions.shape[0] * actions.shape[1])  # TODO: check all dimensions here
-        # rewards = rewards.view(rewards.shape[0] * rewards.shape[1])
-        # actions = torch.tensor(np.array(actions), dtype=torch.long)
-        # actions = actions.view(actions.shape[0] * actions.shape[1])  # TODO: check all dimensions here
-
+            actions = actions.view(actions.shape[0] * actions.shape[1])
         return batch_t, batch_tp, rewards, actions
 
     def train(self):

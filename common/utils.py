@@ -31,9 +31,8 @@ def build_index_intersection_map(roadnet_file):
         edge_adjacent_node_matrix]
     """
     roadnet_dict = json.load(open(roadnet_file, "r"))
-    virt = "virtual" # judge whether is virtual node, especially in convert_sumo file
-    if "gt_virtual" in roadnet_dict["intersections"][0]:
-        virt = "gt_virtual"
+    # judge whether is virtual node, especially in convert_sumo file
+    virt = "gt_virtual" if "gt_virtual" in roadnet_dict["intersections"][0] else "virtual"
     valid_intersection_id = [node["id"] for node in roadnet_dict["intersections"] if not node[virt]]
     node_id2idx = {}
     node_idx2id = {}
@@ -46,7 +45,7 @@ def build_index_intersection_map(roadnet_file):
     sparse_adj = []  # adjacent node of each edge
     invalid_roads = []
     cur_num = 0
-    # build the map between identity and index of node
+    # world.intersections is the same order as roadnet['intersections']
     for node_dict in roadnet_dict["intersections"]:
         if node_dict[virt]:
             for node in node_dict["roads"]:
@@ -77,7 +76,7 @@ def build_index_intersection_map(roadnet_file):
             input_node_idx = node_id2idx[input_node_id]
             output_node_idx = node_id2idx[output_node_id]
             sparse_adj.append([input_node_idx, output_node_idx])
-    
+
     # build adjacent matrix for node (i.e the adjacent node of the node, and the 
     # adjacent edge of the node)
     for node_dict in roadnet_dict["intersections"]:

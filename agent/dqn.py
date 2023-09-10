@@ -52,6 +52,16 @@ class DQNAgent(RLAgent):
     def __repr__(self):
         return self.model.__repr__()
 
+    def _create_generators(self):
+        # self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj,
+        #                                          ["lane_count"], in_only=True, average=None)
+        super()._create_generators()
+        self.ob_generator = [LaneVehicleGenerator(self.world, self.inter_obj,
+                                                 ["lane_pressure"], in_only=True, average=None),
+                             LaneVehicleGenerator(self.world, self.inter_obj,
+                                                 ["lane_count"], in_only=True, average=None)
+        ]
+
     def get_reward(self):
         '''
         get_reward
