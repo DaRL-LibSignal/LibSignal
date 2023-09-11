@@ -21,8 +21,6 @@ class DQNAgent(RLAgent):
     '''
     def __init__(self, world, rank):
         super().__init__(world, rank)
-
-
         self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
         self.replay_buffer = deque(maxlen=self.buffer_size)
 

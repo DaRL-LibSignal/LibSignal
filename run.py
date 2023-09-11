@@ -22,8 +22,8 @@ parser.add_argument('--interface', type=str, default="libsumo", choices=['libsum
 parser.add_argument('--delay_type', type=str, default="apx", choices=['apx','real'], help="method of calculating delay") # apx(approximate) or real
 parser.add_argument('-t', '--task', type=str, default="tsc", help="task type to run")
 parser.add_argument('-a', '--agent', type=str, default="colight", help="agent type of agents in RL environment")
-parser.add_argument('-w', '--world', type=str, default="cityflow", choices=['cityflow','sumo'], help="simulator type")
-parser.add_argument('-n', '--network', type=str, default="cityflow4x4", help="network name")
+parser.add_argument('-w', '--world', type=str, default="sumo", choices=['cityflow','sumo'], help="simulator type")
+parser.add_argument('-n', '--network', type=str, default="sumo4x4", help="network name")
 parser.add_argument('-d', '--dataset', type=str, default='onfly', help='type of dataset in training process')
 
 args = parser.parse_args()
@@ -52,8 +52,10 @@ class Runner:
         interface.World_param_Interface(self.config)
         if self.config['model'].get('graphic', False):
             param = Registry.mapping['world_mapping']['setting'].param
-            if self.config['command']['world'] in ['cityflow', 'sumo']:
+            if self.config['command']['world'] == 'cityflow':
                 roadnet_path = param['dir'] + param['roadnetFile']
+            elif self.config['command']['world'] == 'sumo':
+                roadnet_path = param['dir'] + param['convertroadnetFile']
             else:
                 roadnet_path = param['road_file_addr']
             interface.Graph_World_Interface(roadnet_path)  # register graphic parameters in Registry class
