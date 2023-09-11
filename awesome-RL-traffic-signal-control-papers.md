@@ -18,7 +18,13 @@ In the paper collection, we collected RL-based traffic signal control papers pub
 - [Cite](#cite)
 
 ## Surveys and Simulators
-1. **Traffic Signal Control Methods: Current Status, Challenges, and Emerging Trends**. *I Tomar, S Indu, N Pandey*. Data Analytics and Management . 2022. [link](https://link.springer.com/chapter/10.1007/978-981-16-6289-8_14)
+1. **Graph Neural Networks for Intelligent Transportation Systems: A Survey**. *S Rahmani, A Baghbani, et, al*. IEEE Transactions on Intelligent Transportation Systems. 2023. [link](https://ieeexplore.ieee.org/abstract/document/10077454)
+1. **Deep Reinforcement Learning Based Traffic Signal Control: A Comparative Analysis**. *C Wu, I Kim, et, al*. 2023. [link](https://www.sciencedirect.com/science/article/pii/S1877050923005719)
+1.  **Reinforcement learning in urban network traffic signal control: A systematic literature review**. *M Noaeen, A Naik, L Goodman, J Crebo, et, al.*. 2022. [link](https://www.sciencedirect.com/science/article/pii/S0957417422002858)
+1. **The Real Deal: A Review of Challenges and Opportunities in Moving Reinforcement Learning-Based Traffic Signal Control Systems Towards Reality**. *R Chen, F Fang, N Sadeh*. 2022. [link](https://arxiv.org/abs/2206.11996)
+1. **A review of reinforcement learning applications in adaptive traffic signal control**. *M Miletić, E Ivanjko, et, al*. IET Intelligent Transportation System. 2022. [link](https://ietresearch.onlinelibrary.wiley.com/doi/full/10.1049/itr2.12208)
+
+1. **Traffic Signal Control Methods: Current Status, Challenges, and Emerging Trends**. *I Tomar, S Indu, N Pandey*. Data Analytics and Management. 2022. [link](https://link.springer.com/chapter/10.1007/978-981-16-6289-8_14)
 
 1. **Reinforcement learning in urban network traffic signal control: A systematic literature review**. *M Noaeen, A Naik, L Goodman, J Crebo, T Abrar*. Expert Systems with Applications. 2022. [link](https://www.sciencedirect.com/science/article/pii/S0957417422002858)
 
