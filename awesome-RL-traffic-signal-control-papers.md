@@ -74,6 +74,16 @@ In the paper collection, we collected RL-based traffic signal control papers pub
 
 1. **Learning individually inferred communication for multi-agent cooperation**. *Z Ding, T Huang, Z Lu*. NeurIPS. 2020. [link](https://proceedings.neurips.cc/paper/2020/hash/fb2fcd534b0ff3bbed73cc51df620323-Abstract.html)
 
+## KDD
+1. **Mitigating Action Hysteresis in Traffic Signal Control with Traffic Predictive Reinforcement Learning**. *X Han, X Zhao, L Zhang, W Wang*. KDD. 2023. [link](https://dl.acm.org/doi/pdf/10.1145/3580305.3599528)
+1. **Optimizing Traffic Control with Model-Based Learning: A Pessimistic Approach to Data-Efficient Policy Inference**. *X Han, X Zhao, L Zhang, W Wang*. KDD. 2023. [link](https://dl.acm.org/doi/pdf/10.1145/3580305.3599528)
+1. **CBLab: Supporting the Training of Large-scale Traffic Control
+Policies with Scalable Traffic Simulation**. *C Liang, Z Huang, Y Liu, et, al*. 2023. [link](https://dl.acm.org/doi/pdf/10.1145/3580305.3599789)
+1. **TransformerLight: A Novel Sequence Modeling Based Traffic Signaling Mechanism via Gated Transformer**. *Q Wu, M Li, J Shen, et, al*. KDD. 2023. [link](https://dl.acm.org/doi/pdf/10.1145/3580305.3599530)
+1. **Modeling Network-level Traffic Flow Transitions on Sparse Data**. *X Lei, H Mei, B Shi, H Wei*. KDD. 2022. [link](https://dl.acm.org/doi/abs/10.1145/3534678.3539236)
+1. **Presslight: Learning max pressure control to coordinate traffic signals in arterial network**. *H Wei, C Chen, G Zheng, K Wu, V Gayah*. KDD. 2019. [link](https://dl.acm.org/doi/abs/10.1145/3292500.3330949)
+1. **Time critic policy gradient methods for traffic signal control in complex and congested scenarios**. *SG Rizzo, G Vantini, S Chawla*. KDD. 2019. [link](https://dl.acm.org/doi/abs/10.1145/3292500.3330988)
+1. **Intellilight: A reinforcement learning approach for intelligent traffic light control**. *H Wei, G Zheng, H Yao, Z Li*. KDD. 2018. [link](https://dl.acm.org/doi/abs/10.1145/3219819.3220096)
 
 ## AAAI
 1. **Hierarchically and cooperatively learning traffic signal control**. *B Xu, Y Wang, Z Wang, H Jia, Z Lu*. AAAI. 2021. [link](https://www.aaai.org/AAAI21Papers/AAAI-6437.XuB.pdf)
@@ -87,12 +97,7 @@ In the paper collection, we collected RL-based traffic signal control papers pub
 
 1. **Reinforcement Learning for Traffic Signal Control Optimization: A Concept for Real-World Implementation**. *H Meess, J Gerner, D Hein, S Schmidtner*. AAMAS. 2022. [link](https://dl.acm.org/doi/abs/10.5555/3535850.3536081)
 
-## KDD
-1. **Presslight: Learning max pressure control to coordinate traffic signals in arterial network**. *H Wei, C Chen, G Zheng, K Wu, V Gayah*. KDD. 2019. [link](https://dl.acm.org/doi/abs/10.1145/3292500.3330949)
 
-1. **Time critic policy gradient methods for traffic signal control in complex and congested scenarios**. *SG Rizzo, G Vantini, S Chawla*. KDD. 2019. [link](https://dl.acm.org/doi/abs/10.1145/3292500.3330988)
-
-1. **Intellilight: A reinforcement learning approach for intelligent traffic light control**. *H Wei, G Zheng, H Yao, Z Li*. KDD. 2018. [link](https://dl.acm.org/doi/abs/10.1145/3219819.3220096)
 
 ## CIKM
 1. **DynSTGAT: Dynamic Spatial-Temporal Graph Attention Network for Traffic Signal Control**. *L Wu, M Wang, D Wu, J Wu*. CIKM. 2021. [link](https://dl.acm.org/doi/abs/10.1145/3459637.3482254)
