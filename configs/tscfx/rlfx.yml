@@ -1,9 +1,9 @@
 includes:
-  - configs/tscfx/base.yml
+  - configs/tsc/base.yml
 
 model:
   name: rlfx
-  train_model: True
+  train_model: False
   one_hot: True
   phase: True
   duration_space: 11 # from 0 to 50

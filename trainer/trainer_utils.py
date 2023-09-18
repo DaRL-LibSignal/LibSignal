@@ -208,10 +208,6 @@ def tscfx_train(trainer):
                     obs, rewards, dones, _ = trainer.env.step(actions.flatten())
                     i += 1
                     rewards_list.append(np.stack(rewards))
-                print([f'{a:2d}' for a in actions])
-                print([f'{ag.duration_cur:2d}' for ag in trainer.agents])
-                print([f'{ag.duration_residual:2d}' for ag in trainer.agents])             
-                print() 
                 rewards = np.mean(rewards_list, axis=0)  # [agent, intersection]
                 trainer.metric.update(rewards)
                 cur_phase = np.stack([ag.get_phase() for ag in trainer.agents])

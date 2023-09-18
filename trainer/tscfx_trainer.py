@@ -113,7 +113,7 @@ class TSCFXTrainer(BaseTrainer):
         :return: None
         '''
         # TODO: finalized list or non list
-        self.env = TSCMAEnv(self.world, self.agents, self.metric)
+        self.env = TSCEnv(self.world, self.agents, self.metric)
 
     def train(self):
         tscfx_train(self)

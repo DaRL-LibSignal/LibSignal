@@ -122,7 +122,7 @@ class RLFXAgent(BaseAgent):
         assert len(reward) == 1
         return reward[0]
 
-    def get_action(self, state, phase):
+    def get_action(self, state, phase, test=True):
         '''
         get_action
         Generate action.
