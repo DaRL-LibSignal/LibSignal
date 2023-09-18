@@ -1,18 +1,13 @@
 includes:
-  - configs/tsc/base.yml
+  - configs/tsc/rl.yml
 
 
 model:
   name: presslight
-  train_model: True
   d_dense: 20
   epsilon: 0.1
   epsilon_decay: 0.995
   epsilon_min: 0.01
-  one_hot: True
-  phase: True
-
-
 
 trainer:
   learning_start: 1000

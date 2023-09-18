@@ -3,6 +3,8 @@ from .rl_agent import RLAgent
 from .maxpressure import MaxPressureAgent
 from .colight import CoLightAgent
 from .dqn import DQNAgent
+from .dqn_states import DQNSAgent # for changing state demonstration
+from .dqn_rewards import DQNRAgent # for changing reward demonstration
 from .sotl import SOTLAgent
 from .frap import FRAP_DQNAgent
 from .ppo_pfrl import IPPO_pfrl

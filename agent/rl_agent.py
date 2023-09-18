@@ -59,6 +59,8 @@ class RLAgent(BaseAgent):
         self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
                                                      ["lane_delay"], in_only=True, average="all",
                                                      negative=False)
+        if type(self.ob_generator) != list:
+            self.ob_generator = [self.ob_generator]
 
     def reset(self):
         '''
