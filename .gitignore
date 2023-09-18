@@ -3,9 +3,7 @@ __pycache__/
 .idea/
 .vscode/
 data/output_data
-.ipynb
 *.sh
 data/raw_data/grid4x4/*.xml
 data/raw_data/grid4x4/*.pdf
-*.ipynb
 *.ipynb_checkpoints
