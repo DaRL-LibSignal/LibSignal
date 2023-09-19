@@ -19,7 +19,10 @@ class FRAP_DQNAgent(RLAgent):
     FRAP_DQNAgent consists of FRAP and methods for training agents, communicating with environment, etc.
     '''
     def __init__(self, world, rank):
-        super().__init__(world,world.intersection_ids[rank])
+        super().__init__(world, rank)
+        self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
+        self.replay_buffer = deque(maxlen=self.buffer_size)
+
         self.dic_agent_conf = Registry.mapping['model_mapping']['setting']
         self.dic_traffic_env_conf = Registry.mapping['world_mapping']['setting']
         
@@ -30,34 +33,6 @@ class FRAP_DQNAgent(RLAgent):
         self.epsilon_decay = self.dic_agent_conf.param["epsilon_decay"]
         self.learning_rate = self.dic_agent_conf.param["learning_rate"]
         self.batch_size = self.dic_agent_conf.param["batch_size"]
-        self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
-        self.replay_buffer = deque(maxlen=self.buffer_size)
-
-        self.world = world
-        self.sub_agents = 1
-        self.rank = rank
-
-        self.phase = self.dic_agent_conf.param['phase']
-        self.one_hot = self.dic_agent_conf.param['one_hot']
-
-        # get generator for each Agent
-        self.inter_id = self.world.intersection_ids[self.rank]
-        self.inter_obj = self.world.id2intersection[self.inter_id]
-        self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
-        self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                 ["lane_count"], in_only=True, average=None)
-        self.phase_generator = IntersectionPhaseGenerator(self.world, self.inter_obj,
-                                                          ['phase'], targets=['cur_phase'], negative=False)
-        self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_waiting_count"], in_only=True, average="all",
-                                                     negative=True)
-        
-        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_waiting_count"], in_only=True,
-                                                     negative=False)
-        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_delay"], in_only=True, average="all",
-                                                     negative=False)
 
         map_name = self.dic_traffic_env_conf.param['network']
 
@@ -66,13 +41,13 @@ class FRAP_DQNAgent(RLAgent):
         if all_valid_acts is None:
             self.valid_acts = None
         else:
-            if self.inter_id in all_valid_acts.keys():
-                self.inter_name = self.inter_id
+            if self.inter_obj.id in all_valid_acts.keys():
+                self.inter_name = self.inter_obj.id
             else:
-                if 'GS_' in self.inter_id:
-                    self.inter_name = self.inter_id[3:]
+                if 'GS_' in self.inter_obj.id:
+                    self.inter_name = self.inter_obj.id[3:]
                 else:
-                    self.inter_name = 'GS_' + self.inter_id
+                    self.inter_name = 'GS_' + self.inter_obj.id
             self.valid_acts = all_valid_acts[self.inter_name]
         
         self.ob_order = None
@@ -102,31 +77,6 @@ class FRAP_DQNAgent(RLAgent):
 
     def __repr__(self):
         return self.model.__repr__()
-
-    def reset(self):
-        '''
-        reset
-        Reset information, including ob_generator, phase_generator, queue, delay, etc.
-
-        :param: None
-        :return: None
-        '''
-        self.inter_id = self.world.intersection_ids[self.rank]
-        self.inter_obj = self.world.id2intersection[self.inter_id]
-        self.action_space = gym.spaces.Discrete(len(self.inter_obj.phases))
-        self.ob_generator = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                 ["lane_count"], in_only=True, average=None)
-        self.phase_generator = IntersectionPhaseGenerator(self.world, self.inter_obj,
-                                                          ['phase'], targets=['cur_phase'], negative=False)
-        self.reward_generator = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_waiting_count"], in_only=True, average="all",
-                                                     negative=True)
-        self.queue = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_waiting_count"], in_only=True,
-                                                     negative=False)
-        self.delay = LaneVehicleGenerator(self.world, self.inter_obj,
-                                                     ["lane_delay"], in_only=True, average="all",
-                                                     negative=False)
     
     def relation(self):
         '''
@@ -138,7 +88,7 @@ class FRAP_DQNAgent(RLAgent):
         '''
         comp_mask = []
         for i in range(len(self.phase_pairs)):
-            zeros = np.zeros(len(self.phase_pairs) - 1, dtype=np.int)
+            zeros = np.zeros(len(self.phase_pairs) - 1, dtype=np.int8)
             cnt = 0
             for j in range(len(self.phase_pairs)):
                 if i == j: continue
@@ -158,7 +108,7 @@ class FRAP_DQNAgent(RLAgent):
         :param: None
         :return model: FRAP model
         '''
-        model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask)
+        model = FRAP(self.dic_agent_conf, self.num_actions, self.phase_pairs, self.comp_mask.int())
         return model
 
     def get_ob(self):
@@ -170,7 +120,8 @@ class FRAP_DQNAgent(RLAgent):
         :return x_obs: observation generated by ob_generator
         '''
         x_obs = []  # lane_nums
-        tmp = self.ob_generator.generate()
+        # TODO: add list support of frap later. Now we only take one state from the list
+        tmp = self.ob_generator[0].generate()
         if self.ob_order != None:
             tt = []
             for i in range(12):
@@ -198,18 +149,18 @@ class FRAP_DQNAgent(RLAgent):
         rewards = np.squeeze(np.array(rewards))# * self.num_phases
         return rewards
 
-    def get_phase(self):
-        '''
-        get_phase
-        Get current phase of intersection(s) from environment.
+    # def get_phase(self):
+    #     '''
+    #     get_phase
+    #     Get current phase of intersection(s) from environment.
 
-        :param: None
-        :return phase: current phase generated by phase_generator
-        '''
-        phase = []
-        phase.append(self.phase_generator.generate())
-        phase = (np.concatenate(phase)).astype(np.int8)
-        return phase
+    #     :param: None
+    #     :return phase: current phase generated by phase_generator
+    #     '''
+    #     phase = []
+    #     phase.append(self.phase_generator.generate())
+    #     phase = (np.concatenate(phase)).astype(np.int8)
+    #     return phase
 
     def get_action(self, ob, phase, test=False):
         '''

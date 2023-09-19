@@ -26,10 +26,12 @@ class MPLightAgent(RLAgent):
     MPLightAgent consists of FRAP agent and methods for training agents, communicating with environment, etc.
     '''
     def __init__(self, world, rank):
-        super().__init__(world,world.intersection_ids[rank])
+        super().__init__(world, rank)
+        self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
+        self.replay_buffer = deque(maxlen=self.buffer_size)
+
         self.dic_agent_conf = Registry.mapping['model_mapping']['setting']
         self.dic_traffic_env_conf = Registry.mapping['world_mapping']['setting']
-        self.dic_trainer_conf = Registry.mapping['trainer_mapping']['setting']
         
         self.gamma = self.dic_agent_conf.param["gamma"]
         self.grad_clip = self.dic_agent_conf.param["grad_clip"]
@@ -38,13 +40,7 @@ class MPLightAgent(RLAgent):
         self.buffer_size = Registry.mapping['trainer_mapping']['setting'].param['buffer_size']
         self.replay_buffer = replay_buffers.ReplayBuffer(self.buffer_size)
 
-
-        self.world = world
-        self.rank = rank
         self.sub_agents = len(self.world.intersections)
-        self.inter_id = self.world.intersection_ids[self.rank]
-        self.phase = self.dic_agent_conf.param['phase']
-        self.one_hot = self.dic_agent_conf.param['one_hot']
         self.action_space_list = [gym.spaces.Discrete(len(x.phases)) for x in self.world.intersections]
         # create competition matrix
         map_name = self.dic_traffic_env_conf.param['network']
@@ -71,139 +67,31 @@ class MPLightAgent(RLAgent):
             )
         self.agents_iner = self._build_model()
         
-        # get generators for MPLightAgent
-        observation_generators = []
+    def _create_generators(self):
+        # CoLight has list of generators [#_agents, #_states]
+        super()._create_generators()
+        self.ob_generator = []
+        self.reward_generator = []
+        self.queue = []
+        self.delay = []
+        self.phase_generator = []
+        # world.intersections order are the same as graph['node_id2idx]
         for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ['lane_count'], in_only=True, average=None)
-            observation_generators.append((node_idx, tmp_generator))
-        sorted(observation_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.ob_generator = observation_generators
-
-        #  get reward generator
-        rewarding_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_waiting_count"],
-                                                 in_only=True, average='all', negative=True)
-            rewarding_generators.append((node_idx, tmp_generator))
-        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.reward_generator = rewarding_generators
-
-        #  get phase generator
-        phasing_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = IntersectionPhaseGenerator(self.world, node_obj, ['phase'],
-                                                       targets=['cur_phase'], negative=False)
-            phasing_generators.append((node_idx, tmp_generator))
-        sorted(phasing_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.phase_generator = phasing_generators
-
-        #  get queue generator
-        queues = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_waiting_count"], 
-                                                 in_only=True, negative=False)
-            queues.append((node_idx, tmp_generator))
-        sorted(queues, key=lambda x: x[0])
-        self.queue = queues
-
-        #  get delay generator
-        delays = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_delay"], 
-                                                 in_only=True, average="all", negative=False)
-            delays.append((node_idx, tmp_generator))
-        sorted(delays, key=lambda x: x[0])
-        self.delay = delays
-
-        # TODO check ob_length, compared with presslight and original mplight and RESCO-mplight
-        # this is extracted from presslight so far
-        # if self.phase:
-        #     if self.one_hot:
-        #         self.ob_length = self.ob_generator.ob_length + len(self.inter_obj.phases) # 32
-        #     else:
-        #         self.ob_length = self.ob_generator.ob_length + 1 # 25
-        # else:
-        #     self.ob_length = self.ob_generator.ob_length # 24
+            self.ob_generator.append(
+            [
+                LaneVehicleGenerator(self.world, inter, ['lane_count'], in_only=True, average=None)
+            ])
+            self.reward_generator.append(LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"],
+                                                in_only=True, average='all', negative=True))
+            self.queue.append(LaneVehicleGenerator(self.world, inter, ["lane_waiting_count"], 
+                                                in_only=True, average="all", negative=False))
+            self.delay.append(LaneVehicleGenerator(self.world, inter, ["lane_delay"], 
+                                                in_only=True, average="all", negative=False))
+            self.phase_generator.append(IntersectionPhaseGenerator(self.world, inter, ['phase'],
+                                                    targets=['cur_phase'], negative=False))
 
     def __repr__(self):
-        return self.agents_iner.__repr__()
-
-    def reset(self):
-        '''
-        reset
-        Reset information, including ob_generator, phase_generator, queue, delay, etc.
-
-        :param: None
-        :return: None
-        '''
-        observation_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ['lane_count'], in_only=True, average=None)
-            observation_generators.append((node_idx, tmp_generator))
-        sorted(observation_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.ob_generator = observation_generators
-
-        rewarding_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_waiting_count"],
-                                                 in_only=True, average='all', negative=True)
-            rewarding_generators.append((node_idx, tmp_generator))
-        sorted(rewarding_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.reward_generator = rewarding_generators
-
-        phasing_generators = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = IntersectionPhaseGenerator(self.world, node_obj, ['phase'],
-                                                       targets=['cur_phase'], negative=False)
-            phasing_generators.append((node_idx, tmp_generator))
-        sorted(phasing_generators, key=lambda x: x[0])  # now generator's order is according to its index in graph
-        self.phase_generator = phasing_generators
-
-        queues = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_waiting_count"], 
-                                                 in_only=True, negative=False)
-            queues.append((node_idx, tmp_generator))
-        sorted(queues, key=lambda x: x[0])
-        self.queue = queues
-
-        delays = []
-        for inter in self.world.intersections:
-            node_id = inter.id
-            node_idx = self.world.id2idx[node_id]
-            node_obj = self.world.id2intersection[node_id]
-            tmp_generator = LaneVehicleGenerator(self.world, node_obj, ["lane_delay"], 
-                                                 in_only=True, average="all", negative=False)
-            delays.append((node_idx, tmp_generator))
-        sorted(delays, key=lambda x: x[0])
-        self.delay = delays
+        return self.model.__repr__()
     
     def relation(self):
         '''
@@ -215,7 +103,7 @@ class MPLightAgent(RLAgent):
         '''
         comp_mask = []
         for i in range(len(self.phase_pairs)):
-            zeros = np.zeros(len(self.phase_pairs) - 1, dtype=np.int)
+            zeros = np.zeros(len(self.phase_pairs) - 1, dtype=np.int8)
             cnt = 0
             for j in range(len(self.phase_pairs)):
                 if i == j: continue
@@ -228,96 +116,59 @@ class MPLightAgent(RLAgent):
         return comp_mask
 
     def get_ob(self):
-        '''
-        get_ob
-        Get observation from environment.
-
-        :param: None
-        :return x_obs: observation generated by ob_generator, the shape is [sub_agents,lane_nums]
-        '''
         x_obs = []  # sub_agents * lane_nums,
-        for i in range(len(self.ob_generator)):
-            tmp = self.ob_generator[i][1].generate()
-            if self.ob_order != None:
-                tt = []
-                if self.ob_generator[i][1].I.id[:3] == 'GS_':
-                    name = self.ob_generator[i][1].I.id[3:]
-                else:
-                    name = self.ob_generator[i][1].I.id
-                for i in range(12):
-                    # padding to 12 dims
-                    if i in self.ob_order[name].keys():
-                        tt.append(tmp[self.ob_order[name][i]])
-                    else:
-                        tt.append(0.)
-                x_obs.append(np.array(tt))     
-            else:
-                x_obs.append(tmp)
-            
-        if self.ob_order != None:
-            x_obs = np.array(x_obs, dtype=np.float32)
+        for ob_gs in self.ob_generator:
+            x_obs.append(np.array([ob_g.generate() for ob_g in ob_gs],
+                                   dtype=np.float32).flatten())
+        x_obs = x_obs
         return x_obs
+    
+    # def get_ob(self):
+    #     '''
+    #     get_ob
+    #     Get observation from environment.
+
+    #     :param: None
+    #     :return x_obs: observation generated by ob_generator
+    #     '''
+    #     x_obs = []  # lane_nums
+    #     tmp = self.ob_generator.generate()
+    #     if self.ob_order != None:
+    #         tt = []
+    #         for i in range(12):
+    #             # padding to 12 dims
+    #             if i in self.ob_order.keys():
+    #                 tt.append(tmp[self.ob_order[i]])
+    #             else:
+    #                 tt.append(0.)
+    #         x_obs.append(np.array(tt))     
+    #     else:
+    #         x_obs.append(tmp)
+    #     return x_obs
+
 
     def get_reward(self):
-        '''
-        get_reward
-        Get reward from environment.
-
-        :param: None
-        :return rewards: rewards generated by reward_generator
-        '''
-        # TODO: test output
-        rewards = []  # sub_agents
-        for i in range(len(self.reward_generator)):
-            rewards.append(self.reward_generator[i][1].generate())
-        rewards = np.squeeze(np.array(rewards))
+        rewards = np.squeeze(np.array([rw_g.generate() for rw_g in self.reward_generator],
+                                       dtype=np.float32))
         return rewards
 
     def get_phase(self):
-        '''
-        get_phase
-        Get current phase of intersection(s) from environment.
-
-        :param: None
-        :return phase: current phase generated by phase_generator, the shape is [sub_agents,]
-        '''
-        phase = []  # sub_agents
-        for i in range(len(self.phase_generator)):
-            phase.append((self.phase_generator[i][1].generate()))
-        phase = (np.concatenate(phase)).astype(np.int8)
+        phase = np.array([phs_g.generate() for phs_g in self.phase_generator],
+                                       dtype=np.int8)
         return phase
 
     def get_queue(self):
-        '''
-        get_queue
-        Get queue length of intersection.
-
-        :param: None
-        :return queue: value(one intersection) or [intersections,](multiple intersections)
-        '''
-        queue = []
-        for i in range(len(self.queue)):
-            queue.append((self.queue[i][1].generate()))
-        tmp_queue = np.squeeze(np.array(queue))
-        if self.sub_agents == 1:
-            queue = np.sum(tmp_queue)
-        else:
-            queue = [np.sum(x) for x in tmp_queue]
-        # queue = np.sum(tmp_queue, axis=1 if len(tmp_queue.shape)==1 else 0)
-        return queue # [intersections,]
+        """
+        get delay of intersection
+        return: value(one intersection) or [intersections,](multiple intersections)
+        """
+        queue = np.squeeze(np.array([q_g.generate() for q_g in self.queue],
+                                       dtype=np.float32))
+        return queue
 
     def get_delay(self):
-        '''
-        get_delay
-        Get delay of intersection.
-
-        :param: None
-        :return: total delay
-        '''
-        delay = []
-        for i in range(len(self.delay)):
-            delay.append((self.delay[i][1].generate()))
-        delay = np.squeeze(np.array(delay))
+        delay = np.squeeze(np.array([d_g.generate() for d_g in self.delay],
+                                       dtype=np.float32))
         return delay # [intersections,]
 
     def get_action(self, ob, phase, test=False):
@@ -364,7 +215,7 @@ class MPLightAgent(RLAgent):
                                 reverse_valid=batch_reverse, test=test)
         acts = np.array(batch_acts)
         return acts
-        
+
 
     def sample(self):
         pass
@@ -682,7 +533,7 @@ class FRAP(nn.Module):
 
         # Phase competition mask
         competition_mask = self.comp_mask.repeat((batch_size, 1, 1))
-        relations = F.relu(self.relation_embedding(competition_mask))
+        relations = F.relu(self.relation_embedding(competition_mask.int()))
         relations = relations.permute(0, 3, 1, 2)  # Move channels up
         relations = F.relu(self.relation_conv(relations))  # Pair demand representation
 

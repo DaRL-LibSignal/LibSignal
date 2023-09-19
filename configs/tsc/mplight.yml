@@ -1,9 +1,8 @@
 includes:
-  - configs/tsc/base.yml
+  - configs/tsc/frap.yml
 
 model:
   name: mplight
-  train_model: True
   n_layers: 2
   rotation: true
   conflict_matrix: true
@@ -17,7 +16,6 @@ model:
   eps_decay: 220
   target_update: 500
   demand_shape: 1
-  phase: True
 
 trainer: 
   learning_start: -1

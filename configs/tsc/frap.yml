@@ -1,9 +1,8 @@
 includes:
-  - configs/tsc/base.yml
+  - configs/tsc/rl.yml
 
 model:
   name: frap
-  train_model: True
   n_layers: 2
   rotation: true
   conflict_matrix: true
@@ -15,7 +14,6 @@ model:
   demand_shape: 1
 
   one_hot: False
-  phase: True
 
 trainer: 
   learning_start: 1000
