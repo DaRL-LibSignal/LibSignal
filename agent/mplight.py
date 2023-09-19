@@ -68,7 +68,7 @@ class MPLightAgent(RLAgent):
         self.agents_iner = self._build_model()
         
     def _create_generators(self):
-        # CoLight has list of generators [#_agents, #_states]
+
         super()._create_generators()
         self.ob_generator = []
         self.reward_generator = []
@@ -90,9 +90,8 @@ class MPLightAgent(RLAgent):
             self.phase_generator.append(IntersectionPhaseGenerator(self.world, inter, ['phase'],
                                                     targets=['cur_phase'], negative=False))
 
-
     def __repr__(self):
-        return self.model.__repr__()
+        return self.agents_iner.__repr__()
     
     def relation(self):
         '''

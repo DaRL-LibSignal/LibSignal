@@ -26,7 +26,7 @@ trainer:
   test_steps: 3600
   yellow_length: 5
   action_interval: 10
-  episodes: 20
+  episodes: 200
   update_model_rate: 1
   update_target_rate: 10
   test_when_train: True
