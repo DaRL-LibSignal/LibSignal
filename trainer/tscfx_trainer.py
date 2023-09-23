@@ -158,6 +158,6 @@ class TSCFXTrainer(BaseTrainer):
         res = Registry.mapping['model_mapping']['setting'].param['name'] + '\t' + mode + '\t' + str(
             step) + '\t' + "%.1f" % travel_time + '\t' + "%.1f" % loss + "\t" +\
             "%.2f" % cur_rwd + "\t" + "%.2f" % cur_queue + "\t" + "%.2f" % cur_delay + "\t" + "%d" % cur_throughput
-        log_handle = open(self.log_file, "a")
+        log_handle = open(self.log_file, "w")
         log_handle.write(res + "\n")
         log_handle.close()
