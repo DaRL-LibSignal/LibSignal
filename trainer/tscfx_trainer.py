@@ -50,8 +50,11 @@ class TSCFXTrainer(BaseTrainer):
         self.dataset.initiate(ep=self.episodes, step=self.steps, interval=self.action_interval)
         self.yellow_time = Registry.mapping['trainer_mapping']['setting'].param['yellow_length']
         # consists of path of output dir + log_dir + file handlers name
-        self.log_file = os.path.join(Registry.mapping['logger_mapping']['path'].path,
-                                     Registry.mapping['logger_mapping']['setting'].param['log_dir'],
+        self.log_dir = os.path.join(Registry.mapping['logger_mapping']['path'].path,
+                                     Registry.mapping['logger_mapping']['setting'].param['log_dir'])
+        if not os.path.exists(self.log_dir):
+            os.mkdir(self.log_dir)
+        self.log_file = os.path.join(self.log_dir,
                                      os.path.basename(self.logger.handlers[-1].baseFilename).rstrip('_BRF.log') + '_DTL.log'
                                      )
 
@@ -158,6 +161,6 @@ class TSCFXTrainer(BaseTrainer):
         res = Registry.mapping['model_mapping']['setting'].param['name'] + '\t' + mode + '\t' + str(
             step) + '\t' + "%.1f" % travel_time + '\t' + "%.1f" % loss + "\t" +\
             "%.2f" % cur_rwd + "\t" + "%.2f" % cur_queue + "\t" + "%.2f" % cur_delay + "\t" + "%d" % cur_throughput
-        log_handle = open(self.log_file, "w")
+        log_handle = open(self.log_file, "a")
         log_handle.write(res + "\n")
         log_handle.close()
