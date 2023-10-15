@@ -188,7 +188,7 @@ A whitepaper of LibSignal accepted by NeurIPS 2022 Workshop: Reinforcement Learn
 
 ```
 @misc{2211.10649,
-  Author = {Mei, Hao and Lei, Xiaoliang Lei and Da, Longchao Da and Shi, Bin and Wei, Hua},
+  Author = {Mei, Hao and Lei, Xiaoliang Lei and Da, Longchao and Shi, Bin and Wei, Hua},
   Title = {LibSignal: An Open Library for Traffic Signal Control},
   Year = {2022},
   booktitle={NeurIPS Workshop on Reinforcement Learning for Real Life},
