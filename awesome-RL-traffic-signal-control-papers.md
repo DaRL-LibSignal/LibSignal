@@ -86,6 +86,10 @@ Policies with Scalable Traffic Simulation**. *C Liang, Z Huang, Y Liu, et, al*. 
 1. **Intellilight: A reinforcement learning approach for intelligent traffic light control**. *H Wei, G Zheng, H Yao, Z Li*. KDD. 2018. [link](https://dl.acm.org/doi/abs/10.1145/3219819.3220096)
 
 ## AAAI
+1. **Safelight: A reinforcement learning method toward collision-free traffic signal control**. *Liang E, Su Z, Fang C, et al*. AAAI. 2022. [link](https://ojs.aaai.org/index.php/AAAI/article/download/20378/20137)
+
+1. **OAM: An Option-Action Reinforcement Learning Framework for Universal Multi-Intersection Control**. *Liang E, Su Z, Fang C, et al*. AAAI. 2022. [link](https://ojs.aaai.org/index.php/AAAI/article/download/20378/20137)
+
 1. **Hierarchically and cooperatively learning traffic signal control**. *B Xu, Y Wang, Z Wang, H Jia, Z Lu*. AAAI. 2021. [link](https://www.aaai.org/AAAI21Papers/AAAI-6437.XuB.pdf)
 
 1. **Metalight: Value-based meta-reinforcement learning for traffic signal control**. *X Zang, H Yao, G Zheng, N Xu, K Xu, Z Li*. AAAI. 2020. [link](https://ojs.aaai.org/index.php/AAAI/article/view/5467)
@@ -100,6 +104,10 @@ Policies with Scalable Traffic Simulation**. *C Liang, Z Huang, Y Liu, et, al*. 
 
 
 ## CIKM
+1. **Cooperative max-pressure enhanced traffic signal control**. *Li L, Li R, Peng Y, et al*. CIKM. 2022. [link](https://dl.acm.org/doi/pdf/10.1145/3511808.3557569)
+
+1. **Meta-Reinforcement Learning for Multiple Traffic Signals Control**. *Lou Y, Wu J, Ran Y*. CIKM. 2022. [link](https://dl.acm.org/doi/pdf/10.1145/3511808.3557640)
+
 1. **DynSTGAT: Dynamic Spatial-Temporal Graph Attention Network for Traffic Signal Control**. *L Wu, M Wang, D Wu, J Wu*. CIKM. 2021. [link](https://dl.acm.org/doi/abs/10.1145/3459637.3482254)
 
 2. **Generalight: Improving environment generalization of traffic signal control via meta reinforcement learning**. *H Zhang, C Liu, W Zhang, G Zheng, Y Yu*. CIKM. 2020. [link](https://dl.acm.org/doi/abs/10.1145/3340531.3411859)
@@ -111,6 +119,24 @@ Policies with Scalable Traffic Simulation**. *C Liang, Z Huang, Y Liu, et, al*. 
 5. **Learning traffic signal control from demonstrations**. *Y Xiong, G Zheng, K Xu, Z Li*. CIKM. 2019. [link](https://dl.acm.org/doi/abs/10.1145/3357384.3358079)
 
 ## IEEE TITS
+1. **CoTV: Cooperative Control for Traffic Light Signals and Connected Autonomous Vehicles Using Deep Reinforcement Learning**. *Guo J, Cheng L, Wang S*. TITS. 2023. [link](https://ieeexplore.ieee.org/document/10144471)
+
+1. **DeepGAL: Intelligent Vehicle Control for Traffic Congestion Alleviation at Intersections**. *Cao M, Li V O K, Shuai Q*. TITS. 2023. [link](https://ieeexplore.ieee.org/document/10104205)
+
+1. **Real-Time Cooperative Vehicle Coordination at Unsignalized Road Intersections**. *Luo J, Zhang T, Hao R, et al*. TITS. 2023. [link](https://ieeexplore.ieee.org/document/10050400)
+
+1. **A gain with no pain: Exploring intelligent traffic signal control for emergency vehicles**. *Cao M, Li V O K, Shuai Q*. TITS. 2023. [link](https://ieeexplore.ieee.org/document/9740468)
+
+1. **Network-wide traffic signal control using bilinear system modeling and adaptive optimization**. *Wang H, Zhu M, Hong W, et al*. TITS. 2022. [link](https://ieeexplore.ieee.org/document/9931530)
+
+1. **Mastering arterial traffic signal control with multi-agent attention-based soft actor-critic model**. *Mao F, Li Z, Lin Y, et al*. TITS. 2022. [link](https://ieeexplore.ieee.org/document/9994639)
+
+1. **Distributed Signal Control of Arterial Corridors Using Multi-Agent Deep Reinforcement Learning**. *Zhang W, Yan C, Li X, et al*. TITS. 2022. [link](https://ieeexplore.ieee.org/document/9931528)
+
+1. **Network-Level Traffic Signal Cooperation: A Higher-Order Conflict Graph Approach**. *Li W, Wang B, Khattak Z H, et al*. TITS. 2022. [link](https://ieeexplore.ieee.org/document/9847014)
+
+1. **PV-TSC: Learning to control traffic signals for pedestrian and vehicle traffic in 6G era**. *Xu K, Huang J, Kong L, et al*. TITS. 2022. [link](https://ieeexplore.ieee.org/document/9733963)
+
 1. **A Gain With No Pain: Exploring Intelligent Traffic Signal Control for Emergency Vehicles**. *M Cao, VOK Li, Q Shuai*. TITS. 2022. [link](https://ieeexplore.ieee.org/abstract/document/9740468/)
 
 1. **PV-TSC: Learning to Control Traffic Signals for Pedestrian and Vehicle Traffic in 6G Era**. *K Xu, J Huang, L Kong, J Yu*. TITS. 2022. [link](https://ieeexplore.ieee.org/abstract/document/9733963/)
@@ -132,6 +158,19 @@ Policies with Scalable Traffic Simulation**. *C Liang, Z Huang, Y Liu, et, al*. 
 1. **Reinforcement learning with function approximation for traffic signal control**. *LA Prashanth, S Bhatnagar*. TITS. 2010. [link](https://ieeexplore.ieee.org/abstract/document/5658157/)
 
 ## ITSC
+
+1. **QueueLearner: A Knowledge-Combined Reinforcement Learning to Understand Queuing Evolution in Isolated Traffic Signal Control**. *Han T, Oguchi T, Lyu S*. ITSC. 2022. [link](https://ieeexplore.ieee.org/abstract/document/9922584)
+
+1. **A Hierarchical Spatio-Temporal Cooperative Reinforcement Learning Approach for Traffic Signal Control**. *Li M, Hu Z, Huang H, et al*. ITSC. 2022. [link](https://ieeexplore.ieee.org/abstract/document/9922065)
+
+1. **A Spatial-Temporal Deep Reinforcement Learning Model for Large-Scale Centralized Traffic Signal Control**. *Yi C, Wu J, Ren Y, et al*. ITSC. 2022. [link](https://ieeexplore.ieee.org/abstract/document/9922459)
+
+1. **A Deep Reinforcement Learning Framework with Memory Network to Coordinate Traffic Signal Control**. *Kong A Y, Lu B X, Yang C Z, et al*. ITSC. 2022. [link](https://ieeexplore.ieee.org/abstract/document/9921752)
+
+1. **Safe and Psychologically Pleasant Traffic Signal Control with Reinforcement Learning using Action Masking**. *Müller A, Sabatelli M*. ITSC. 2022. [link](https://ieeexplore.ieee.org/abstract/document/9922306)
+
+1. **Meta-Reinforcement Learning for Centralized Multiple Intersections Traffic Signal Control**. *Ren Y, Wu J, Yi C, et al*. ITSC. 2022. [link](https://ieeexplore.ieee.org/abstract/document/9922355)
+
 1. **A deep reinforcement learning approach for fair traffic signal control**. *M Raeis, A Leon-Garcia*. ITSC. 2021. [link](https://ieeexplore.ieee.org/abstract/document/9564847/)
 
 1. **An ontology-based intelligent traffic signal control model**. *S Ghanadbashi, F Golpayegani*. ITSC. 2021. [link](https://ieeexplore.ieee.org/abstract/document/9564962/)
