@@ -192,6 +192,10 @@ Policies with Scalable Traffic Simulation**. *C Liang, Z Huang, Y Liu, et, al*. 
 1. **Traffic signal control based on reinforcement learning with graph convolutional neural nets**. *T Nishi, K Otaki, K Hayakawa*. ITSC. 2018. [link](https://ieeexplore.ieee.org/abstract/document/8569301/)
 
 ## TR-C
+1. **Traffic behavior recognition from traffic videos under occlusion condition: a Kalman filter approach**. *Jiao J, Wang H*. TR-C. 2022. [link](https://journals.sagepub.com/doi/epub/10.1177/03611981221076426)
+
+1. **Intelligent vehicle pedestrian light (IVPL): A deep reinforcement learning approach for traffic signal control**. *Yazdani M, Sarvi M, Bagloee S A, et al*.  TR-C. 2022. [link](https://www.sciencedirect.com/science/article/pii/S0968090X22004041?casa_token=fT7A6QjXY3MAAAAA:fLKFSOjUcG1igKuPp37JlRrv3L3xHqQLxHOuHKNXWPfmkHnvTqRPeBOUDH6SAdhD3B_S3TTw)
+
 1. **Adaptive Traffic Signal Control for large-scale scenario with Cooperative Group-based Multi-agent reinforcement learning**. *T Wang, J Cao, A Hussain*. TR-C. 2021. [link](https://www.sciencedirect.com/science/article/pii/S0968090X21000760)
 
 1. **DRL-TP3: A learning and control framework for signalized intersections with mixed connected automated traffic**. *Y Guo, J Ma*. TR-C. 2021. [link](https://www.sciencedirect.com/science/article/pii/S0968090X21004101)
