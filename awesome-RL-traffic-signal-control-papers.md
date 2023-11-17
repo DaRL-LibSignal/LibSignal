@@ -218,6 +218,10 @@ Policies with Scalable Traffic Simulation**. *C Liang, Z Huang, Y Liu, et, al*. 
 1. **Towards Explainable Deep Reinforcement Learning for Traffic Signal Control**. *LV Schreiber, GO Ramos, ALC Bazzan*. ICML Workshop. 2021. [link](https://research.latinxinai.org/papers/icml/2021/pdf/paper_26.pdf)
 
 ## Others
+1. **Multi-agent reinforcement learning for traffic signal control: A cooperative approach**. *M Kolat, B Kővári, T Bécsi*. Sustainability, 2023. [link](https://www.mdpi.com/2071-1050/15/4/3479)
+
+1. **Distributed agent-based deep reinforcement learning for large scale traffic signal control**. *Q Wu, J Wu, J Shen, et, al*. Knowledge-Based Systems. 2022. [link](https://www.sciencedirect.com/science/article/pii/S095070512200106X)
+
 1. **Intelligent Traffic Signal Phase Distribution System Using Deep Q-Network**. *H Joo, Y Lim*. Applied Sciences. 2022. [link](https://www.mdpi.com/2076-3417/12/1/425)
 
 1. **Model Predictive Traffic Control by Bi-Level Optimization**. *K Stoilova, T Stoilov*. Applied Sciences. 2022. [link](https://www.mdpi.com/2076-3417/12/9/4147)
@@ -487,6 +491,10 @@ Policies with Scalable Traffic Simulation**. *C Liang, Z Huang, Y Liu, et, al*. 
 
 
 ## Other Related Topics
+1. **Ipdalight: Intensity-and phase duration-aware traffic signal control based on reinforcement learning**. *W Zhao, Y Ye, J Ding*. Journal of Systems Architecture. Journal of Systems Architecture. 2022. [link](https://www.sciencedirect.com/science/article/pii/S1383762121002587)
+
+1. **Hybrid Prediction-Based Approach for Traffic Signal Control Problem**. *AA Agafonov, VV Myasnikov*. Optical Memory and Neural Networks. 2022. [link](https://link.springer.com/article/10.3103/S1060992X2203002X)
+
 1. **Comprehensive analysis of reinforcement learning methods and parameters for adaptive traffic signal control**. *S El-Tantawy, B Abdulhai*. TRB. 2011. [link](https://trid.trb.org/view/1091967)
 
 1. **Network-aware Multi-agent Reinforcement Learning for Adaptive Navigation of Vehicles in a Dynamic Road Network**. *F Arasteh*.  York University Libraries. 2022. [link](https://yorkspace.library.yorku.ca/xmlui/handle/10315/39079)
