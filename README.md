@@ -1,9 +1,9 @@
 # Introduction
-This repo provides OpenAI Gym compatible environments for traffic light control scenario and a bunch of baseline methods. 
+This repo provides OpenAI Gym-compatible environments for traffic light control scenarios and a bunch of baseline methods. 
 
-Environments include single intersetion (single-agent) and multi intersections (multi-agents) with different road network and traffic flow settings.
+Environments include single intersections (single-agent) and multi-intersections (multi-agents) with different road networks and traffic flow settings.
 
-Baselines include traditional Taffic Signal Control algorithms and reinforcement learning based methods.
+Baselines include traditional Traffic Signal Control algorithms and reinforcement learning-based methods.
 
 LibSignal is a cross-simulator environment that provides multiple traditional and Reinforcement Learning models in traffic control tasks. Currently, we support SUMO, CityFlow, and CBEine simulation environments. Conversion between SUMO and CityFlow is carefully calibrated.
 
@@ -183,14 +183,15 @@ Supporting parameters:
 
 # Citation
 
-
-A whitepaper of LibSignal accepted by NeurIPS 2022 Workshop: Reinforcement Learning for Real Life is available https://arxiv.org/abs/2211.10649, and can be cited with the following bibtex entry:
+LibSignal is accepted by the Machine Learning Journal by Springer: ```Mei, H., Lei, X., Da, L. et al. Libsignal: an open library for traffic signal control. Mach Learn (2023). https://doi.org/10.1007/s10994-023-06412-y``` and can be cited with the following BibTeX entry (A short version is accepted by NeurIPS 2022 Workshop: Reinforcement Learning for Real Life):
 
 ```
-@misc{2211.10649,
-  Author = {Mei, Hao and Lei, Xiaoliang Lei and Da, Longchao and Shi, Bin and Wei, Hua},
-  Title = {LibSignal: An Open Library for Traffic Signal Control},
-  Year = {2022},
-  booktitle={NeurIPS Workshop on Reinforcement Learning for Real Life},
+@article{mei2023libsignal,
+  title={Libsignal: an open library for traffic signal control},
+  author={Mei, Hao and Lei, Xiaoliang and Da, Longchao and Shi, Bin and Wei, Hua},
+  journal={Machine Learning},
+  pages={1--37},
+  year={2023},
+  publisher={Springer}
 }
 ```
