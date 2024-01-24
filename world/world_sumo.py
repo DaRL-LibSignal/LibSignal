@@ -63,11 +63,8 @@ class Intersection(object):
         self.yellow_phase_time = min([i.duration for i in self.eng.trafficlight.getAllProgramLogics(self.id)[0].phases])
         self.map_name = world.map  # TODO: try to add it to Registry later
 
-        self.lanelinks = self.world.eng.trafficlight.getControlledLinks(self.id)
+        self.lanelinks = world.eng.trafficlight.getControlledLinks(self.id)
         for link in self.lanelinks:
-            # skip invalid lanes
-            if not link:
-                continue
             link = link[0]
             if link[0][:-2] not in self.road_lane_mapping.keys():
                 self.road_lane_mapping.update({link[0][:-2]: []})  # assume less than 9 lanes in each road
@@ -102,11 +99,8 @@ class Intersection(object):
             tmp_lanelinks = []
             tmp_startane = []
             for n, i in enumerate(p.state):
-                # skip invalid lanes
-                if not self.lanelinks[n]:
-                    continue
                 if i == 'G' or i == 's':
-                    links = self.lanelinks[n][0]
+                    links = self.world.eng.trafficlight.getControlledLinks(self.id)[n][0]
                     tmp_lanelinks.append([links[0], links[1]])
                     if links[0] not in tmp_startane:
                         tmp_startane.append(links[0])
