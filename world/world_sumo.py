@@ -362,7 +362,7 @@ class World(object):
             raise Exception('NOT IMPORTED YET')
         with open(sumo_config) as f:
             sumo_dict = json.load(f)
-        if sumo_dict['gui'] == "True":
+        if sumo_dict['gui'] == "True" or sumo_dict['gui'] == True:
             sumo_cmd = [sumolib.checkBinary('sumo-gui')]
         else:
             sumo_cmd = [sumolib.checkBinary('sumo')]
