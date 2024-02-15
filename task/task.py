@@ -42,7 +42,8 @@ class TSCTask(BaseTask):
             if Registry.mapping['model_mapping']['setting'].param['train_model']:
                 self.trainer.train()
             if Registry.mapping['model_mapping']['setting'].param['test_model']:
-                self.trainer.test()
+                drop_load = not Registry.mapping['model_mapping']['setting'].param["load_model"]
+                self.trainer.test(drop_load=drop_load)
         except RuntimeError as e:
             self._process_error(e)
             raise e
