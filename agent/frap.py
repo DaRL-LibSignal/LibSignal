@@ -138,7 +138,7 @@ class FRAP_DQNAgent(RLAgent):
         '''
         comp_mask = []
         for i in range(len(self.phase_pairs)):
-            zeros = np.zeros(len(self.phase_pairs) - 1, dtype=np.int)
+            zeros = np.zeros(len(self.phase_pairs) - 1, dtype=np.int64)
             cnt = 0
             for j in range(len(self.phase_pairs)):
                 if i == j: continue
