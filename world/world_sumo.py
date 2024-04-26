@@ -65,6 +65,9 @@ class Intersection(object):
 
         self.lanelinks = world.eng.trafficlight.getControlledLinks(self.id)
         for link in self.lanelinks:
+            # skip if empty link
+            if not link:
+                continue
             link = link[0]
             if link[0][:-2] not in self.road_lane_mapping.keys():
                 self.road_lane_mapping.update({link[0][:-2]: []})  # assume less than 9 lanes in each road
@@ -100,7 +103,11 @@ class Intersection(object):
             tmp_startane = []
             for n, i in enumerate(p.state):
                 if i == 'G' or i == 's':
-                    links = self.world.eng.trafficlight.getControlledLinks(self.id)[n][0]
+                    # skip if empty link
+                    links = self.world.eng.trafficlight.getControlledLinks(self.id)[n]
+                    if not links:
+                        continue
+                    links = links[0]
                     tmp_lanelinks.append([links[0], links[1]])
                     if links[0] not in tmp_startane:
                         tmp_startane.append(links[0])
