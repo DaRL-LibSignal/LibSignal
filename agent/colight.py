@@ -102,15 +102,15 @@ class CoLightAgent(RLAgent):
 
         # TODO: add irregular control of signals in the future
         self.action_space = gym.spaces.Discrete(len(self.world.intersections[0].phases))
-
+        min_ob_length = max([ob[1].ob_length for ob in self.ob_generator])
         if self.phase:
             # TODO: irregular ob and phase in the future
             if self.one_hot:
-                self.ob_length = self.ob_generator[0][1].ob_length + len(self.world.intersections[0].phases)
+                self.ob_length = min_ob_length + len(self.world.intersections[0].phases)
             else:
-                self.ob_length = self.ob_generator[0][1].ob_length + 1
+                self.ob_length = min_ob_length + 1
         else:
-            self.ob_length = self.ob_generator[0][1].ob_length
+            self.ob_length = min_ob_length
 
         self.get_attention = Registry.mapping['logger_mapping']['setting'].param['attention']
         # train parameters
@@ -191,13 +191,11 @@ class CoLightAgent(RLAgent):
     def get_ob(self):
         x_obs = []  # sub_agents * lane_nums,
         for i in range(len(self.ob_generator)):
-            x_obs.append((self.ob_generator[i][1].generate()) / self.vehicle_max)
-        # construct edge information.
-        length = set([len(i) for i in x_obs])
-        if len(length) == 1: # each intersections may has  different lane nums
-            x_obs = np.array(x_obs, dtype=np.float32)
-        else:
-            x_obs = [np.expand_dims(x,axis=0) for x in x_obs]
+            ob = self.ob_generator[i][1].generate()/ self.vehicle_max
+            ob = np.pad(ob, (0, self.ob_length - ob.shape[-1] ))
+            x_obs.append(ob)
+            
+        x_obs = np.array(x_obs, dtype=np.float32)
         return x_obs
 
     def get_reward(self):
@@ -223,8 +221,11 @@ class CoLightAgent(RLAgent):
         return: value(one intersection) or [intersections,](multiple intersections)
         """
         queue = []
-        for i in range(len(self.queue)):
-            queue.append((self.queue[i][1].generate()))
+        for item in self.queue:
+            item = item[1].generate()
+            item = np.pad(item, (0, self.ob_length - item.shape[-1]))
+            queue.append(item)
+            
         tmp_queue = np.squeeze(np.array(queue, dtype=np.float32))
         queue = np.sum(tmp_queue, axis=1 if len(tmp_queue.shape)==2 else 0)
         return queue

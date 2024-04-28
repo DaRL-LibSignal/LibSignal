@@ -128,11 +128,14 @@ def build_index_intersection_map_sumo(roadnet_file):
     edge_list = []  # adjacent node of each node
     node_list = []  # adjacent edge of each node
     sparse_adj = []  # adjacent node of each edge
-
+    
+    def get_node_id(node):
+        node_id = node.getID()
+        return node_id if 'GS_' not in node_id else node_id[3:]
     # build the map between identity and index of node
     cur_num = 0
     for tl in net.getTrafficLights():
-        cur_id = tl.getID()
+        cur_id = get_node_id(tl)
         node_idx2id[cur_num] = cur_id
         node_id2idx[cur_id] = cur_num
         cur_num += 1
@@ -142,8 +145,8 @@ def build_index_intersection_map_sumo(roadnet_file):
     cur_num = 0
     for edge in net.getEdges():
         edge_id = edge.getID()
-        input_node_id = edge.getFromNode().getID()
-        output_node_id = edge.getToNode().getID()
+        input_node_id = get_node_id(edge.getFromNode())
+        output_node_id = get_node_id(edge.getToNode())
         # skip edges where there are no traffic lights
         if input_node_id not in node_id2idx.keys() or output_node_id not in node_id2idx.keys():
             continue
@@ -158,20 +161,20 @@ def build_index_intersection_map_sumo(roadnet_file):
     # build adjacent matrix for node (i.e the adjacent node of the node, and the 
         # adjacent edge of the node)
     for tl in net.getTrafficLights():
-        node_id = tl.getID()
+        node_id = get_node_id(tl) 
         road_links = tl.getEdges()
         input_nodes = []  # should be node_degree
         input_edges = []  # needed, should be node_degree
         for road_link in road_links:
             road_link_id = road_link.getID()
-            end_intersection = road_link.getToNode().getID()
+            end_intersection = get_node_id(road_link.getToNode())
             if end_intersection == node_id:
                 if road_link_id in edge_id2idx.keys():
                     input_edge_idx = edge_id2idx[road_link_id]
                     input_edges.append(input_edge_idx)
                 else:
                     continue
-                start_node = road_link.getFromNode().getID()
+                start_node = get_node_id(road_link.getFromNode())
                 if start_node in node_id2idx.keys():
                     start_node_idx = node_id2idx[start_node]
                     input_nodes.append(start_node_idx)
