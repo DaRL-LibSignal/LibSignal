@@ -10,6 +10,7 @@ from datetime import datetime
 
 from common.registry import Registry
 import world
+import sumolib
 
 
 def get_road_dict(roadnet_dict, road_id):
@@ -18,8 +19,7 @@ def get_road_dict(roadnet_dict, road_id):
             return item
     raise KeyError("environment and graph setting mapping error, no such road exists")
 
-
-def build_index_intersection_map(roadnet_file):
+def build_index_intersection_map_cityflow(roadnet_file):
     """
     generate the map between identity ---> index ,index --->identity
     generate the map between int ---> roads,  roads ----> int
@@ -115,7 +115,80 @@ def build_index_intersection_map(roadnet_file):
               'node_list': node_list, 'edge_list': edge_list}
     return result
 
+def build_index_intersection_map_sumo(roadnet_file):
 
+    net = sumolib.net.readNet(roadnet_file)
+
+    node_id2idx = {}
+    node_idx2id = {}
+    edge_id2idx = {}
+    edge_idx2id = {}
+    node_degrees = []  # the num of adjacent nodes of node
+
+    edge_list = []  # adjacent node of each node
+    node_list = []  # adjacent edge of each node
+    sparse_adj = []  # adjacent node of each edge
+
+    # build the map between identity and index of node
+    cur_num = 0
+    for tl in net.getTrafficLights():
+        cur_id = tl.getID()
+        node_idx2id[cur_num] = cur_id
+        node_id2idx[cur_id] = cur_num
+        cur_num += 1
+
+    # nodes = node_id2idx.keys()
+    # build the map between identity and index and built the adjacent matrix of edge
+    cur_num = 0
+    for edge in net.getEdges():
+        edge_id = edge.getID()
+        input_node_id = edge.getFromNode().getID()
+        output_node_id = edge.getToNode().getID()
+        # skip edges where there are no traffic lights
+        if input_node_id not in node_id2idx.keys() or output_node_id not in node_id2idx.keys():
+            continue
+
+        edge_idx2id[cur_num] = edge_id
+        edge_id2idx[edge_id] = cur_num
+        cur_num += 1
+        input_node_idx = node_id2idx[input_node_id]
+        output_node_idx = node_id2idx[output_node_id]
+        sparse_adj.append([input_node_idx, output_node_idx])
+
+    # build adjacent matrix for node (i.e the adjacent node of the node, and the 
+        # adjacent edge of the node)
+    for tl in net.getTrafficLights():
+        node_id = tl.getID()
+        road_links = tl.getEdges()
+        input_nodes = []  # should be node_degree
+        input_edges = []  # needed, should be node_degree
+        for road_link in road_links:
+            road_link_id = road_link.getID()
+            end_intersection = road_link.getToNode().getID()
+            if end_intersection == node_id:
+                if road_link_id in edge_id2idx.keys():
+                    input_edge_idx = edge_id2idx[road_link_id]
+                    input_edges.append(input_edge_idx)
+                else:
+                    continue
+                start_node = road_link.getFromNode().getID()
+                if start_node in node_id2idx.keys():
+                    start_node_idx = node_id2idx[start_node]
+                    input_nodes.append(start_node_idx)
+        if len(input_nodes) != len(input_edges):
+            raise ValueError(f"{node_id} : number of input node and edge not equals")
+        node_degrees.append(len(input_nodes))
+        edge_list.append(sorted(input_edges))
+        node_list.append(sorted(input_nodes))
+
+    node_degrees = np.array(node_degrees)  # the num of adjacent nodes of node
+    sparse_adj = np.array(sparse_adj)  # the valid num of adjacent edges of node
+
+    result = {'node_idx2id': node_idx2id, 'node_id2idx': node_id2idx,
+            'edge_idx2id': edge_idx2id, 'edge_id2idx': edge_id2idx,
+            'node_degrees': node_degrees, 'sparse_adj': sparse_adj,
+            'node_list': node_list, 'edge_list': edge_list}
+    return result
 
 def analyse_vehicle_nums(file_path):
     replay_buffer = pickle.load(open(file_path, "rb"))
