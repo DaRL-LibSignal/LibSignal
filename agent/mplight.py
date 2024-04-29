@@ -300,7 +300,7 @@ class MPLightAgent(RLAgent):
             queue.append((self.queue[i][1].generate()))
         maxsize = max(len(x) for x in queue)
         for i in range(len(queue)):
-            queue[i] = np.resize(queue[i], maxsize)
+            queue[i] = np.pad(queue[i], (0, maxsize - queue[i].shape[-1]))
         tmp_queue = np.squeeze(np.array(queue))
         if self.sub_agents == 1:
             queue = np.sum(tmp_queue)
