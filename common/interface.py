@@ -1,4 +1,4 @@
-from common.utils import build_index_intersection_map
+from common.utils import build_index_intersection_map_cityflow, build_index_intersection_map_sumo
 from common.registry import Registry
 from utils.logger import load_config_dict, modify_config_file, get_output_file_path
 import os
@@ -26,7 +26,11 @@ class Graph_World_Interface(Interface):
     def __init__(self, path):
         super(Graph_World_Interface, self).__init__()
         # TODO: support other roadnet file formation other than cityflow
-        Graph_World_Interface.graph = build_index_intersection_map(path)
+        world = Registry.mapping['command_mapping']['setting'].param['world']
+        if world == "cityflow":
+            Graph_World_Interface.graph = build_index_intersection_map_cityflow(path)
+        elif world == "sumo":
+            Graph_World_Interface.graph = build_index_intersection_map_sumo(path)
 
 
 @Registry.register_world('setting')
