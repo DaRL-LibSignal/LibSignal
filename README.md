@@ -7,6 +7,36 @@ Baselines include traditional Traffic Signal Control algorithms and reinforcemen
 
 LibSignal is a cross-simulator environment that provides multiple traditional and Reinforcement Learning models in traffic control tasks. Currently, we support SUMO, CityFlow, and CBEine simulation environments. Conversion between SUMO and CityFlow is carefully calibrated.
 
+## 🚀 🚀 🚀
+## We have created a docker image for your convenience 
+## <span style="color:red">(Run LibSignal, multiple sim2real baselines by one line)!</span>
+
+
+This docker code base contains three projects, first pull from docker hub: 
+
+`docker pull danielda1/ugat:latest`
+
+`docker run -it --name ugat_case danielda1/ugat:latest`
+
+Then go to the terminal: 
+`cd /DaRL/LibSignal`
+
+`python run.py`
+
+We have also included two sim-to-real for RL - TSC tasks:  
+
+> CDC23: Uncertainty-aware Grounded Action Transformation towards Sim-to-Real Transfer for Traffic Signal Control (https://github.com/darl-libsignal/ugat)
+
+`cd /DaRL/UGAT_Docker/`
+
+`python sim2real.py`
+
+> AAAI24: Prompt to Transfer: Sim-to-Real Transfer for Traffic Signal Control with Prompt Learning (https://github.com/DaRL-LibSignal/PromptGAT)
+
+`cd /DaRL/PromptGAT`
+
+`python sim2real.py`
+
 # Install
 
 ## Source
