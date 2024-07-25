@@ -18,7 +18,7 @@ This docker code base contains three projects, first pull from docker hub:
 
 `docker run -it --name ugat_case danielda1/ugat:latest`
 
-Then go to the terminal: 
+For LibSignal - Then go to the terminal: 
 
 `cd /DaRL/LibSignal`
 
