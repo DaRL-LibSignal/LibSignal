@@ -8,6 +8,7 @@ from .frap import FRAP_DQNAgent
 from .ppo_pfrl import IPPO_pfrl
 # from .maddpg import MADDPGAgent
 from .maddpg_v2 import MADDPGAgent
+from .magd import MAGDAgent
 from .presslight import PressLightAgent
 from .fixedtime import FixedTimeAgent
 from .mplight import MPLightAgent
