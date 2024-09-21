@@ -5,6 +5,7 @@ includes:
 model:
   name: maddpg_v2
   local_q_learn: False
+  train_model: True
   graphic: False
   vehicle_max: 1
   alpha: 0.01

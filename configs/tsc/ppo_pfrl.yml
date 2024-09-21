@@ -4,6 +4,7 @@ includes:
 
 model:
   name: ppo_pfrl
+  train_model: True
   graphic: False
   vehicle_max: 1
   learning_rate: 0.0001
