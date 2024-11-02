@@ -101,7 +101,8 @@ class CoLightAgent(RLAgent):
         self.phase_generator = phasing_generators
 
         # TODO: add irregular control of signals in the future
-        self.action_space = gym.spaces.Discrete(len(self.world.intersections[0].phases))
+        self.phase_lengths = np.array([len(i.phases) for i in self.world.intersections])
+        self.action_space = gym.spaces.Discrete(max(self.phase_lengths))
         min_ob_length = max([ob[1].ob_length for ob in self.ob_generator])
         if self.phase:
             # TODO: irregular ob and phase in the future
@@ -259,17 +260,33 @@ class CoLightAgent(RLAgent):
             actions = self.model(x=dp.x, edge_index=dp.edge_index, train=False)
             att = None
             actions = actions.clone().detach().numpy()
-            return np.argmax(actions, axis=1), att  # [batch, agents], [batch, agents, nv, neighbor]
+            # action = np.argmax(actions, axis=1)
+            action_list = []
+            for action_vec, phase_length in zip(actions, self.phase_lengths):
+                action_list.append(np.argmax(action_vec[0:phase_length]))
+            # action = np.clip(action, 0, self.phase_lengths - 1)
+            action = np.array(action_list)
+            # action = np.clip(action, 0, self.phase_lengths - 1)
+            return action, att  # [batch, agents], [batch, agents, nv, neighbor]
         else:
             actions = self.model(x=dp.x, edge_index=dp.edge_index, train=False)
             actions = actions.clone().detach().numpy()
-            return np.argmax(actions, axis=1)  # [batch, agents] TODO: check here
+            
+            action_list = []
+            for action_vec, phase_length in zip(actions, self.phase_lengths):
+                action_list.append(np.argmax(action_vec[0:phase_length]))
+            # action = np.clip(action, 0, self.phase_lengths - 1)
+            action = np.array(action_list)
+            
+            return action  # [batch, agents] TODO: check here
 
     def sample(self):
-        return np.random.randint(0, self.action_space.n, self.sub_agents)
+        action = np.random.randint(0, self.action_space.n, self.sub_agents)
+        action = np.clip(action, 0, self.phase_lengths - 1)
+        return action
 
     def _build_model(self):
-        model = ColightNet(self.ob_length, self.action_space.n, **self.model_dict)
+        model = ColightNet(self.ob_length, self.action_space.n, self.phase_lengths, **self.model_dict)
         return model
 
     def remember(self, last_obs, last_phase, actions, actions_prob, rewards, obs, cur_phase, done, key):
@@ -330,10 +347,8 @@ class CoLightAgent(RLAgent):
 
     def load_model(self, e):
         model_name = os.path.join(Registry.mapping['logger_mapping']['path'].path,
-                                  'model', f'{e}_{self.rank}.pt')
-        self.model = self._build_model()
+                                'model', f'{e}_{self.rank}.pt')
         self.model.load_state_dict(torch.load(model_name))
-        self.target_model = self._build_model()
         self.target_model.load_state_dict(torch.load(model_name))
 
     def save_model(self, e):
@@ -345,9 +360,10 @@ class CoLightAgent(RLAgent):
 
 
 class ColightNet(nn.Module):
-    def __init__(self, input_dim, output_dim, **kwargs):
+    def __init__(self, input_dim, output_dim, phase_lengths, **kwargs):
         super(ColightNet, self).__init__()
         self.model_dict = kwargs
+        self.batch_size = self.model_dict['batch_size']
         self.action_space = gym.spaces.Discrete(output_dim)
         self.features = input_dim
         self.module_list = nn.ModuleList()
@@ -377,6 +393,13 @@ class ColightNet(nn.Module):
             out = nn.Linear(block.d_out, self.action_space.n)
         name = f'output'
         output_dict.update({name: out})
+        
+        # make mask
+        unpadded_phase_mask = [torch.ones(length, dtype=torch.bool) for length in phase_lengths]
+        phase_mask = torch.nn.utils.rnn.pad_sequence(unpadded_phase_mask, batch_first=True)
+        mask_layer = MaskedOutput(mask=phase_mask, batch_size=self.batch_size, action_space=self.action_space)
+        output_dict.update({'out_mask': mask_layer})
+
         self.output_layer = nn.Sequential(output_dict)
 
     def forward(self, x, edge_index, train=True):
@@ -394,6 +417,19 @@ class ColightNet(nn.Module):
                 h = self.output_layer(h)
         return h
 
+class MaskedOutput(nn.Module):
+    def __init__(self, mask, batch_size, action_space):
+        super(MaskedOutput, self).__init__()
+        self.batch_size = batch_size
+        self.mask = mask
+        self.action_space = action_space
+
+    def forward(self, x):
+        # Apply the mask to the output
+        # x = torch.exp(x)
+        masked_output = x.reshape(-1 ,self.mask.shape[0], self.action_space.n) * self.mask
+        masked_output = masked_output.reshape(-1, self.mask.shape[-1])
+        return masked_output
 
 class Embedding_MLP(nn.Module):
     def __init__(self, in_size, layers):
