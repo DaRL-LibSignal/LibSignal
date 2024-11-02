@@ -385,7 +385,7 @@ def filter_roadlinks_by_startedge_and_turn_type(roadLinks, edge, turntype):
 
 def filter_roadlinks_by_startedge(roadLinks, lane_id):
     result = []
-    edge_id, lane_index = lane_id.split('_')
+    edge_id, lane_index = lane_id.rsplit("_", 1)
     for index, roadlink in enumerate(roadLinks):
         lane_index_list = []
         for laneLink in roadlink['laneLinks']:
@@ -532,7 +532,8 @@ def node_to_intersection(node, tls_dict, edge_dict):
 
                 lane_list_ = []
                 for lane in lane_list:
-                    edge_id, lane_id = lane.split('_')
+                    print(lane)
+                    edge_id, lane_id = lane.rsplit("_", 1)
                     lane_id = int(lane_id)
                     lane_ = edge_id + '_' + \
                         str(len(edge_dict[edge_id])-lane_id-1)
