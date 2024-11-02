@@ -205,7 +205,7 @@ Supporting parameters:
 | **MPLight implementation** | July-18-2022  | developed  | √          |
 | **Libsumo integration**    | August-8-2022 | developed | √          |
 | **Delay calculation**      | August-8-2022 | developed |  √          |
-| **CoLight adaptation for heterogenous network** | September-1-2022 | developed | √  |
+| **CoLight adaptation for heterogenous network** | November-2-2024 | developed | √  |
 | **Optimize FRAP and MPLight**      | October-4-2022 | developed |  √          |
 | **FRAP adaptation for irregular intersections**      | October-18-2022 | developed |  √          |
 | **PettingZoo envrionment to better support MARL**      | Jul-18-2023 | developed |       |
