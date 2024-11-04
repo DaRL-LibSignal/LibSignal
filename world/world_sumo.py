@@ -104,7 +104,14 @@ class Intersection(object):
             for n, i in enumerate(p.state):
                 if i == 'G' or i == 's':
                     # skip if empty link
-                    links = self.world.eng.trafficlight.getControlledLinks(self.id)[n]
+                    links = self.world.eng.trafficlight.getControlledLinks(self.id)
+                    
+                    # links = links[n]
+                    if n >= len(links):
+                        break
+                    else:
+                        links = links[n]
+                                            
                     if not links:
                         continue
                     links = links[0]
@@ -117,11 +124,11 @@ class Intersection(object):
             self.phase_available_lanelinks.append(tmp_lanelinks)
 
         self.full_phases, self.yellow_dict = self.create_yellows(self.green_phases, self.yellow_phase_time, self.interface_flag)
-        programs = self.eng.trafficlight.getAllProgramLogics(self.id)
-        logic = programs[0]
-        logic.type = 0
-        logic.phases = self.full_phases
+        # programs = self.eng.trafficlight.getAllProgramLogics(self.id)
+        tl_id = self.id + "_rl"
+        logic = self.eng.trafficlight.Logic(tl_id, 0, 0, self.full_phases)
         self.eng.trafficlight.setProgramLogic(self.id, logic)
+        self.eng.trafficlight.setProgram(self.id, tl_id)
 
         # dictionary of remembered features
         self.waiting_times = dict()

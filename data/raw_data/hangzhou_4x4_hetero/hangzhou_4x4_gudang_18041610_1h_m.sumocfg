@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+	<input>
+		<net-file value="hangzhou_4x4_gudang_18041610_1h_m.net.xml"/>
+		<route-files value="hangzhou_4x4_gudang_18041610_1h_m.rou.xml"/>
+	</input>
+	<time>
+		<begin value="0"/>
+		<end value="3600"/>
+	</time>
+</configuration>

@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tlLogics version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/tllogic_file.xsd">
+	<tlLogic id="intersection_1_1" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_1_2" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_1_3" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_1_4" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_2_1" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_2_2" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_2_3" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_2_4" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_3_1" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_3_2" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_3_3" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_3_4" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_4_1" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_4_2" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_4_3" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+	<tlLogic id="intersection_4_4" offset="0" programID="0" type="static">
+		<phase duration="30" state="GGGrrrrrrGGGGGGrrrGGGrrrrrrGGGGGGrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGrrrGGGrrrrrrGGGGGGrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrGGGGGGrrrrrrGGGrrrGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrGGGGGGrrrrrrGGGrrrGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGrrrrrrGGGGGGGGG"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGGGGGGGGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGrrrrrrGGGrrrrrrGGGGGGGGGGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+		<phase duration="30" state="GGGGGGGGGGGGrrrrrrGGGrrrrrrGGGrrrrrr"/>
+		<phase duration="5" state="sssrrrrrrsssrrrrrrsssrrrrrrsssrrrrrr"/>
+	</tlLogic>
+</tlLogics>
