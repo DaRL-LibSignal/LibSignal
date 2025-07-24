@@ -240,7 +240,7 @@ class Intersection(object):
         # TODO: check if change state, yellow phase must less than minimum of action time
         # test yellow finished first
         self.virtual_phase = action
-        if self.current_phase_time == self.yellow_phase_time:
+        if self.current_phase_time >= self.yellow_phase_time:
             self._change_phase(action)
         else:
             if action != self.get_current_phase() and self.current_phase_time > self.yellow_phase_time:
