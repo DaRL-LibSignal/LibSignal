@@ -1,4 +1,10 @@
 # Introduction
+
+![visitors](https://visitor-badge.laobi.icu/badge?page_id=wingsweihua.LibSignal&style=flat)
+![Website](https://img.shields.io/website?url=https%3A%2F%2Fdarl-libsignal.github.io%2F&up_message=LibSignal&style=flat)
+![GitHub Repo stars](https://img.shields.io/github/stars/DaRL-LibSignal/LibSignal?style=flat&color=red)
+
+
 This repo provides OpenAI Gym-compatible environments for traffic light control scenarios and a bunch of baseline methods. 
 
 Environments include single intersections (single-agent) and multi-intersections (multi-agents) with different road networks and traffic flow settings.
